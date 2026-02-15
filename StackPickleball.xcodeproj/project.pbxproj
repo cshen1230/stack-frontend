@@ -17,10 +17,23 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4B66C9462F3AC6630058A358 /* StackPickleball */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AA000004000000000000000A /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
 			path = StackPickleball;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		AA000004000000000000000A /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4B66C9432F3AC6630058A358 /* StackPickleball */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		4B66C9412F3AC6630058A358 /* Frameworks */ = {

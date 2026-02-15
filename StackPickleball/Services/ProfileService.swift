@@ -3,13 +3,13 @@ import Supabase
 
 enum ProfileService {
     static func getProfile(userId: UUID) async throws -> User? {
-        try await supabase
+        let users: [User] = try await supabase
             .from("users")
             .select()
             .eq("id", value: userId)
-            .maybeSingle()
             .execute()
             .value
+        return users.first
     }
 
     struct CreateProfileRequest: Encodable {
