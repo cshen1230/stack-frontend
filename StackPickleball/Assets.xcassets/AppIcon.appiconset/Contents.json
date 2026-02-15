@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "Pickleball logo on deep green background.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -73,6 +74,7 @@
       "size" : "512x512"
     },
     {
+      "filename" : "Pickleball logo on deep green background 1.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "512x512"
