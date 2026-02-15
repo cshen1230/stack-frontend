@@ -31,6 +31,8 @@ enum ProfileService {
         latitude: Double?,
         longitude: Double?
     ) async throws {
+        let session = try await supabase.auth.session
+        let headers = ["Authorization": "Bearer \(session.accessToken)"]
         let request = CreateProfileRequest(
             first_name: firstName,
             last_name: lastName,
@@ -40,7 +42,7 @@ enum ProfileService {
             latitude: latitude,
             longitude: longitude
         )
-        try await supabase.functions.invoke("create-profile", options: .init(body: request))
+        try await supabase.functions.invoke("create-profile", options: .init(headers: headers, body: request))
     }
 
     struct UpdateProfileRequest: Encodable {
@@ -64,6 +66,8 @@ enum ProfileService {
         latitude: Double? = nil,
         longitude: Double? = nil
     ) async throws {
+        let session = try await supabase.auth.session
+        let headers = ["Authorization": "Bearer \(session.accessToken)"]
         let request = UpdateProfileRequest(
             first_name: firstName,
             last_name: lastName,
@@ -74,7 +78,7 @@ enum ProfileService {
             latitude: latitude,
             longitude: longitude
         )
-        try await supabase.functions.invoke("update-profile", options: .init(body: request))
+        try await supabase.functions.invoke("update-profile", options: .init(headers: headers, body: request))
     }
 
     static func uploadAvatar(userId: UUID, imageData: Data) async throws -> String {

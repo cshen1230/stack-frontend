@@ -32,6 +32,8 @@ enum GameService {
         skillLevelMax: Double?,
         description: String?
     ) async throws {
+        let session = try await supabase.auth.session
+        let headers = ["Authorization": "Bearer \(session.accessToken)"]
         let request = CreateGameRequest(
             game_datetime: ISO8601DateFormatter().string(from: gameDatetime),
             spots_available: spotsAvailable,
@@ -43,7 +45,7 @@ enum GameService {
             skill_level_max: skillLevelMax,
             description: description
         )
-        try await supabase.functions.invoke("create-game", options: .init(body: request))
+        try await supabase.functions.invoke("create-game", options: .init(headers: headers, body: request))
     }
 
     struct GameIdRequest: Encodable {
@@ -51,16 +53,20 @@ enum GameService {
     }
 
     static func rsvpToGame(gameId: UUID) async throws {
+        let session = try await supabase.auth.session
+        let headers = ["Authorization": "Bearer \(session.accessToken)"]
         try await supabase.functions.invoke(
             "rsvp-to-game",
-            options: .init(body: GameIdRequest(game_id: gameId.uuidString))
+            options: .init(headers: headers, body: GameIdRequest(game_id: gameId.uuidString))
         )
     }
 
     static func cancelRsvp(gameId: UUID) async throws {
+        let session = try await supabase.auth.session
+        let headers = ["Authorization": "Bearer \(session.accessToken)"]
         try await supabase.functions.invoke(
             "cancel-rsvp",
-            options: .init(body: GameIdRequest(game_id: gameId.uuidString))
+            options: .init(headers: headers, body: GameIdRequest(game_id: gameId.uuidString))
         )
     }
 }

@@ -22,19 +22,23 @@ enum PlayerService {
         longitude: Double?,
         preferredFormat: GameFormat?
     ) async throws {
+        let session = try await supabase.auth.session
+        let headers = ["Authorization": "Bearer \(session.accessToken)"]
         let request = SetAvailabilityRequest(
             available_until: ISO8601DateFormatter().string(from: availableUntil),
             latitude: latitude,
             longitude: longitude,
             preferred_format: preferredFormat?.rawValue
         )
-        try await supabase.functions.invoke("set-availability", options: .init(body: request))
+        try await supabase.functions.invoke("set-availability", options: .init(headers: headers, body: request))
     }
 
     static func clearAvailability() async throws {
+        let session = try await supabase.auth.session
+        let headers = ["Authorization": "Bearer \(session.accessToken)"]
         try await supabase.functions.invoke(
             "set-availability",
-            options: .init(method: .delete)
+            options: .init(method: .delete, headers: headers)
         )
     }
 

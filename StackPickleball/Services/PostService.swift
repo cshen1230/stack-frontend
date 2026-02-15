@@ -33,6 +33,8 @@ enum PostService {
         longitude: Double?,
         locationName: String?
     ) async throws {
+        let session = try await supabase.auth.session
+        let headers = ["Authorization": "Bearer \(session.accessToken)"]
         let request = CreatePostRequest(
             media_url: mediaUrl,
             post_type: postType.rawValue,
@@ -43,7 +45,7 @@ enum PostService {
             longitude: longitude,
             location_name: locationName
         )
-        try await supabase.functions.invoke("create-post", options: .init(body: request))
+        try await supabase.functions.invoke("create-post", options: .init(headers: headers, body: request))
     }
 
     static func uploadMedia(userId: UUID, data: Data, isVideo: Bool) async throws -> String {
