@@ -80,8 +80,13 @@ struct SignUpView: View {
                 }
                 .padding(.horizontal, 24)
 
-                // Error message
-                if let error = viewModel.errorMessage {
+                // Success / Error messages
+                if viewModel.signUpSucceeded {
+                    Text("Check your email to confirm your account, then sign in.")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color(hex: "#2D5016"))
+                        .padding(.horizontal, 24)
+                } else if let error = viewModel.errorMessage {
                     Text(error)
                         .font(.system(size: 14))
                         .foregroundColor(.red)
