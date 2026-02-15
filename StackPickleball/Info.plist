@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Stack uses your location to find nearby games, players, and tournaments.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Stack uses the camera to take photos and videos of your pickleball sessions.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Stack accesses your photo library to share session photos and videos.</string>
+</dict>
+</plist>

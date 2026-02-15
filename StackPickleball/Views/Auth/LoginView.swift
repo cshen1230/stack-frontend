@@ -1,7 +1,8 @@
 import SwiftUI
 
 struct LoginView: View {
-    @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var viewModel = AuthViewModel()
+    @State private var showingSignUp = false
 
     var body: some View {
         ZStack {
@@ -17,7 +18,6 @@ struct LoginView: View {
 
                 // Branding
                 VStack(spacing: 16) {
-                    // App icon
                     Image("StackLogo")
                         .resizable()
                         .scaledToFit()
@@ -37,12 +37,11 @@ struct LoginView: View {
 
                 // Form
                 VStack(spacing: 14) {
-                    // Email field
                     HStack(spacing: 12) {
                         Image(systemName: "envelope")
                             .font(.system(size: 16))
                             .foregroundColor(Color(hex: "#9CA3AF"))
-                        TextField("Email", text: $authViewModel.email)
+                        TextField("Email", text: $viewModel.email)
                             .font(.system(size: 16))
                             .foregroundColor(.primary)
                             .textContentType(.emailAddress)
@@ -60,12 +59,11 @@ struct LoginView: View {
                     )
                     .colorScheme(.light)
 
-                    // Password field
                     HStack(spacing: 12) {
                         Image(systemName: "lock")
                             .font(.system(size: 16))
                             .foregroundColor(Color(hex: "#9CA3AF"))
-                        SecureField("Password", text: $authViewModel.password)
+                        SecureField("Password", text: $viewModel.password)
                             .font(.system(size: 16))
                             .foregroundColor(.primary)
                             .textContentType(.password)
@@ -81,13 +79,20 @@ struct LoginView: View {
                 }
                 .padding(.horizontal, 24)
 
+                // Error message
+                if let error = viewModel.errorMessage {
+                    Text(error)
+                        .font(.system(size: 14))
+                        .foregroundColor(.red)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 8)
+                }
+
                 // Sign In button
                 Button(action: {
-                    Task {
-                        await authViewModel.signIn()
-                    }
+                    Task { await viewModel.signIn() }
                 }) {
-                    if authViewModel.isLoading {
+                    if viewModel.isLoading {
                         ProgressView()
                             .tint(.white)
                             .frame(maxWidth: .infinity)
@@ -108,7 +113,7 @@ struct LoginView: View {
                 .contentShape(Rectangle())
                 .padding(.horizontal, 24)
                 .padding(.top, 24)
-                .disabled(authViewModel.isLoading)
+                .disabled(viewModel.isLoading)
 
                 // Sign up link
                 HStack(spacing: 0) {
@@ -118,7 +123,7 @@ struct LoginView: View {
                         .foregroundColor(.stackGreen)
                         .fontWeight(.bold)
                         .onTapGesture {
-                            // TODO: Navigate to sign up view
+                            showingSignUp = true
                         }
                 }
                 .font(.system(size: 16))
@@ -127,10 +132,13 @@ struct LoginView: View {
                 Spacer()
             }
         }
+        .sheet(isPresented: $showingSignUp) {
+            SignUpView()
+        }
     }
 }
 
 #Preview {
     LoginView()
-        .environmentObject(AuthViewModel())
+        .environment(AppState())
 }

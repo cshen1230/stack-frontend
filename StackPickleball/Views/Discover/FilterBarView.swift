@@ -1,40 +1,37 @@
 import SwiftUI
 
 struct FilterBarView: View {
-    @Binding var duprMin: Double
-    @Binding var duprMax: Double
-    @Binding var date: Date
     @Binding var distance: Double
     let onApply: () -> Void
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                // DUPR filter (active)
-                FilterChip(
-                    icon: "trophy",
-                    text: "DUPR \(String(format: "%.1f", duprMin))-\(String(format: "%.1f", duprMax))",
-                    isActive: true
-                ) {
-                    // TODO: Show DUPR picker
-                }
-
-                // Date filter (inactive)
-                FilterChip(
-                    icon: "calendar",
-                    text: "Today",
-                    isActive: false
-                ) {
-                    // TODO: Show date picker
-                }
-
-                // Distance filter (inactive)
+                // Distance filter
                 FilterChip(
                     icon: "mappin.circle",
                     text: "\(Int(distance)) mi",
-                    isActive: false
+                    isActive: true
                 ) {
-                    // TODO: Show distance picker
+                    // Cycle through distance options
+                    let options: [Double] = [5, 10, 20, 50]
+                    if let idx = options.firstIndex(of: distance) {
+                        distance = options[(idx + 1) % options.count]
+                    } else {
+                        distance = 20
+                    }
+                    onApply()
+                }
+
+                // Game format filters
+                ForEach(GameFormat.allCases, id: \.self) { format in
+                    FilterChip(
+                        icon: "sportscourt",
+                        text: format.displayName,
+                        isActive: false
+                    ) {
+                        // Filter action placeholder
+                    }
                 }
             }
         }
@@ -66,10 +63,7 @@ struct FilterChip: View {
 
 #Preview {
     FilterBarView(
-        duprMin: .constant(3.0),
-        duprMax: .constant(4.5),
-        date: .constant(Date()),
-        distance: .constant(5.0),
+        distance: .constant(20.0),
         onApply: {}
     )
     .padding(16)

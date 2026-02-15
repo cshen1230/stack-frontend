@@ -16,22 +16,29 @@ struct GameHighlightCard: View {
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(post.userName)
+                    Text(post.posterDisplayName)
                         .font(.system(size: 16, weight: .semibold))
-                    Text("Game Highlight")
+                    Text("Session Highlight")
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                 }
 
                 Spacer()
 
-                Text(post.timestamp, style: .relative)
+                Text(post.createdAt, style: .relative)
                     .font(.system(size: 13))
                     .foregroundColor(.secondary)
             }
 
-            // Highlight image placeholder
-            if post.mediaURL != nil {
+            // Media
+            AsyncImage(url: URL(string: post.mediaUrl)) { image in
+                image
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: 200)
+                    .clipped()
+                    .cornerRadius(12)
+            } placeholder: {
                 Rectangle()
                     .fill(
                         LinearGradient(
@@ -43,42 +50,18 @@ struct GameHighlightCard: View {
                     .frame(height: 200)
                     .cornerRadius(12)
                     .overlay(
-                        VStack {
-                            Image(systemName: "trophy.fill")
-                                .font(.system(size: 36))
-                                .foregroundColor(Color(hex: "#2D5016").opacity(0.5))
-                            Text("Game Highlight")
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Color(hex: "#2D5016").opacity(0.7))
-                        }
+                        Image(systemName: "photo")
+                            .font(.system(size: 36))
+                            .foregroundColor(Color(hex: "#2D5016").opacity(0.5))
                     )
             }
 
             // Caption
-            if let content = post.content {
-                Text(content)
+            if let caption = post.caption {
+                Text(caption)
                     .font(.system(size: 15))
                     .fixedSize(horizontal: false, vertical: true)
             }
-
-            // Engagement
-            HStack(spacing: 24) {
-                HStack(spacing: 6) {
-                    Image(systemName: "heart")
-                    Text("\(post.likes)")
-                }
-
-                HStack(spacing: 6) {
-                    Image(systemName: "bubble.right")
-                    Text("\(post.comments)")
-                }
-
-                Spacer()
-
-                Image(systemName: "square.and.arrow.up")
-            }
-            .font(.system(size: 16))
-            .foregroundColor(.primary)
         }
         .padding(16)
         .background(Color.white)

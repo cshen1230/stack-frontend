@@ -1,26 +1,27 @@
-//
-//  ContentView.swift
-//  StackPickleball
-//
-//  Created by Chris Shen on 2/9/26.
-//
-
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var authViewModel = AuthViewModel()
+    @Environment(AppState.self) private var appState
 
     var body: some View {
-        if authViewModel.isAuthenticated {
-            TabBarView()
-                .environmentObject(authViewModel)
-        } else {
-            LoginView()
-                .environmentObject(authViewModel)
+        Group {
+            if appState.isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.stackBackground)
+            } else if !appState.isAuthenticated {
+                LoginView()
+            } else if appState.needsOnboarding {
+                OnboardingView()
+            } else {
+                TabBarView()
+            }
         }
     }
 }
 
 #Preview {
     ContentView()
+        .environment(AppState())
+        .environmentObject(LocationManager.shared)
 }

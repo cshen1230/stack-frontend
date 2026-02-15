@@ -15,6 +15,18 @@ extension View {
                 y: AppConstants.shadowYOffset
             )
     }
+
+    func errorAlert(_ errorMessage: Binding<String?>) -> some View {
+        self.alert(
+            "Error",
+            isPresented: Binding(
+                get: { errorMessage.wrappedValue != nil },
+                set: { if !$0 { errorMessage.wrappedValue = nil } }
+            ),
+            actions: { Button("OK") { errorMessage.wrappedValue = nil } },
+            message: { Text(errorMessage.wrappedValue ?? "") }
+        )
+    }
 }
 
 // MARK: - Date Extensions

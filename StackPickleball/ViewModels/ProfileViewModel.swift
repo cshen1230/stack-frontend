@@ -1,76 +1,54 @@
 import SwiftUI
-import Combine
 
-// Supporting model for match history display
-struct MatchHistoryItem: Identifiable, Sendable {
-    let id: UUID
-    let opponents: String
-    let score: String
-    let result: MatchResult
-    let date: Date
-    let location: String
-}
+@Observable
+class ProfileViewModel {
+    var user: User?
+    var isLoading = false
+    var errorMessage: String?
 
-class ProfileViewModel: ObservableObject {
-    @Published var user: User?
-    @Published var matchHistory: [MatchHistoryItem] = []
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
-
-    init() {
-        loadProfile()
-    }
-
-    // MARK: - Data Loading
-
-    func loadProfile() {
+    func loadProfile() async {
         isLoading = true
-
-        // TODO: Fetch user profile from Supabase
-
-        // Mock data based on Figma designs
-        user = User(
-            name: "Mike Chen",
-            email: "mike@example.com",
-            duprRating: 4.2,
-            profileImageURL: nil,
-            location: "San Francisco, CA",
-            favoriteCourts: ["Sunset Park", "Central Courts"]
-        )
-
-        // Mock match history
-        matchHistory = [
-            MatchHistoryItem(
-                id: UUID(),
-                opponents: "Sarah J. & Mike C.",
-                score: "11-9, 11-7",
-                result: .win,
-                date: Date().addingTimeInterval(-86400), // Yesterday
-                location: "Sunset Park"
-            ),
-            MatchHistoryItem(
-                id: UUID(),
-                opponents: "Alex M. & Emma D.",
-                score: "11-8, 9-11, 11-6",
-                result: .win,
-                date: Date().addingTimeInterval(-3 * 86400), // 3 days ago
-                location: "Central Courts"
-            ),
-            MatchHistoryItem(
-                id: UUID(),
-                opponents: "Tom A. & Lisa K.",
-                score: "8-11, 11-9, 9-11",
-                result: .loss,
-                date: Date().addingTimeInterval(-7 * 86400), // 7 days ago
-                location: "Riverside Park"
-            ),
-        ]
-
+        errorMessage = nil
+        do {
+            guard let userId = await AuthService.currentUserId() else { return }
+            user = try await ProfileService.getProfile(userId: userId)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
         isLoading = false
     }
 
-    func updateProfile(_ updatedUser: User) async {
-        // TODO: Update user profile in Supabase
-        self.user = updatedUser
+    func updateProfile(
+        firstName: String?,
+        lastName: String?,
+        middleName: String?,
+        username: String?,
+        duprRating: Double?,
+        avatarUrl: String?
+    ) async {
+        isLoading = true
+        errorMessage = nil
+        do {
+            try await ProfileService.updateProfile(
+                firstName: firstName,
+                lastName: lastName,
+                middleName: middleName,
+                username: username,
+                duprRating: duprRating,
+                avatarUrl: avatarUrl
+            )
+            await loadProfile()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    func signOut() async {
+        do {
+            try await AuthService.signOut()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }

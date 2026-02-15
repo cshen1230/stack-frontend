@@ -3,50 +3,51 @@ import Foundation
 struct Post: Identifiable, Codable, Sendable {
     let id: UUID
     let userId: UUID
-    var userName: String
-    var userImageURL: String?
-    let type: PostType
-    var content: String?
-    var mediaURL: String?
+    var postType: PostType
+    var caption: String?
+    var mediaUrl: String
     var gameId: UUID?
-    var gameDetails: GameDetails?
-    var likes: Int
-    var comments: Int
-    var timestamp: Date
+    var tournamentId: UUID?
+    var locationName: String?
+    let createdAt: Date
 
-    init(
-        id: UUID = UUID(),
-        userId: UUID,
-        userName: String,
-        userImageURL: String? = nil,
-        type: PostType,
-        content: String? = nil,
-        mediaURL: String? = nil,
-        gameId: UUID? = nil,
-        gameDetails: GameDetails? = nil,
-        likes: Int = 0,
-        comments: Int = 0,
-        timestamp: Date = Date()
-    ) {
-        self.id = id
-        self.userId = userId
-        self.userName = userName
-        self.userImageURL = userImageURL
-        self.type = type
-        self.content = content
-        self.mediaURL = mediaURL
-        self.gameId = gameId
-        self.gameDetails = gameDetails
-        self.likes = likes
-        self.comments = comments
-        self.timestamp = timestamp
+    // Nested user object from joined query
+    var users: PostUser?
+
+    var posterDisplayName: String {
+        if let user = users {
+            return "\(user.firstName) \(user.lastName)"
+        }
+        return "Unknown"
+    }
+
+    var posterUsername: String? { users?.username }
+    var posterAvatarUrl: String? { users?.avatarUrl }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case userId = "user_id"
+        case postType = "post_type"
+        case caption
+        case mediaUrl = "media_url"
+        case gameId = "game_id"
+        case tournamentId = "tournament_id"
+        case locationName = "location_name"
+        case createdAt = "created_at"
+        case users
     }
 }
 
-// Nested struct for embedded game details in posts
-struct GameDetails: Codable, Sendable {
-    let time: Date
-    let location: String
-    let skillLevel: String // e.g., "DUPR 4.0-4.5"
-    let playerCount: String // e.g., "3/4 players"
+struct PostUser: Codable, Sendable {
+    let username: String
+    let firstName: String
+    let lastName: String
+    let avatarUrl: String?
+
+    enum CodingKeys: String, CodingKey {
+        case username
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case avatarUrl = "avatar_url"
+    }
 }

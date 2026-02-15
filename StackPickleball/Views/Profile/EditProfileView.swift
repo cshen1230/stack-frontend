@@ -2,31 +2,39 @@ import SwiftUI
 
 struct EditProfileView: View {
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject var viewModel: ProfileViewModel
+    var viewModel: ProfileViewModel
 
-    @State private var name: String = ""
-    @State private var duprRating: String = ""
-    @State private var location: String = ""
-    @State private var preferredSide: PlayingSide = .forehand
+    @State private var firstName = ""
+    @State private var middleName = ""
+    @State private var lastName = ""
+    @State private var username = ""
+    @State private var duprRating = ""
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Personal Info") {
-                    TextField("Name", text: $name)
-                    TextField("Location", text: $location)
+                Section("Name") {
+                    TextField("First Name", text: $firstName)
+                        .textContentType(.givenName)
+                    TextField("Middle Name (optional)", text: $middleName)
+                        .textContentType(.middleName)
+                    TextField("Last Name", text: $lastName)
+                        .textContentType(.familyName)
                 }
 
-                Section("Pickleball Info") {
+                Section("Account") {
+                    TextField("Username", text: $username)
+                        .textContentType(.username)
+                        #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        #endif
+                }
+
+                Section("Pickleball") {
                     TextField("DUPR Rating", text: $duprRating)
                         #if os(iOS)
                         .keyboardType(.decimalPad)
                         #endif
-
-                    Picker("Preferred Side", selection: $preferredSide) {
-                        Text("Forehand").tag(PlayingSide.forehand)
-                        Text("Backhand").tag(PlayingSide.backhand)
-                    }
                 }
             }
             .navigationTitle("Edit Profile")
@@ -35,33 +43,33 @@ struct EditProfileView: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                    Button("Cancel") { dismiss() }
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        if var user = viewModel.user {
-                            user.name = name
-                            user.location = location.isEmpty ? nil : location
-                            user.duprRating = Double(duprRating)
-                            user.preferredSide = preferredSide
-                            Task {
-                                await viewModel.updateProfile(user)
-                            }
+                        Task {
+                            await viewModel.updateProfile(
+                                firstName: firstName.isEmpty ? nil : firstName,
+                                lastName: lastName.isEmpty ? nil : lastName,
+                                middleName: middleName,
+                                username: username.isEmpty ? nil : username,
+                                duprRating: Double(duprRating),
+                                avatarUrl: nil
+                            )
+                            dismiss()
                         }
-                        dismiss()
                     }
                     .fontWeight(.semibold)
                 }
             }
             .onAppear {
                 if let user = viewModel.user {
-                    name = user.name
+                    firstName = user.firstName
+                    middleName = user.middleName ?? ""
+                    lastName = user.lastName
+                    username = user.username
                     duprRating = user.duprRating.map { String(format: "%.1f", $0) } ?? ""
-                    location = user.location ?? ""
-                    preferredSide = user.preferredSide ?? .forehand
                 }
             }
         }

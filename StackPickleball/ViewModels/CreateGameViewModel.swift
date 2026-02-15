@@ -1,58 +1,49 @@
 import SwiftUI
-import Combine
 
-class CreateGameViewModel: ObservableObject {
-    @Published var location: String = ""
-    @Published var selectedDate: Date = Date()
-    @Published var skillLevelMin: Double = 3.0
-    @Published var skillLevelMax: Double = 4.5
-    @Published var gameType: GameType = .doubles
-    @Published var visibility: GameVisibility = .publicGame
-    @Published var maxPlayers: Int = 4
-    @Published var notes: String = ""
+@Observable
+class CreateGameViewModel {
+    var locationName = ""
+    var selectedDate = Date()
+    var skillLevelMin: Double = 3.0
+    var skillLevelMax: Double = 4.5
+    var gameFormat: GameFormat = .doubles
+    var spotsAvailable: Int = 4
+    var description = ""
 
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
-    @Published var showingSuccess: Bool = false
+    var isLoading = false
+    var errorMessage: String?
+    var showingSuccess = false
 
-    // MARK: - Game Creation
-
-    func createGame(hostId: UUID, hostName: String) async {
+    func createGame(lat: Double?, lng: Double?) async {
         isLoading = true
         errorMessage = nil
-
-        // TODO: Create game in Supabase
-        let _ = Game(
-            hostId: hostId,
-            hostName: hostName,
-            location: location,
-            time: selectedDate,
-            skillLevelMin: skillLevelMin,
-            skillLevelMax: skillLevelMax,
-            maxPlayers: maxPlayers,
-            visibility: visibility,
-            gameType: gameType,
-            notes: notes.isEmpty ? nil : notes
-        )
-
-        try? await Task.sleep(nanoseconds: 1_000_000_000) // Simulate network delay
-
-        // Mock success
-        showingSuccess = true
+        do {
+            try await GameService.createGame(
+                gameDatetime: selectedDate,
+                spotsAvailable: spotsAvailable,
+                gameFormat: gameFormat,
+                locationName: locationName.isEmpty ? nil : locationName,
+                latitude: lat,
+                longitude: lng,
+                skillLevelMin: skillLevelMin,
+                skillLevelMax: skillLevelMax,
+                description: description.isEmpty ? nil : description
+            )
+            showingSuccess = true
+            resetForm()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
         isLoading = false
-
-        // Reset form
-        resetForm()
     }
 
     func resetForm() {
-        location = ""
+        locationName = ""
         selectedDate = Date()
         skillLevelMin = 3.0
         skillLevelMax = 4.5
-        gameType = .doubles
-        visibility = .publicGame
-        maxPlayers = 4
-        notes = ""
+        gameFormat = .doubles
+        spotsAvailable = 4
+        description = ""
     }
 }

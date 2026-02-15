@@ -1,20 +1,34 @@
 import SwiftUI
 
 struct FeedView: View {
-    @StateObject private var viewModel = FeedViewModel()
+    @State private var viewModel = FeedViewModel()
+    @State private var showingCreatePost = false
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    ForEach(viewModel.posts) { post in
-                        PostCardView(post: post) {
-                            viewModel.likePost(post)
+            ZStack {
+                if viewModel.isLoading && viewModel.posts.isEmpty {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if viewModel.posts.isEmpty {
+                    EmptyStateView(
+                        icon: "camera",
+                        title: "No Posts Yet",
+                        message: "Be the first to share a session photo!",
+                        buttonTitle: "Post Session",
+                        buttonAction: { showingCreatePost = true }
+                    )
+                } else {
+                    ScrollView {
+                        LazyVStack(spacing: 12) {
+                            ForEach(viewModel.posts) { post in
+                                PostCardView(post: post)
+                            }
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 12)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
             }
             .background(Color.stackBackground)
             .navigationTitle("Feed")
@@ -23,22 +37,29 @@ struct FeedView: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .automatic) {
-                    Button(action: {
-                        // TODO: Navigate to notifications
-                    }) {
-                        Image(systemName: "bell")
+                    Button(action: { showingCreatePost = true }) {
+                        Image(systemName: "camera")
                             .font(.system(size: 20))
-                            .foregroundColor(.black)
+                            .foregroundColor(.stackGreen)
                     }
                 }
             }
             .refreshable {
-                await viewModel.refreshFeed()
+                await viewModel.loadFeed()
             }
+            .task {
+                await viewModel.loadFeed()
+            }
+            .sheet(isPresented: $showingCreatePost) {
+                CreatePostView()
+            }
+            .errorAlert($viewModel.errorMessage)
         }
     }
 }
 
 #Preview {
     FeedView()
+        .environment(AppState())
+        .environmentObject(LocationManager.shared)
 }

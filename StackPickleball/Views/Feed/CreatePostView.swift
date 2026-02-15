@@ -1,35 +1,35 @@
 import SwiftUI
+import PhotosUI
 
-struct CreateGameView: View {
+struct CreatePostView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var locationManager: LocationManager
-    @State private var viewModel = CreateGameViewModel()
+    @State private var viewModel = CreatePostViewModel()
+    @State private var selectedItem: PhotosPickerItem?
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Game Details") {
-                    TextField("Location Name", text: $viewModel.locationName)
-                    DatePicker("Date & Time", selection: $viewModel.selectedDate, in: Date()...)
-
-                    HStack {
-                        Text("DUPR Range")
-                        Spacer()
-                        Text("\(String(format: "%.1f", viewModel.skillLevelMin)) - \(String(format: "%.1f", viewModel.skillLevelMax))")
-                            .foregroundColor(.secondary)
-                    }
-
-                    Picker("Format", selection: $viewModel.gameFormat) {
-                        ForEach(GameFormat.allCases, id: \.self) { format in
-                            Text(format.displayName).tag(format)
+                Section("Photo") {
+                    PhotosPicker(selection: $selectedItem, matching: .images) {
+                        if viewModel.selectedImageData != nil {
+                            Label("Photo Selected", systemImage: "checkmark.circle.fill")
+                                .foregroundColor(.stackGreen)
+                        } else {
+                            Label("Choose Photo", systemImage: "photo.on.rectangle")
                         }
                     }
-
-                    Stepper("Spots: \(viewModel.spotsAvailable)", value: $viewModel.spotsAvailable, in: 1...16)
+                    .onChange(of: selectedItem) { _, newValue in
+                        Task {
+                            if let data = try? await newValue?.loadTransferable(type: Data.self) {
+                                viewModel.selectedImageData = data
+                            }
+                        }
+                    }
                 }
 
-                Section("Additional Info") {
-                    TextField("Description (optional)", text: $viewModel.description, axis: .vertical)
+                Section("Caption") {
+                    TextField("What happened on the court?", text: $viewModel.caption, axis: .vertical)
                         .lineLimit(3...6)
                 }
 
@@ -40,7 +40,7 @@ struct CreateGameView: View {
                     }
                 }
             }
-            .navigationTitle("Create Game")
+            .navigationTitle("New Post")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -48,11 +48,10 @@ struct CreateGameView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
-
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
+                    Button("Post") {
                         Task {
-                            await viewModel.createGame(
+                            await viewModel.createPost(
                                 lat: locationManager.latitude,
                                 lng: locationManager.longitude
                             )
@@ -62,7 +61,7 @@ struct CreateGameView: View {
                         }
                     }
                     .fontWeight(.semibold)
-                    .disabled(viewModel.locationName.isEmpty || viewModel.isLoading)
+                    .disabled(viewModel.selectedImageData == nil || viewModel.isLoading)
                 }
             }
         }
@@ -70,6 +69,6 @@ struct CreateGameView: View {
 }
 
 #Preview {
-    CreateGameView()
+    CreatePostView()
         .environmentObject(LocationManager.shared)
 }

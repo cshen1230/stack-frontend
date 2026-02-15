@@ -1,11 +1,9 @@
 import SwiftUI
 
 struct SignUpView: View {
-    @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
-
-    @State private var name: String = ""
-    @State private var confirmPassword: String = ""
+    @State private var viewModel = AuthViewModel()
+    @State private var confirmPassword = ""
 
     var body: some View {
         ZStack {
@@ -32,26 +30,12 @@ struct SignUpView: View {
 
                 Spacer()
 
-                // Input fields
+                // Input fields — email + password only (name/DUPR collected in onboarding)
                 VStack(spacing: 16) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "person")
-                            .foregroundColor(.secondary)
-                        TextField("Full Name", text: $name)
-                            .textContentType(.name)
-                    }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "#E0E0E0"), lineWidth: 1)
-                    )
-
                     HStack(spacing: 12) {
                         Image(systemName: "envelope")
                             .foregroundColor(.secondary)
-                        TextField("Email", text: $authViewModel.email)
+                        TextField("Email", text: $viewModel.email)
                             .textContentType(.emailAddress)
                             #if os(iOS)
                             .textInputAutocapitalization(.never)
@@ -69,7 +53,7 @@ struct SignUpView: View {
                     HStack(spacing: 12) {
                         Image(systemName: "lock")
                             .foregroundColor(.secondary)
-                        SecureField("Password", text: $authViewModel.password)
+                        SecureField("Password", text: $viewModel.password)
                             .textContentType(.newPassword)
                     }
                     .padding()
@@ -96,13 +80,23 @@ struct SignUpView: View {
                 }
                 .padding(.horizontal, 24)
 
+                // Error message
+                if let error = viewModel.errorMessage {
+                    Text(error)
+                        .font(.system(size: 14))
+                        .foregroundColor(.red)
+                        .padding(.horizontal, 24)
+                }
+
                 // Sign up button
                 Button(action: {
-                    Task {
-                        await authViewModel.signUp()
+                    if viewModel.password != confirmPassword {
+                        viewModel.errorMessage = "Passwords do not match"
+                        return
                     }
+                    Task { await viewModel.signUp() }
                 }) {
-                    if authViewModel.isLoading {
+                    if viewModel.isLoading {
                         ProgressView()
                             .tint(.white)
                     } else {
@@ -116,7 +110,7 @@ struct SignUpView: View {
                 .background(Color(hex: "#2D5016"))
                 .cornerRadius(12)
                 .padding(.horizontal, 24)
-                .disabled(authViewModel.isLoading)
+                .disabled(viewModel.isLoading)
 
                 // Back to login link
                 HStack(spacing: 4) {
@@ -138,5 +132,5 @@ struct SignUpView: View {
 
 #Preview {
     SignUpView()
-        .environmentObject(AuthViewModel())
+        .environment(AppState())
 }

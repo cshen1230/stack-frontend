@@ -1,26 +1,33 @@
 import Foundation
 
-enum PostType: String, Codable, Sendable {
-    case upcomingGame = "upcoming_game"
-    case gameHighlight = "game_highlight"
-}
-
-enum GameVisibility: String, Codable, Sendable {
-    case publicGame = "public"
-    case privateGame = "private"
-}
-
-enum GameType: String, Codable, Sendable {
+enum GameFormat: String, Codable, Sendable, CaseIterable {
     case singles = "singles"
     case doubles = "doubles"
+    case mixedDoubles = "mixed_doubles"
+    case drill = "drill"
+
+    var displayName: String {
+        switch self {
+        case .singles: return "Singles"
+        case .doubles: return "Doubles"
+        case .mixedDoubles: return "Mixed Doubles"
+        case .drill: return "Drill"
+        }
+    }
 }
 
-enum PlayingSide: String, Codable, Sendable {
-    case forehand = "forehand"
-    case backhand = "backhand"
+enum PostType: String, Codable, Sendable {
+    case sessionPhoto = "session_photo"
+    case sessionClip = "session_clip"
 }
 
-enum MatchResult: String, Codable, Sendable {
-    case win = "win"
-    case loss = "loss"
+enum AvailabilityStatus: String, Codable, Sendable {
+    case available = "available"
+    case busy = "busy"
+}
+
+enum RSVPStatus: String, Codable, Sendable {
+    case confirmed = "confirmed"
+    case waitlisted = "waitlisted"
+    case cancelled = "cancelled"
 }

@@ -21,16 +21,23 @@ struct TabBarView: View {
                     }
                     .tag(1)
 
-                ProfileView()
+                TournamentListView()
                     .tabItem {
-                        Image(systemName: selectedTab == 2 ? "person.fill" : "person")
-                        Text("Profile")
+                        Image(systemName: selectedTab == 2 ? "trophy.fill" : "trophy")
+                        Text("Tournaments")
                     }
                     .tag(2)
+
+                ProfileView()
+                    .tabItem {
+                        Image(systemName: selectedTab == 3 ? "person.fill" : "person")
+                        Text("Profile")
+                    }
+                    .tag(3)
             }
             .accentColor(.stackGreen)
 
-            // Floating action button
+            // Floating action button on Feed and Discover tabs
             if selectedTab == 0 || selectedTab == 1 {
                 VStack {
                     Spacer()
@@ -53,5 +60,6 @@ struct TabBarView: View {
 
 #Preview {
     TabBarView()
-        .environmentObject(AuthViewModel())
+        .environment(AppState())
+        .environmentObject(LocationManager.shared)
 }
