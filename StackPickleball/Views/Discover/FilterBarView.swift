@@ -48,15 +48,19 @@ struct FilterChip: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 13))
+                    .font(.system(size: 14))
                 Text(text)
                     .font(.system(size: 14, weight: .medium))
             }
-            .foregroundColor(isActive ? .white : .black)
-            .padding(.horizontal, 16)
+            .foregroundColor(.black)
+            .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .background(isActive ? Color.stackFilterActive : Color.stackFilterInactive)
+            .background(Color.white)
             .cornerRadius(20)
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(isActive ? Color.black : Color.stackBorder, lineWidth: isActive ? 1.5 : 1)
+            )
         }
     }
 }

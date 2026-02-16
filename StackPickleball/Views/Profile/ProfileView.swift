@@ -9,72 +9,66 @@ struct ProfileView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
-                    // Top section
-                    VStack(spacing: 0) {
-                        HStack(alignment: .top, spacing: 14) {
-                            // Avatar
+                    // Top section — centered profile header
+                    VStack(spacing: 12) {
+                        // Avatar with colored ring
+                        ZStack(alignment: .bottom) {
                             if let avatarUrl = viewModel.user?.avatarUrl, let url = URL(string: avatarUrl) {
                                 AsyncImage(url: url) { image in
                                     image.resizable().scaledToFill()
                                 } placeholder: {
                                     avatarPlaceholder
                                 }
-                                .frame(width: 90, height: 90)
+                                .frame(width: 110, height: 110)
                                 .clipShape(Circle())
                             } else {
                                 avatarPlaceholder
                             }
+                        }
+                        .overlay(
+                            Circle()
+                                .stroke(Color.stackGreen.opacity(0.4), lineWidth: 4)
+                                .frame(width: 120, height: 120)
+                        )
 
-                            // Name + DUPR badge
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(viewModel.user?.displayName ?? "")
-                                    .font(.system(size: 26, weight: .bold))
-                                    .foregroundColor(.black)
+                        // Display name
+                        Text(viewModel.user?.displayName ?? "")
+                            .font(.system(size: 26, weight: .bold))
+                            .foregroundColor(.black)
+                            .padding(.top, 4)
 
-                                if let username = viewModel.user?.username {
+                        // Username with chevron
+                        if let username = viewModel.user?.username {
+                            Button(action: { showingEditProfile = true }) {
+                                HStack(spacing: 4) {
                                     Text("@\(username)")
                                         .font(.system(size: 15))
                                         .foregroundColor(.stackSecondaryText)
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.stackSecondaryText)
                                 }
-
-                                if let dupr = viewModel.user?.duprRating {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "trophy.fill")
-                                            .font(.system(size: 14))
-                                            .foregroundColor(.white)
-                                        Text("\(String(format: "%.1f", dupr)) DUPR")
-                                            .font(.system(size: 16, weight: .medium))
-                                            .foregroundColor(.white)
-                                    }
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(Color.stackDUPRBadge)
-                                    .cornerRadius(16)
-                                }
-                            }
-
-                            Spacer()
-
-                            // Edit button
-                            Button(action: { showingEditProfile = true }) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "pencil")
-                                        .font(.system(size: 14))
-                                    Text("Edit")
-                                        .font(.system(size: 15, weight: .medium))
-                                }
-                                .foregroundColor(.stackGreen)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.stackGreen, lineWidth: 1.5)
-                                )
                             }
                         }
-                        .padding(16)
-                        .padding(.bottom, 4)
+
+                        // DUPR badge
+                        if let dupr = viewModel.user?.duprRating {
+                            HStack(spacing: 6) {
+                                Image(systemName: "trophy.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.white)
+                                Text("\(String(format: "%.1f", dupr)) DUPR")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.white)
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(Color.stackDUPRBadge)
+                            .cornerRadius(18)
+                        }
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 24)
                     .background(Color.white)
 
                     Rectangle()
@@ -106,6 +100,22 @@ struct ProfileView: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(action: {}) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 20))
+                            .foregroundColor(.black)
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: { showingEditProfile = true }) {
+                        Text("Edit")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.stackGreen)
+                    }
+                }
+            }
             .task {
                 await viewModel.loadProfile()
             }
@@ -119,10 +129,10 @@ struct ProfileView: View {
     private var avatarPlaceholder: some View {
         Circle()
             .fill(Color.gray.opacity(0.3))
-            .frame(width: 90, height: 90)
+            .frame(width: 110, height: 110)
             .overlay(
                 Image(systemName: "person.fill")
-                    .font(.system(size: 44))
+                    .font(.system(size: 50))
                     .foregroundColor(.white)
             )
     }

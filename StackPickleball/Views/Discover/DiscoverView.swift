@@ -21,7 +21,7 @@ struct DiscoverView: View {
                     }
                 )
                 .padding(.horizontal, 16)
-                .padding(.vertical, 14)
+                .padding(.vertical, 8)
                 .background(Color.white)
 
                 Divider()
@@ -54,7 +54,7 @@ struct DiscoverView: View {
             }
             .navigationTitle("Discover Games")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .automatic) {
