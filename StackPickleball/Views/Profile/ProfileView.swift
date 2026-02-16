@@ -73,11 +73,15 @@ struct ProfileView: View {
                     .cornerRadius(20)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.stackGreen, lineWidth: 1.5)
+                            .stroke(Color.black, lineWidth: 1)
                     )
                     .background(
                         RoundedRectangle(cornerRadius: 20)
                             .fill(Color.stackGreen)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(Color.black, lineWidth: 1)
+                            )
                             .offset(x: 3, y: 4)
                     )
 
@@ -91,15 +95,23 @@ struct ProfileView: View {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
                                 .font(.system(size: 15))
                         }
-                        .foregroundColor(.white)
+                        .foregroundColor(.red)
                         .padding(.horizontal, 32)
                         .padding(.vertical, 14)
-                        .background(Color.red)
+                        .background(Color.white)
                         .cornerRadius(14)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.black, lineWidth: 1)
+                        )
                         .background(
                             RoundedRectangle(cornerRadius: 14)
-                                .fill(Color.red.opacity(0.55))
-                                .offset(x: -2, y: 3)
+                                .fill(Color.red)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .stroke(Color.black, lineWidth: 1)
+                                )
+                                .offset(x: 3, y: 4)
                         )
                     }
 

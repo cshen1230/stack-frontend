@@ -107,11 +107,15 @@ struct GameCardView: View {
         .cornerRadius(16)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(game.gameFormat.accentColor, lineWidth: 1.5)
+                .stroke(Color.black, lineWidth: 1)
         )
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(game.gameFormat.accentColor)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.black, lineWidth: 1)
+                )
                 .offset(x: 3, y: 4)
         )
     }
