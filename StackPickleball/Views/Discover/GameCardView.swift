@@ -109,6 +109,10 @@ struct GameCardView: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(game.gameFormat.accentColor, lineWidth: 1.5)
         )
-        .shadow(color: game.gameFormat.accentColor.opacity(0.4), radius: 10, x: 0, y: 4)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(game.gameFormat.accentColor)
+                .offset(x: 3, y: 4)
+        )
     }
 }

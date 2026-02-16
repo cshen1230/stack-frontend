@@ -28,7 +28,7 @@ struct TournamentListView: View {
                     }
                 }
             }
-            .background(Color.stackBackground)
+            .background(Color.white)
             .navigationTitle("Tournaments")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)

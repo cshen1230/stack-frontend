@@ -8,8 +8,8 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 0) {
-                    // Top section — centered profile header
+                VStack(spacing: 20) {
+                    // Profile card
                     VStack(spacing: 12) {
                         // Avatar with colored ring
                         ZStack(alignment: .bottom) {
@@ -68,32 +68,45 @@ struct ProfileView: View {
                         }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 24)
+                    .padding(.vertical, 28)
                     .background(Color.white)
-
-                    Rectangle()
-                        .fill(Color.stackBorder)
-                        .frame(height: 1)
+                    .cornerRadius(20)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.stackGreen, lineWidth: 1.5)
+                    )
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(Color.stackGreen)
+                            .offset(x: 3, y: 4)
+                    )
 
                     // Sign out
-                    VStack(spacing: 16) {
-                        Button(action: {
-                            Task { await viewModel.signOut() }
-                        }) {
+                    Button(action: {
+                        Task { await viewModel.signOut() }
+                    }) {
+                        HStack(spacing: 8) {
                             Text("Sign Out")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.red)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 14)
-                                .background(Color.white)
-                                .cornerRadius(12)
+                                .font(.system(size: 16, weight: .semibold))
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.system(size: 15))
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 24)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 32)
+                        .padding(.vertical, 14)
+                        .background(Color.red)
+                        .cornerRadius(14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.red.opacity(0.55))
+                                .offset(x: -2, y: 3)
+                        )
                     }
 
                     Spacer(minLength: 24)
                 }
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
             }
             .background(Color.stackBackground)
             .navigationTitle("Profile")
