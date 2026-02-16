@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 enum GameFormat: String, Codable, Sendable, CaseIterable {
     case singles = "singles"
@@ -12,6 +13,15 @@ enum GameFormat: String, Codable, Sendable, CaseIterable {
         case .doubles: return "Doubles"
         case .mixedDoubles: return "Mixed Doubles"
         case .drill: return "Drill"
+        }
+    }
+
+    var accentColor: Color {
+        switch self {
+        case .singles: return Color(red: 0.6, green: 0.2, blue: 0.8)    // Purple
+        case .doubles: return Color(red: 0.9, green: 0.2, blue: 0.2)    // Red
+        case .mixedDoubles: return Color(red: 0.2, green: 0.3, blue: 0.8) // Blue
+        case .drill: return Color(red: 0.9, green: 0.5, blue: 0.1)      // Orange
         }
     }
 }

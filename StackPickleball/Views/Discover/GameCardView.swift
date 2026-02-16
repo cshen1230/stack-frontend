@@ -105,6 +105,10 @@ struct GameCardView: View {
         .padding(16)
         .background(Color.stackCardWhite)
         .cornerRadius(16)
-        .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 3)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(game.gameFormat.accentColor, lineWidth: 1.5)
+        )
+        .shadow(color: game.gameFormat.accentColor.opacity(0.4), radius: 10, x: 0, y: 4)
     }
 }

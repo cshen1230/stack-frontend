@@ -29,12 +29,11 @@ struct DiscoverView: View {
                 ZStack {
                     if viewModel.isLoading && viewModel.games.isEmpty {
                         ProgressView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else if viewModel.games.isEmpty {
                         EmptyStateView(
                             icon: "sportscourt",
-                            title: "No Games Found",
-                            message: "There are no games available nearby. Create one to get started!"
+                            title: "No Sessions Found",
+                            message: "There are no sessions available nearby. Create one to get started!"
                         )
                     } else {
                         ScrollView {
@@ -50,9 +49,10 @@ struct DiscoverView: View {
                         }
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(Color.stackBackground)
             }
-            .navigationTitle("Discover Games")
+            .navigationTitle("Discover Sessions")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
