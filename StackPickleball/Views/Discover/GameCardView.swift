@@ -6,78 +6,76 @@ struct GameCardView: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            // Creator avatar placeholder
+            // Creator avatar
             Circle()
                 .fill(Color.gray.opacity(0.3))
-                .frame(width: 52, height: 52)
+                .frame(width: 48, height: 48)
                 .overlay(
                     Image(systemName: "person.fill")
-                        .font(.system(size: 22))
+                        .font(.system(size: 20))
                         .foregroundColor(.white)
                 )
 
             // Game details
-            VStack(alignment: .leading, spacing: 6) {
-                // Name + badge
+            VStack(alignment: .leading, spacing: 2) {
+                // Host name + format badge
                 HStack(spacing: 8) {
                     Text(game.creatorDisplayName)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.black)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
 
                     Text(game.gameFormat.displayName)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.stackGreen)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
                         .background(Color.stackBadgeBg)
-                        .cornerRadius(8)
+                        .cornerRadius(6)
                 }
 
-                // Time row
-                HStack(spacing: 0) {
-                    Text(game.gameDatetime, style: .time)
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.black)
-                    Text(" \u{2022} ")
-                        .font(.system(size: 16))
-                        .foregroundColor(.stackSecondaryText)
-                    Text(game.gameDatetime, style: .date)
-                        .font(.system(size: 16))
-                        .foregroundColor(.stackSecondaryText)
-                }
+                // Time · Date
+                (Text(game.gameDatetime, format: .dateTime.hour().minute())
+                + Text("  ·  ")
+                + Text(game.gameDatetime, format: .dateTime.month(.abbreviated).day()))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.stackSecondaryText)
+                    .padding(.bottom, 6)
 
-                // Location row
-                if let location = game.locationName {
-                    HStack(spacing: 4) {
-                        Image(systemName: "mappin.circle")
-                            .font(.system(size: 13))
-                            .foregroundColor(.stackGreen)
-                        Text(location)
-                            .font(.system(size: 14))
-                            .foregroundColor(.black)
+                // Metadata
+                VStack(alignment: .leading, spacing: 3) {
+                    // Location
+                    if let location = game.locationName {
+                        HStack(spacing: 5) {
+                            Image(systemName: "mappin")
+                                .font(.system(size: 11))
+                                .foregroundColor(.stackSecondaryText)
+                            Text(location)
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                        }
                     }
-                }
 
-                // DUPR row
-                if let min = game.skillLevelMin, let max = game.skillLevelMax {
-                    HStack(spacing: 4) {
-                        Image(systemName: "trophy")
-                            .font(.system(size: 13))
-                            .foregroundColor(.stackGreen)
-                        Text("DUPR \(String(format: "%.1f", min))-\(String(format: "%.1f", max))")
-                            .font(.system(size: 14))
-                            .foregroundColor(.black)
+                    // DUPR
+                    if let min = game.skillLevelMin, let max = game.skillLevelMax {
+                        HStack(spacing: 5) {
+                            Image(systemName: "trophy")
+                                .font(.system(size: 11))
+                                .foregroundColor(.stackSecondaryText)
+                            Text("DUPR \(String(format: "%.1f", min))–\(String(format: "%.1f", max))")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                        }
                     }
-                }
 
-                // Spots row
-                HStack(spacing: 4) {
-                    Image(systemName: "person.2")
-                        .font(.system(size: 13))
-                        .foregroundColor(.stackGreen)
-                    Text("\(game.spotsFilled)/\(game.spotsAvailable) spots")
-                        .font(.system(size: 14))
-                        .foregroundColor(.black)
+                    // Spots
+                    HStack(spacing: 5) {
+                        Image(systemName: "person.2")
+                            .font(.system(size: 11))
+                            .foregroundColor(.stackSecondaryText)
+                        Text("\(game.spotsFilled)/\(game.spotsAvailable) spots")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
 
