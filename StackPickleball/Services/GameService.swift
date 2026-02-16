@@ -69,4 +69,28 @@ enum GameService {
             options: .init(headers: headers, body: GameIdRequest(game_id: gameId.uuidString))
         )
     }
+
+    /// Returns the set of game IDs where the given user is a confirmed participant.
+    static func myJoinedGameIds(userId: UUID) async throws -> Set<UUID> {
+        let participants: [GameParticipant] = try await supabase
+            .from("game_participants")
+            .select()
+            .eq("user_id", value: userId)
+            .eq("rsvp_status", value: "confirmed")
+            .execute()
+            .value
+        return Set(participants.map(\.gameId))
+    }
+
+    /// Returns participants for a specific game, joined with user profile info.
+    static func gameParticipants(gameId: UUID) async throws -> [ParticipantWithProfile] {
+        let rows: [ParticipantWithProfile] = try await supabase
+            .from("game_participants")
+            .select("id, game_id, user_id, rsvp_status, created_at, users(username, first_name, last_name, dupr_rating)")
+            .eq("game_id", value: gameId)
+            .eq("rsvp_status", value: "confirmed")
+            .execute()
+            .value
+        return rows
+    }
 }

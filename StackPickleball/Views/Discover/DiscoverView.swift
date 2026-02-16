@@ -1,9 +1,13 @@
 import SwiftUI
 
 struct DiscoverView: View {
+    @Environment(AppState.self) private var appState
     @EnvironmentObject private var locationManager: LocationManager
     @State private var viewModel = DiscoverViewModel()
     @State private var showingPlayerSearch = false
+    @State private var selectedGame: Game?
+
+    private var currentUserId: UUID? { appState.currentUser?.id }
 
     var body: some View {
         NavigationStack {
@@ -15,7 +19,8 @@ struct DiscoverView: View {
                         Task {
                             await viewModel.loadGames(
                                 lat: locationManager.latitude,
-                                lng: locationManager.longitude
+                                lng: locationManager.longitude,
+                                currentUserId: currentUserId
                             )
                         }
                     }
@@ -39,9 +44,17 @@ struct DiscoverView: View {
                         ScrollView {
                             LazyVStack(spacing: 12) {
                                 ForEach(viewModel.games) { game in
-                                    GameCardView(game: game) {
-                                        Task { await viewModel.rsvpToGame(game) }
-                                    }
+                                    GameCardView(
+                                        game: game,
+                                        isHost: game.creatorId == currentUserId,
+                                        isJoined: viewModel.joinedGameIds.contains(game.id),
+                                        onJoin: {
+                                            Task { await viewModel.rsvpToGame(game) }
+                                        },
+                                        onView: {
+                                            selectedGame = game
+                                        }
+                                    )
                                 }
                             }
                             .padding(.horizontal, 16)
@@ -67,17 +80,22 @@ struct DiscoverView: View {
             .task {
                 await viewModel.loadGames(
                     lat: locationManager.latitude,
-                    lng: locationManager.longitude
+                    lng: locationManager.longitude,
+                    currentUserId: currentUserId
                 )
             }
             .refreshable {
                 await viewModel.loadGames(
                     lat: locationManager.latitude,
-                    lng: locationManager.longitude
+                    lng: locationManager.longitude,
+                    currentUserId: currentUserId
                 )
             }
             .sheet(isPresented: $showingPlayerSearch) {
                 PlayerSearchView()
+            }
+            .sheet(item: $selectedGame) { game in
+                GameDetailView(game: game, isHost: game.creatorId == currentUserId)
             }
             .errorAlert($viewModel.errorMessage)
         }
