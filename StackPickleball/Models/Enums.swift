@@ -16,11 +16,6 @@ enum GameFormat: String, Codable, Sendable, CaseIterable {
     }
 }
 
-enum PostType: String, Codable, Sendable {
-    case sessionPhoto = "session_photo"
-    case sessionClip = "session_clip"
-}
-
 enum AvailabilityStatus: String, Codable, Sendable {
     case available = "available"
     case busy = "busy"

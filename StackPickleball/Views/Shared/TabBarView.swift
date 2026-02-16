@@ -7,38 +7,31 @@ struct TabBarView: View {
     var body: some View {
         ZStack {
             TabView(selection: $selectedTab) {
-                FeedView()
+                DiscoverView()
                     .tabItem {
-                        Image(systemName: selectedTab == 0 ? "house.fill" : "house")
-                        Text("Feed")
+                        Image(systemName: selectedTab == 0 ? "magnifyingglass.circle.fill" : "magnifyingglass")
+                        Text("Discover")
                     }
                     .tag(0)
 
-                DiscoverView()
+                TournamentListView()
                     .tabItem {
-                        Image(systemName: selectedTab == 1 ? "magnifyingglass.circle.fill" : "magnifyingglass")
-                        Text("Discover")
+                        Image(systemName: selectedTab == 1 ? "trophy.fill" : "trophy")
+                        Text("Tournaments")
                     }
                     .tag(1)
 
-                TournamentListView()
-                    .tabItem {
-                        Image(systemName: selectedTab == 2 ? "trophy.fill" : "trophy")
-                        Text("Tournaments")
-                    }
-                    .tag(2)
-
                 ProfileView()
                     .tabItem {
-                        Image(systemName: selectedTab == 3 ? "person.fill" : "person")
+                        Image(systemName: selectedTab == 2 ? "person.fill" : "person")
                         Text("Profile")
                     }
-                    .tag(3)
+                    .tag(2)
             }
             .accentColor(.stackGreen)
 
-            // Floating action button on Feed and Discover tabs
-            if selectedTab == 0 || selectedTab == 1 {
+            // Floating action button on Discover tab
+            if selectedTab == 0 {
                 VStack {
                     Spacer()
                     HStack {
