@@ -50,7 +50,7 @@ struct DiscoverView: View {
             .navigationBarTitleDisplayMode(.large)
             #endif
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     Menu {
                         ForEach(distanceOptions, id: \.self) { dist in
                             Button {
