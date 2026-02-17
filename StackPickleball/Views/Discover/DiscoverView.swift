@@ -94,7 +94,7 @@ struct DiscoverView: View {
             .sheet(isPresented: $showingPlayerSearch) {
                 PlayerSearchView()
             }
-            .sheet(item: $selectedGame) { game in
+            .navigationDestination(item: $selectedGame) { game in
                 GameDetailView(game: game, isHost: game.creatorId == currentUserId)
             }
             .errorAlert($viewModel.errorMessage)

@@ -86,7 +86,7 @@ enum GameService {
     static func gameParticipants(gameId: UUID) async throws -> [ParticipantWithProfile] {
         let rows: [ParticipantWithProfile] = try await supabase
             .from("game_participants")
-            .select("id, game_id, user_id, rsvp_status, created_at, users(username, first_name, last_name, dupr_rating)")
+            .select("id, game_id, user_id, rsvp_status, created_at, users(username, first_name, last_name, dupr_rating, avatar_url)")
             .eq("game_id", value: gameId)
             .eq("rsvp_status", value: "confirmed")
             .execute()

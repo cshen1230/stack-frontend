@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct GameDetailView: View {
-    @Environment(\.dismiss) private var dismiss
     let game: Game
     let isHost: Bool
 
@@ -10,112 +9,137 @@ struct GameDetailView: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        NavigationStack {
-            List {
-                // Game info section
-                Section("Game Info") {
-                    LabeledContent("Format", value: game.gameFormat.displayName)
-                    LabeledContent("Date") {
-                        Text(game.gameDatetime, style: .date)
+        ScrollView {
+            VStack(spacing: 0) {
+                // Game info card
+                VStack(alignment: .leading, spacing: 10) {
+                    // Format badge
+                    Text(game.gameFormat.displayName)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.stackGreen)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.stackBadgeBg)
+                        .cornerRadius(8)
+
+                    // Date & Time
+                    HStack(spacing: 6) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 13))
+                            .foregroundColor(.stackSecondaryText)
+                        (Text(game.gameDatetime, format: .dateTime.weekday(.wide))
+                        + Text(", ")
+                        + Text(game.gameDatetime, format: .dateTime.month(.abbreviated).day())
+                        + Text(" at ")
+                        + Text(game.gameDatetime, format: .dateTime.hour().minute()))
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.primary)
                     }
-                    LabeledContent("Time") {
-                        Text(game.gameDatetime, style: .time)
-                    }
+
+                    // Location
                     if let location = game.locationName {
-                        LabeledContent("Location", value: location)
+                        HStack(spacing: 6) {
+                            Image(systemName: "mappin")
+                                .font(.system(size: 13))
+                                .foregroundColor(.stackSecondaryText)
+                            Text(location)
+                                .font(.system(size: 14))
+                                .foregroundColor(.primary)
+                        }
                     }
+
+                    // DUPR Range
                     if let min = game.skillLevelMin, let max = game.skillLevelMax {
-                        LabeledContent("DUPR Range", value: "\(String(format: "%.1f", min)) - \(String(format: "%.1f", max))")
+                        HStack(spacing: 6) {
+                            Image(systemName: "trophy")
+                                .font(.system(size: 13))
+                                .foregroundColor(.stackSecondaryText)
+                            Text("DUPR \(String(format: "%.1f", min)) – \(String(format: "%.1f", max))")
+                                .font(.system(size: 14))
+                                .foregroundColor(.primary)
+                        }
                     }
-                    LabeledContent("Spots", value: "\(game.spotsFilled)/\(game.spotsAvailable)")
+
+                    // Spots
+                    HStack(spacing: 6) {
+                        Image(systemName: "person.2")
+                            .font(.system(size: 13))
+                            .foregroundColor(.stackSecondaryText)
+                        Text("\(game.spotsFilled)/\(game.spotsAvailable) spots filled")
+                            .font(.system(size: 14))
+                            .foregroundColor(.primary)
+                    }
+
+                    // Description
                     if let desc = game.description, !desc.isEmpty {
                         Text(desc)
-                            .font(.subheadline)
+                            .font(.system(size: 14))
                             .foregroundColor(.secondary)
+                            .padding(.top, 4)
                     }
                 }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.stackCardWhite)
+                .cornerRadius(16)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.black, lineWidth: 1)
+                )
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
 
-                // Participants section
-                Section("Players (\(participants.count))") {
-                    if isLoading {
-                        HStack {
-                            Spacer()
-                            ProgressView()
-                            Spacer()
-                        }
-                    } else if participants.isEmpty {
-                        Text("No participants yet")
-                            .foregroundColor(.secondary)
-                    } else {
+                // Players header
+                HStack {
+                    Text("Players (\(participants.count))")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.primary)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 24)
+                .padding(.bottom, 8)
+
+                // Player list
+                if isLoading {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                        Spacer()
+                    }
+                    .padding(.top, 20)
+                } else if participants.isEmpty {
+                    Text("No players yet")
+                        .font(.system(size: 15))
+                        .foregroundColor(.secondary)
+                        .padding(.top, 20)
+                } else {
+                    LazyVStack(spacing: 8) {
                         ForEach(participants) { participant in
-                            HStack(spacing: 12) {
-                                Circle()
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 36, height: 36)
-                                    .overlay(
-                                        Image(systemName: "person.fill")
-                                            .font(.system(size: 14))
-                                            .foregroundColor(.white)
-                                    )
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    HStack(spacing: 6) {
-                                        Text(participant.displayName)
-                                            .font(.system(size: 15, weight: .medium))
-
-                                        if participant.userId == game.creatorId {
-                                            HStack(spacing: 2) {
-                                                Image(systemName: "crown.fill")
-                                                    .font(.system(size: 10))
-                                                Text("Host")
-                                                    .font(.system(size: 11, weight: .semibold))
-                                            }
-                                            .foregroundColor(.orange)
-                                        }
-                                    }
-
-                                    HStack(spacing: 4) {
-                                        Text("@\(participant.users.username)")
-                                            .font(.system(size: 13))
-                                            .foregroundColor(.secondary)
-
-                                        if let rating = participant.users.duprRating {
-                                            Text("\u{2022}")
-                                                .font(.system(size: 10))
-                                                .foregroundColor(.secondary)
-                                            Text("DUPR \(String(format: "%.1f", rating))")
-                                                .font(.system(size: 13))
-                                                .foregroundColor(.stackGreen)
-                                        }
-                                    }
-                                }
-
-                                Spacer()
-                            }
+                            PlayerRow(participant: participant, isHost: participant.userId == game.creatorId)
                         }
                     }
+                    .padding(.horizontal, 16)
                 }
 
                 if let error = errorMessage {
-                    Section {
-                        Text(error)
-                            .foregroundColor(.red)
-                            .font(.caption)
-                    }
+                    Text(error)
+                        .foregroundColor(.red)
+                        .font(.caption)
+                        .padding(.top, 12)
+                        .padding(.horizontal, 16)
                 }
+
+                Spacer(minLength: 24)
             }
-            .navigationTitle(game.creatorDisplayName + "'s Game")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-            .task {
-                await loadParticipants()
-            }
+        }
+        .background(Color.stackBackground)
+        .navigationTitle(game.creatorDisplayName + "'s Game")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .task {
+            await loadParticipants()
         }
     }
 
@@ -127,5 +151,79 @@ struct GameDetailView: View {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+}
+
+// MARK: - Player Row
+
+private struct PlayerRow: View {
+    let participant: ParticipantWithProfile
+    let isHost: Bool
+
+    var body: some View {
+        HStack(spacing: 12) {
+            // Profile picture
+            if let avatarUrl = participant.users.avatarUrl, let url = URL(string: avatarUrl) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    default:
+                        avatarPlaceholder
+                    }
+                }
+                .frame(width: 48, height: 48)
+                .clipShape(Circle())
+            } else {
+                avatarPlaceholder
+                    .frame(width: 48, height: 48)
+            }
+
+            // Name + DUPR
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(participant.displayName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+
+                    if isHost {
+                        HStack(spacing: 2) {
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 10))
+                            Text("Host")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundColor(.orange)
+                    }
+                }
+
+                if let rating = participant.users.duprRating {
+                    Text("DUPR \(String(format: "%.1f", rating))")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.stackGreen)
+                }
+            }
+
+            Spacer()
+        }
+        .padding(12)
+        .background(Color.stackCardWhite)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.black.opacity(0.08), lineWidth: 1)
+        )
+    }
+
+    private var avatarPlaceholder: some View {
+        Circle()
+            .fill(Color.gray.opacity(0.3))
+            .overlay(
+                Image(systemName: "person.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(.white)
+            )
     }
 }

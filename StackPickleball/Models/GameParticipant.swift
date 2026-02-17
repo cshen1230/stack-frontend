@@ -30,12 +30,14 @@ struct ParticipantWithProfile: Identifiable, Codable, Sendable {
         let firstName: String
         let lastName: String
         let duprRating: Double?
+        let avatarUrl: String?
 
         enum CodingKeys: String, CodingKey {
             case username
             case firstName = "first_name"
             case lastName = "last_name"
             case duprRating = "dupr_rating"
+            case avatarUrl = "avatar_url"
         }
     }
 

@@ -1,6 +1,8 @@
 import Foundation
 
-struct Game: Identifiable, Codable, Sendable {
+struct Game: Identifiable, Codable, Sendable, Hashable {
+    static func == (lhs: Game, rhs: Game) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
     let id: UUID
     let creatorId: UUID
     var gameDatetime: Date
