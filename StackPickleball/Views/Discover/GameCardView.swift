@@ -11,57 +11,55 @@ struct GameCardView: View {
     let onView: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Main content row
-            HStack(alignment: .center) {
-                // Left: Session info
-                VStack(alignment: .leading, spacing: 4) {
-                    if isHost {
-                        Text("Host")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.orange)
-                            .cornerRadius(4)
-                    }
-
-                    Text(game.sessionName ?? game.creatorDisplayName)
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.primary)
-                        .lineLimit(2)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(game.spotsFilled)/\(game.spotsAvailable) spots")
-                            .font(.system(size: 13))
-                            .foregroundColor(.secondary)
-
-                        if let min = game.skillLevelMin, let max = game.skillLevelMax {
-                            Text("DUPR \(String(format: "%.1f", min))–\(String(format: "%.1f", max))")
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
-                        }
-
-                        Text(game.gameFormat.displayName)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.secondary)
-                    }
+        HStack(alignment: .center) {
+            // Left: Session info
+            VStack(alignment: .leading, spacing: 4) {
+                if isHost {
+                    Text("Host")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.orange)
+                        .cornerRadius(4)
                 }
 
-                Spacer(minLength: 12)
+                Text(game.sessionName ?? game.creatorDisplayName)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
 
-                // Right: Avatar cluster
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(game.spotsFilled)/\(game.spotsAvailable) spots")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+
+                    if let min = game.skillLevelMin, let max = game.skillLevelMax {
+                        Text("DUPR \(String(format: "%.1f", min))–\(String(format: "%.1f", max))")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                    }
+
+                    Text(game.gameFormat.displayName)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            Spacer(minLength: 12)
+
+            // Right: Avatars or action buttons (swap in place)
+            ZStack {
+                // Avatar cluster — visible when collapsed
                 AvatarClusterView(
                     avatarURLs: avatarURLs,
                     totalParticipants: game.spotsFilled
                 )
-            }
+                .opacity(isExpanded ? 0 : 1)
+                .scaleEffect(isExpanded ? 0.6 : 1)
 
-            // Revealed action buttons
-            if isExpanded {
-                HStack(spacing: 12) {
-                    Spacer()
-
+                // Action buttons — visible when expanded
+                VStack(spacing: 8) {
                     Button(action: onView) {
                         Text("View")
                             .font(.system(size: 14, weight: .semibold))
@@ -92,9 +90,10 @@ struct GameCardView: View {
                         }
                     }
                 }
-                .padding(.top, 14)
-                .transition(.opacity.combined(with: .move(edge: .bottom)))
+                .opacity(isExpanded ? 1 : 0)
+                .scaleEffect(isExpanded ? 1 : 0.6)
             }
+            .frame(width: 90, height: 80)
         }
         .padding(16)
         .background(Color.stackCardWhite)
