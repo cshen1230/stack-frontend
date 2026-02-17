@@ -148,13 +148,6 @@ struct ProfileView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(action: {}) {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: 20))
-                            .foregroundColor(.black)
-                    }
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: { showingEditProfile = true }) {
                         Text("Edit")
