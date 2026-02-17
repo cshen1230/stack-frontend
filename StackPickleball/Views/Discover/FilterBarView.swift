@@ -23,16 +23,6 @@ struct FilterBarView: View {
                     onApply()
                 }
 
-                // Game format filters
-                ForEach(GameFormat.allCases, id: \.self) { format in
-                    FilterChip(
-                        icon: "sportscourt",
-                        text: format.displayName,
-                        isActive: false
-                    ) {
-                        // Filter action placeholder
-                    }
-                }
             }
         }
     }
