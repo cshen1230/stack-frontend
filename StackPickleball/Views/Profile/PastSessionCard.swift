@@ -28,7 +28,7 @@ struct PastSessionCard: View {
             // Game details
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
-                    Text(game.creatorDisplayName)
+                    Text(game.sessionName ?? game.creatorDisplayName)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
 

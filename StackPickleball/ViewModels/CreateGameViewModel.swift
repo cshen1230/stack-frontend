@@ -2,6 +2,7 @@ import SwiftUI
 
 @Observable
 class CreateGameViewModel {
+    var sessionName = ""
     var locationName = ""
     var selectedDate = Date()
     var skillLevelMin: Double = 3.0
@@ -22,6 +23,7 @@ class CreateGameViewModel {
                 gameDatetime: selectedDate,
                 spotsAvailable: spotsAvailable,
                 gameFormat: gameFormat,
+                sessionName: sessionName.isEmpty ? nil : sessionName,
                 locationName: locationName.isEmpty ? nil : locationName,
                 latitude: lat,
                 longitude: lng,
@@ -38,6 +40,7 @@ class CreateGameViewModel {
     }
 
     func resetForm() {
+        sessionName = ""
         locationName = ""
         selectedDate = Date()
         skillLevelMin = 3.0

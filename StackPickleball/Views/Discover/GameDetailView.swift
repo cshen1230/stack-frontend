@@ -134,7 +134,7 @@ struct GameDetailView: View {
             }
         }
         .background(Color.stackBackground)
-        .navigationTitle(game.creatorDisplayName + "'s Game")
+        .navigationTitle(game.sessionName ?? game.creatorDisplayName + "'s Game")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif

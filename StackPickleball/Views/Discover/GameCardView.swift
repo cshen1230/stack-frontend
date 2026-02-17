@@ -32,7 +32,7 @@ struct GameCardView: View {
             VStack(alignment: .leading, spacing: 2) {
                 // Host name + format badge
                 HStack(spacing: 8) {
-                    Text(game.creatorDisplayName)
+                    Text(game.sessionName ?? game.creatorDisplayName)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
 
