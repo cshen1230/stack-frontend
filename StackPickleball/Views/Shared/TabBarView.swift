@@ -14,19 +14,12 @@ struct TabBarView: View {
                     }
                     .tag(0)
 
-                TournamentListView()
-                    .tabItem {
-                        Image(systemName: selectedTab == 1 ? "trophy.fill" : "trophy")
-                        Text("Tournaments")
-                    }
-                    .tag(1)
-
                 ProfileView()
                     .tabItem {
-                        Image(systemName: selectedTab == 2 ? "person.fill" : "person")
+                        Image(systemName: selectedTab == 1 ? "person.fill" : "person")
                         Text("Profile")
                     }
-                    .tag(2)
+                    .tag(1)
             }
             .accentColor(.stackGreen)
 

@@ -4,7 +4,6 @@ struct DiscoverView: View {
     @Environment(AppState.self) private var appState
     @EnvironmentObject private var locationManager: LocationManager
     @State private var viewModel = DiscoverViewModel()
-    @State private var showingPlayerSearch = false
     @State private var selectedGame: Game?
 
     private var currentUserId: UUID? { appState.currentUser?.id }
@@ -69,14 +68,6 @@ struct DiscoverView: View {
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .toolbar {
-                ToolbarItem(placement: .automatic) {
-                    Button(action: { showingPlayerSearch = true }) {
-                        Image(systemName: "person.2")
-                            .foregroundColor(.stackGreen)
-                    }
-                }
-            }
             .task {
                 await viewModel.loadGames(
                     lat: locationManager.latitude,
@@ -90,9 +81,6 @@ struct DiscoverView: View {
                     lng: locationManager.longitude,
                     currentUserId: currentUserId
                 )
-            }
-            .sheet(isPresented: $showingPlayerSearch) {
-                PlayerSearchView()
             }
             .navigationDestination(item: $selectedGame) { game in
                 GameDetailView(game: game, isHost: game.creatorId == currentUserId)
