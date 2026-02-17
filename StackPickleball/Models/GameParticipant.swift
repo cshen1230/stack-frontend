@@ -54,3 +54,22 @@ struct ParticipantWithProfile: Identifiable, Codable, Sendable {
         case users
     }
 }
+
+/// Lightweight struct for batch-fetching participant avatar URLs.
+struct ParticipantAvatarRow: Codable, Sendable {
+    let gameId: UUID
+    let users: AvatarUser
+
+    struct AvatarUser: Codable, Sendable {
+        let avatarUrl: String?
+
+        enum CodingKeys: String, CodingKey {
+            case avatarUrl = "avatar_url"
+        }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case gameId = "game_id"
+        case users
+    }
+}

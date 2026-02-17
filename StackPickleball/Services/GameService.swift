@@ -104,4 +104,23 @@ enum GameService {
             .value
         return rows
     }
+
+    /// Returns avatar URLs grouped by game ID for a batch of games.
+    static func participantAvatarsForGames(gameIds: [UUID]) async throws -> [UUID: [String]] {
+        guard !gameIds.isEmpty else { return [:] }
+        let rows: [ParticipantAvatarRow] = try await supabase
+            .from("game_participants")
+            .select("game_id, users(avatar_url)")
+            .in("game_id", values: gameIds.map(\.uuidString))
+            .eq("rsvp_status", value: "confirmed")
+            .execute()
+            .value
+        var result: [UUID: [String]] = [:]
+        for row in rows {
+            if let url = row.users.avatarUrl {
+                result[row.gameId, default: []].append(url)
+            }
+        }
+        return result
+    }
 }

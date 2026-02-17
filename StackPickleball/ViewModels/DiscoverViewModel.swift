@@ -4,6 +4,7 @@ import SwiftUI
 class DiscoverViewModel {
     var games: [Game] = []
     var joinedGameIds: Set<UUID> = []
+    var participantAvatars: [UUID: [String]] = [:]
     var isLoading = false
     var errorMessage: String?
 
@@ -35,6 +36,10 @@ class DiscoverViewModel {
             } else {
                 games = try await fetchedGames
             }
+
+            // Batch-fetch participant avatars for all loaded games
+            let gameIds = games.map(\.id)
+            participantAvatars = try await GameService.participantAvatarsForGames(gameIds: gameIds)
         } catch {
             errorMessage = error.localizedDescription
         }

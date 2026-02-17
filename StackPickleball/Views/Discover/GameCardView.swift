@@ -4,138 +4,96 @@ struct GameCardView: View {
     let game: Game
     let isHost: Bool
     let isJoined: Bool
+    let avatarURLs: [String]
+    let isExpanded: Bool
+    let onTap: () -> Void
     let onJoin: () -> Void
     let onView: () -> Void
 
     var body: some View {
-        HStack(spacing: 14) {
-            // Creator avatar with crown overlay for host
-            ZStack(alignment: .top) {
-                Circle()
-                    .fill(Color.gray.opacity(0.3))
-                    .frame(width: 48, height: 48)
-                    .overlay(
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(.white)
-                    )
-
-                if isHost {
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(.yellow)
-                        .offset(y: -8)
-                }
-            }
-
-            // Game details
-            VStack(alignment: .leading, spacing: 2) {
-                // Host name + format badge
-                HStack(spacing: 8) {
-                    Text(game.sessionName ?? game.creatorDisplayName)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-
-                    Text(game.gameFormat.displayName)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(.stackGreen)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(Color.stackBadgeBg)
-                        .cornerRadius(6)
-
+        VStack(spacing: 0) {
+            // Main content row
+            HStack(alignment: .center) {
+                // Left: Session info
+                VStack(alignment: .leading, spacing: 4) {
                     if isHost {
                         Text("Host")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(.white)
                             .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
+                            .padding(.vertical, 2)
                             .background(Color.orange)
-                            .cornerRadius(6)
-                    }
-                }
-
-                // Time · Date
-                (Text(game.gameDatetime, format: .dateTime.hour().minute())
-                + Text("  ·  ")
-                + Text(game.gameDatetime, format: .dateTime.month(.abbreviated).day()))
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.stackSecondaryText)
-                    .padding(.bottom, 6)
-
-                // Metadata
-                VStack(alignment: .leading, spacing: 3) {
-                    // Location
-                    if let location = game.locationName {
-                        HStack(spacing: 5) {
-                            Image(systemName: "mappin")
-                                .font(.system(size: 11))
-                                .foregroundColor(.stackSecondaryText)
-                            Text(location)
-                                .font(.system(size: 13))
-                                .foregroundColor(.secondary)
-                        }
+                            .cornerRadius(4)
                     }
 
-                    // DUPR
-                    if let min = game.skillLevelMin, let max = game.skillLevelMax {
-                        HStack(spacing: 5) {
-                            Image(systemName: "trophy")
-                                .font(.system(size: 11))
-                                .foregroundColor(.stackSecondaryText)
+                    Text(game.sessionName ?? game.creatorDisplayName)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(game.spotsFilled)/\(game.spotsAvailable) spots")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+
+                        if let min = game.skillLevelMin, let max = game.skillLevelMax {
                             Text("DUPR \(String(format: "%.1f", min))–\(String(format: "%.1f", max))")
                                 .font(.system(size: 13))
                                 .foregroundColor(.secondary)
                         }
-                    }
 
-                    // Spots
-                    HStack(spacing: 5) {
-                        Image(systemName: "person.2")
-                            .font(.system(size: 11))
-                            .foregroundColor(.stackSecondaryText)
-                        Text("\(game.spotsFilled)/\(game.spotsAvailable) spots")
-                            .font(.system(size: 13))
+                        Text(game.gameFormat.displayName)
+                            .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.secondary)
                     }
                 }
+
+                Spacer(minLength: 12)
+
+                // Right: Avatar cluster
+                AvatarClusterView(
+                    avatarURLs: avatarURLs,
+                    totalParticipants: game.spotsFilled
+                )
             }
 
-            Spacer()
+            // Revealed action buttons
+            if isExpanded {
+                HStack(spacing: 12) {
+                    Spacer()
 
-            // Action buttons
-            VStack(spacing: 6) {
-                // View button — always shown so anyone can see participants
-                Button(action: onView) {
-                    Text("View")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.stackGreen)
-                        .frame(width: 70)
-                        .padding(.vertical, 8)
-                        .background(Color.stackGreen.opacity(0.15))
-                        .cornerRadius(8)
-                }
-
-                // Join button — only for users who haven't joined yet
-                if !isJoined {
-                    if game.spotsRemaining > 0 {
-                        Button(action: onJoin) {
-                            Text("Join")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.white)
-                                .frame(width: 70)
-                                .padding(.vertical, 8)
-                                .background(Color.stackGreen)
-                                .cornerRadius(8)
-                        }
-                    } else {
-                        Text("Full")
+                    Button(action: onView) {
+                        Text("View")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.stackSecondaryText)
-                            .frame(width: 70)
-                            .padding(.vertical, 8)
+                            .foregroundColor(.stackGreen)
+                            .frame(width: 80)
+                            .padding(.vertical, 10)
+                            .background(Color.stackGreen.opacity(0.15))
+                            .cornerRadius(10)
+                    }
+
+                    if !isJoined {
+                        if game.spotsRemaining > 0 {
+                            Button(action: onJoin) {
+                                Text("Join")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 80)
+                                    .padding(.vertical, 10)
+                                    .background(Color.stackGreen)
+                                    .cornerRadius(10)
+                            }
+                        } else {
+                            Text("Full")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.secondary)
+                                .frame(width: 80)
+                                .padding(.vertical, 10)
+                        }
                     }
                 }
+                .padding(.top, 14)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
         .padding(16)
@@ -152,7 +110,107 @@ struct GameCardView: View {
                     RoundedRectangle(cornerRadius: 16)
                         .stroke(Color.black, lineWidth: 1)
                 )
-                .offset(x: 3, y: 4)
+                .offset(x: isExpanded ? 3 : 0, y: isExpanded ? 4 : 0)
+                .opacity(isExpanded ? 1 : 0)
         )
+        .scaleEffect(isExpanded ? 1.02 : 1.0)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onTap()
+        }
+    }
+}
+
+// MARK: - Avatar Cluster
+
+struct AvatarClusterView: View {
+    let avatarURLs: [String]
+    let totalParticipants: Int
+
+    private var displayCount: Int {
+        min(totalParticipants, 4)
+    }
+
+    private var overflow: Int {
+        max(0, totalParticipants - displayCount)
+    }
+
+    private func clusterPositions(for count: Int) -> [(x: CGFloat, y: CGFloat, size: CGFloat)] {
+        switch count {
+        case 0:
+            return []
+        case 1:
+            return [(0, 0, 48)]
+        case 2:
+            return [
+                (-10, -4, 44),
+                (14, 6, 40),
+            ]
+        case 3:
+            return [
+                (-6, -12, 42),
+                (18, -2, 38),
+                (4, 18, 36),
+            ]
+        default:
+            return [
+                (-8, -14, 42),
+                (20, -6, 38),
+                (-12, 14, 36),
+                (18, 18, 34),
+            ]
+        }
+    }
+
+    var body: some View {
+        let pos = clusterPositions(for: displayCount)
+
+        ZStack {
+            ForEach(Array(0..<displayCount), id: \.self) { i in
+                let url: String? = i < avatarURLs.count ? avatarURLs[i] : nil
+                avatarCircle(url: url, size: pos[i].size)
+                    .offset(x: pos[i].x, y: pos[i].y)
+            }
+
+            if overflow > 0 {
+                Text("+\(overflow)")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .frame(width: 30, height: 30)
+                    .background(Color(.systemGray5))
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                    .offset(x: 28, y: 24)
+            }
+        }
+        .frame(width: 90, height: 80)
+    }
+
+    @ViewBuilder
+    private func avatarCircle(url: String?, size: CGFloat) -> some View {
+        Group {
+            if let url = url, let imageURL = URL(string: url) {
+                AsyncImage(url: imageURL) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    placeholderCircle(size: size)
+                }
+            } else {
+                placeholderCircle(size: size)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+        .overlay(Circle().stroke(Color.white, lineWidth: 2))
+    }
+
+    private func placeholderCircle(size: CGFloat) -> some View {
+        Circle()
+            .fill(Color.gray.opacity(0.25))
+            .overlay(
+                Image(systemName: "person.fill")
+                    .font(.system(size: size * 0.36))
+                    .foregroundColor(.white)
+            )
     }
 }

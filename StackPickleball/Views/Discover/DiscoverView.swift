@@ -6,6 +6,7 @@ struct DiscoverView: View {
     @State private var viewModel = DiscoverViewModel()
     @State private var selectedGame: Game?
     @State private var showingCreateGame = false
+    @State private var expandedGameId: UUID?
 
     private let distanceOptions: [Double] = [5, 10, 20, 50]
     private var currentUserId: UUID? { appState.currentUser?.id }
@@ -29,6 +30,13 @@ struct DiscoverView: View {
                                     game: game,
                                     isHost: game.creatorId == currentUserId,
                                     isJoined: viewModel.joinedGameIds.contains(game.id),
+                                    avatarURLs: viewModel.participantAvatars[game.id] ?? [],
+                                    isExpanded: expandedGameId == game.id,
+                                    onTap: {
+                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                            expandedGameId = expandedGameId == game.id ? nil : game.id
+                                        }
+                                    },
                                     onJoin: {
                                         Task { await viewModel.rsvpToGame(game) }
                                     },
