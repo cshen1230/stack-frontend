@@ -92,7 +92,7 @@ struct DiscoverView: View {
                     }
                 }
             }
-            .task {
+            .task(id: currentUserId) {
                 await viewModel.loadGames(
                     lat: locationManager.latitude,
                     lng: locationManager.longitude,
