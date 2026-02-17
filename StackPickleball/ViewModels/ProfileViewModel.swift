@@ -3,6 +3,7 @@ import SwiftUI
 @Observable
 class ProfileViewModel {
     var user: User?
+    var pastGames: [Game] = []
     var isLoading = false
     var errorMessage: String?
 
@@ -11,7 +12,10 @@ class ProfileViewModel {
         errorMessage = nil
         do {
             guard let userId = await AuthService.currentUserId() else { return }
-            user = try await ProfileService.getProfile(userId: userId)
+            async let profile = ProfileService.getProfile(userId: userId)
+            async let games = GameService.userPastGames(userId: userId)
+            user = try await profile
+            pastGames = try await games
         } catch {
             errorMessage = error.localizedDescription
         }

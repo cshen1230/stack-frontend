@@ -14,19 +14,8 @@
 		4B66C9442F3AC6630058A358 /* StackPickleball.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StackPickleball.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedRootGroup section */
-		4B66C9462F3AC6630058A358 /* StackPickleball */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				AA000004000000000000000A /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
-			);
-			path = StackPickleball;
-			sourceTree = "<group>";
-		};
-/* End PBXFileSystemSynchronizedRootGroup section */
-
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		AA000004000000000000000A /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		AA000004000000000000000A /* Exceptions for "StackPickleball" folder in "StackPickleball" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -34,6 +23,17 @@
 			target = 4B66C9432F3AC6630058A358 /* StackPickleball */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		4B66C9462F3AC6630058A358 /* StackPickleball */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AA000004000000000000000A /* Exceptions for "StackPickleball" folder in "StackPickleball" target */,
+			);
+			path = StackPickleball;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		4B66C9412F3AC6630058A358 /* Frameworks */ = {

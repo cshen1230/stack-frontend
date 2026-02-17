@@ -90,6 +90,23 @@ struct ProfileView: View {
                         .zIndex(1)
                     }
 
+                    // Past Sessions
+                    if !viewModel.pastGames.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Past Sessions")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.black)
+                                .padding(.leading, 4)
+
+                            ForEach(viewModel.pastGames) { game in
+                                PastSessionCard(
+                                    game: game,
+                                    isHost: game.creatorId == appState.currentUser?.id
+                                )
+                            }
+                        }
+                    }
+
                     // Sign out
                     Button(action: {
                         Task { await viewModel.signOut() }

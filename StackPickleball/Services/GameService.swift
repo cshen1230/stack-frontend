@@ -70,6 +70,14 @@ enum GameService {
         )
     }
 
+    /// Returns past games the user hosted or joined.
+    static func userPastGames(userId: UUID) async throws -> [Game] {
+        try await supabase.rpc(
+            "user_past_games",
+            params: ["p_user_id": userId.uuidString]
+        ).execute().value
+    }
+
     /// Returns the set of game IDs where the given user is a confirmed participant.
     static func myJoinedGameIds(userId: UUID) async throws -> Set<UUID> {
         let participants: [GameParticipant] = try await supabase
