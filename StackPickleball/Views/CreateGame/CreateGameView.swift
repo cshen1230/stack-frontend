@@ -9,6 +9,7 @@ struct CreateGameView: View {
         NavigationStack {
             Form {
                 Section("Game Details") {
+                    TextField("Session Name", text: $viewModel.sessionName)
                     TextField("Location Name", text: $viewModel.locationName)
                     DatePicker("Date & Time", selection: $viewModel.selectedDate, in: Date()...)
 
@@ -62,7 +63,7 @@ struct CreateGameView: View {
                         }
                     }
                     .fontWeight(.semibold)
-                    .disabled(viewModel.locationName.isEmpty || viewModel.isLoading)
+                    .disabled(viewModel.sessionName.isEmpty || viewModel.locationName.isEmpty || viewModel.isLoading)
                 }
             }
         }

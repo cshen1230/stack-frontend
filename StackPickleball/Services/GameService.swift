@@ -13,6 +13,7 @@ enum GameService {
         let game_datetime: String
         let spots_available: Int
         let game_format: String
+        var session_name: String?
         var location_name: String?
         var latitude: Double?
         var longitude: Double?
@@ -25,6 +26,7 @@ enum GameService {
         gameDatetime: Date,
         spotsAvailable: Int,
         gameFormat: GameFormat,
+        sessionName: String?,
         locationName: String?,
         latitude: Double?,
         longitude: Double?,
@@ -38,6 +40,7 @@ enum GameService {
             game_datetime: ISO8601DateFormatter().string(from: gameDatetime),
             spots_available: spotsAvailable,
             game_format: gameFormat.rawValue,
+            session_name: sessionName,
             location_name: locationName,
             latitude: latitude,
             longitude: longitude,
