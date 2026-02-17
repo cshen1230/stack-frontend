@@ -51,46 +51,44 @@ struct DiscoverView: View {
             #endif
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 16) {
-                        // Distance dropdown
-                        Menu {
-                            ForEach(distanceOptions, id: \.self) { dist in
-                                Button {
-                                    viewModel.selectedDistance = dist
-                                    Task {
-                                        await viewModel.loadGames(
-                                            lat: locationManager.latitude,
-                                            lng: locationManager.longitude,
-                                            currentUserId: currentUserId
-                                        )
-                                    }
-                                } label: {
-                                    HStack {
-                                        Text("\(Int(dist)) mi")
-                                        if viewModel.selectedDistance == dist {
-                                            Image(systemName: "checkmark")
-                                        }
+                    Menu {
+                        ForEach(distanceOptions, id: \.self) { dist in
+                            Button {
+                                viewModel.selectedDistance = dist
+                                Task {
+                                    await viewModel.loadGames(
+                                        lat: locationManager.latitude,
+                                        lng: locationManager.longitude,
+                                        currentUserId: currentUserId
+                                    )
+                                }
+                            } label: {
+                                HStack {
+                                    Text("\(Int(dist)) mi")
+                                    if viewModel.selectedDistance == dist {
+                                        Image(systemName: "checkmark")
                                     }
                                 }
                             }
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "location.circle")
-                                    .font(.system(size: 17))
-                                Text("\(Int(viewModel.selectedDistance)) mi")
-                                    .font(.system(size: 14, weight: .medium))
-                            }
-                            .foregroundColor(.primary)
                         }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "location.circle")
+                                .font(.system(size: 17))
+                            Text("\(Int(viewModel.selectedDistance)) mi")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.primary)
+                    }
+                }
 
-                        // Create game button
-                        Button {
-                            showingCreateGame = true
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(.primary)
-                        }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showingCreateGame = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.primary)
                     }
                 }
             }
