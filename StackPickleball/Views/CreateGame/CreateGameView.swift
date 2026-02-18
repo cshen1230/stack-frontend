@@ -4,13 +4,33 @@ struct CreateGameView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var locationManager: LocationManager
     @State private var viewModel = CreateGameViewModel()
+    @State private var showingLocationPicker = false
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Game Details") {
                     TextField("Session Name", text: $viewModel.sessionName)
-                    TextField("Location Name", text: $viewModel.locationName)
+
+                    Button {
+                        showingLocationPicker = true
+                    } label: {
+                        HStack {
+                            Image(systemName: "mappin.circle.fill")
+                                .foregroundColor(.stackGreen)
+                            if viewModel.locationName.isEmpty {
+                                Text("Choose Location")
+                                    .foregroundColor(.secondary)
+                            } else {
+                                Text(viewModel.locationName)
+                                    .foregroundColor(.primary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 13))
+                                .foregroundColor(.secondary)
+                        }
+                    }
                     DatePicker("Date & Time", selection: $viewModel.selectedDate, in: Date()...)
 
                     HStack {
@@ -64,6 +84,16 @@ struct CreateGameView: View {
                     }
                     .fontWeight(.semibold)
                     .disabled(viewModel.sessionName.isEmpty || viewModel.locationName.isEmpty || viewModel.isLoading)
+                }
+            }
+            .sheet(isPresented: $showingLocationPicker) {
+                LocationPickerView(
+                    userLatitude: locationManager.latitude,
+                    userLongitude: locationManager.longitude
+                ) { name, lat, lng in
+                    viewModel.locationName = name
+                    viewModel.selectedLatitude = lat
+                    viewModel.selectedLongitude = lng
                 }
             }
         }

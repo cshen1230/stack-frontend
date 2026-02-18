@@ -4,6 +4,8 @@ import SwiftUI
 class CreateGameViewModel {
     var sessionName = ""
     var locationName = ""
+    var selectedLatitude: Double?
+    var selectedLongitude: Double?
     var selectedDate = Date()
     var skillLevelMin: Double = 3.0
     var skillLevelMax: Double = 4.5
@@ -25,8 +27,8 @@ class CreateGameViewModel {
                 gameFormat: gameFormat,
                 sessionName: sessionName.isEmpty ? nil : sessionName,
                 locationName: locationName.isEmpty ? nil : locationName,
-                latitude: lat,
-                longitude: lng,
+                latitude: selectedLatitude ?? lat,
+                longitude: selectedLongitude ?? lng,
                 skillLevelMin: skillLevelMin,
                 skillLevelMax: skillLevelMax,
                 description: description.isEmpty ? nil : description
@@ -42,6 +44,8 @@ class CreateGameViewModel {
     func resetForm() {
         sessionName = ""
         locationName = ""
+        selectedLatitude = nil
+        selectedLongitude = nil
         selectedDate = Date()
         skillLevelMin = 3.0
         skillLevelMax = 4.5
