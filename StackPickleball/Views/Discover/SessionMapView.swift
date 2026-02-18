@@ -11,6 +11,7 @@ struct SessionMapView: View {
 
     @State private var selectedGame: Game?
     @State private var position: MapCameraPosition
+    @State private var pickleballCourts: [MKMapItem] = []
 
     init(
         games: [Game],
@@ -46,6 +47,7 @@ struct SessionMapView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             Map(position: $position) {
+                // Game session pins
                 ForEach(gamesWithCoordinates) { game in
                     Annotation("", coordinate: game.coordinate!) {
                         mapPin(for: game)
@@ -56,11 +58,24 @@ struct SessionMapView: View {
                             }
                     }
                 }
+
+                // Nearby pickleball courts/parks
+                ForEach(pickleballCourts, id: \.self) { court in
+                    Marker(
+                        court.name ?? "Court",
+                        systemImage: "figure.pickleball",
+                        coordinate: court.placemark.coordinate
+                    )
+                    .tint(.orange)
+                }
             }
             .mapControls {
                 MapUserLocationButton()
             }
             .ignoresSafeArea(edges: .top)
+            .task {
+                await searchPickleballCourts()
+            }
 
             // Floating "List" button
             VStack {
@@ -115,6 +130,30 @@ struct SessionMapView: View {
                     .stroke(Color.black, lineWidth: 1)
             )
             .scaleEffect(isSelected ? 1.1 : 1.0)
+    }
+
+    // MARK: - Selected Game Card
+
+    // MARK: - Pickleball Court Search
+
+    private func searchPickleballCourts() async {
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = "pickleball"
+        request.region = MKCoordinateRegion(
+            center: CLLocationCoordinate2D(
+                latitude: games.first?.latitude ?? 30.2672,
+                longitude: games.first?.longitude ?? -97.7431
+            ),
+            span: MKCoordinateSpan(latitudeDelta: 0.3, longitudeDelta: 0.3)
+        )
+
+        do {
+            let search = MKLocalSearch(request: request)
+            let response = try await search.start()
+            pickleballCourts = response.mapItems
+        } catch {
+            // Search failed silently — courts just won't show
+        }
     }
 
     // MARK: - Selected Game Card
