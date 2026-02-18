@@ -5,11 +5,17 @@ struct LocationPickerView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
     @State private var completer = LocationCompleter()
+    @State private var nearbyCourts: [MKMapItem] = []
+    @State private var isLoadingNearby = true
     @State private var isResolving = false
 
     let userLatitude: Double?
     let userLongitude: Double?
     let onSelect: (String, Double, Double) -> Void
+
+    private var isSearching: Bool {
+        !searchText.trimmingCharacters(in: .whitespaces).isEmpty
+    }
 
     var body: some View {
         NavigationStack {
@@ -20,27 +26,46 @@ struct LocationPickerView: View {
                         ProgressView()
                         Spacer()
                     }
-                } else if completer.results.isEmpty && !searchText.isEmpty {
-                    Text("No results found")
-                        .foregroundColor(.secondary)
+                } else if isSearching {
+                    // Autocomplete results while typing
+                    if completer.results.isEmpty {
+                        Text("No results found")
+                            .foregroundColor(.secondary)
+                    } else {
+                        ForEach(completer.results, id: \.self) { completion in
+                            Button {
+                                Task { await selectCompletion(completion) }
+                            } label: {
+                                completionRow(completion)
+                            }
+                        }
+                    }
                 } else {
-                    ForEach(completer.results, id: \.self) { completion in
-                        Button {
-                            Task { await selectCompletion(completion) }
-                        } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(completion.title)
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.primary)
-
-                                if !completion.subtitle.isEmpty {
-                                    Text(completion.subtitle)
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.secondary)
+                    // Nearby pickleball courts
+                    Section {
+                        if isLoadingNearby {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                Spacer()
+                            }
+                        } else if nearbyCourts.isEmpty {
+                            Text("No courts found nearby")
+                                .foregroundColor(.secondary)
+                        } else {
+                            ForEach(nearbyCourts, id: \.self) { item in
+                                Button {
+                                    let name = item.name ?? "Unknown"
+                                    let coord = item.placemark.coordinate
+                                    onSelect(name, coord.latitude, coord.longitude)
+                                    dismiss()
+                                } label: {
+                                    mapItemRow(item)
                                 }
                             }
-                            .padding(.vertical, 4)
                         }
+                    } header: {
+                        Text("Nearby Courts")
                     }
                 }
             }
@@ -57,12 +82,73 @@ struct LocationPickerView: View {
                     Button("Cancel") { dismiss() }
                 }
             }
-            .onAppear {
+            .task {
                 completer.setRegion(lat: userLatitude, lng: userLongitude)
-                completer.search(query: "pickleball")
-                searchText = "pickleball"
+                await loadNearbyCourts()
             }
         }
+    }
+
+    // MARK: - Row Views
+
+    private func completionRow(_ completion: MKLocalSearchCompletion) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(completion.title)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.primary)
+
+            if !completion.subtitle.isEmpty {
+                Text(completion.subtitle)
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func mapItemRow(_ item: MKMapItem) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "figure.pickleball")
+                .font(.system(size: 16))
+                .foregroundColor(.orange)
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.name ?? "Unknown")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+
+                if let subtitle = formatSubtitle(item) {
+                    Text(subtitle)
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    // MARK: - Data Loading
+
+    private func loadNearbyCourts() async {
+        let request = MKLocalSearch.Request()
+        request.naturalLanguageQuery = "pickleball"
+        request.region = MKCoordinateRegion(
+            center: CLLocationCoordinate2D(
+                latitude: userLatitude ?? 30.2672,
+                longitude: userLongitude ?? -97.7431
+            ),
+            span: MKCoordinateSpan(latitudeDelta: 0.3, longitudeDelta: 0.3)
+        )
+
+        do {
+            let search = MKLocalSearch(request: request)
+            let response = try await search.start()
+            nearbyCourts = response.mapItems
+        } catch {
+            nearbyCourts = []
+        }
+        isLoadingNearby = false
     }
 
     private func selectCompletion(_ completion: MKLocalSearchCompletion) async {
@@ -78,9 +164,15 @@ struct LocationPickerView: View {
                 dismiss()
             }
         } catch {
-            // Fall back to just the title with no coordinates
+            // Resolve failed — stay on picker
         }
         isResolving = false
+    }
+
+    private func formatSubtitle(_ item: MKMapItem) -> String? {
+        let placemark = item.placemark
+        let parts = [placemark.thoroughfare, placemark.locality, placemark.administrativeArea].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: ", ")
     }
 }
 

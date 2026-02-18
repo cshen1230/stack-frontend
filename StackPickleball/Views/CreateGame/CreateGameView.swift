@@ -18,18 +18,23 @@ struct CreateGameView: View {
                         HStack {
                             Image(systemName: "mappin.circle.fill")
                                 .foregroundColor(.stackGreen)
-                            if viewModel.locationName.isEmpty {
+                            if viewModel.selectedLatitude == nil {
                                 Text("Choose Location")
                                     .foregroundColor(.secondary)
                             } else {
                                 Text(viewModel.locationName)
                                     .foregroundColor(.primary)
+                                    .lineLimit(1)
                             }
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 13))
                                 .foregroundColor(.secondary)
                         }
+                    }
+
+                    if viewModel.selectedLatitude != nil {
+                        TextField("Park / Venue Name", text: $viewModel.locationName)
                     }
                     DatePicker("Date & Time", selection: $viewModel.selectedDate, in: Date()...)
 
