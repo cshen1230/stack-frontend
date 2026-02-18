@@ -7,6 +7,7 @@ struct DiscoverView: View {
     @State private var selectedGame: Game?
     @State private var showingCreateGame = false
     @State private var expandedGameId: UUID?
+    @State private var showingMap = false
 
     private let distanceOptions: [Double] = [5, 10, 20, 50]
     private var currentUserId: UUID? { appState.currentUser?.id }
@@ -49,6 +50,28 @@ struct DiscoverView: View {
                         .padding(.horizontal, 16)
                         .padding(.top, 10)
                     }
+                }
+            }
+            // Floating Map button
+            .overlay(alignment: .bottom) {
+                if !viewModel.games.isEmpty {
+                    Button {
+                        showingMap = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "map.fill")
+                                .font(.system(size: 14, weight: .semibold))
+                            Text("Map")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Color.stackGreen)
+                        .clipShape(Capsule())
+                        .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+                    }
+                    .padding(.bottom, 16)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -119,6 +142,22 @@ struct DiscoverView: View {
             }
             .sheet(isPresented: $showingCreateGame) {
                 CreateGameView()
+            }
+            .fullScreenCover(isPresented: $showingMap) {
+                SessionMapView(
+                    games: viewModel.games,
+                    joinedGameIds: viewModel.joinedGameIds,
+                    currentUserId: currentUserId,
+                    userLatitude: locationManager.latitude,
+                    userLongitude: locationManager.longitude,
+                    onJoin: { game in
+                        Task { await viewModel.rsvpToGame(game) }
+                    },
+                    onView: { game in
+                        showingMap = false
+                        selectedGame = game
+                    }
+                )
             }
             .errorAlert($viewModel.errorMessage)
         }

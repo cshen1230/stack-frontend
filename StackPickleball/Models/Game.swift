@@ -1,4 +1,5 @@
 import Foundation
+import CoreLocation
 
 struct Game: Identifiable, Codable, Sendable, Hashable {
     static func == (lhs: Game, rhs: Game) -> Bool { lhs.id == rhs.id }
@@ -18,6 +19,10 @@ struct Game: Identifiable, Codable, Sendable, Hashable {
     let createdAt: Date
     var updatedAt: Date
 
+    // Coordinates (extracted from PostGIS geography column)
+    var latitude: Double?
+    var longitude: Double?
+
     // Joined creator fields (populated via select queries)
     var creatorUsername: String?
     var creatorFirstName: String?
@@ -32,6 +37,11 @@ struct Game: Identifiable, Codable, Sendable, Hashable {
             return "\(first) \(last)"
         }
         return creatorUsername ?? "Unknown"
+    }
+
+    var coordinate: CLLocationCoordinate2D? {
+        guard let lat = latitude, let lng = longitude else { return nil }
+        return CLLocationCoordinate2D(latitude: lat, longitude: lng)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -49,6 +59,8 @@ struct Game: Identifiable, Codable, Sendable, Hashable {
         case isCancelled = "is_cancelled"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case latitude
+        case longitude
         case creatorUsername = "creator_username"
         case creatorFirstName = "creator_first_name"
         case creatorLastName = "creator_last_name"
