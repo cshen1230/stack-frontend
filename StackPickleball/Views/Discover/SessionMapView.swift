@@ -59,7 +59,6 @@ struct SessionMapView: View {
             }
             .mapControls {
                 MapUserLocationButton()
-                MapCompassButton()
             }
             .ignoresSafeArea(edges: .top)
 
