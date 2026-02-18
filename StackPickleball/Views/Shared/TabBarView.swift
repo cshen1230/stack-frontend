@@ -12,12 +12,19 @@ struct TabBarView: View {
                 }
                 .tag(0)
 
-            ProfileView()
+            MySessionsView()
                 .tabItem {
-                    Image(systemName: selectedTab == 1 ? "person.fill" : "person")
-                    Text("Profile")
+                    Image(systemName: selectedTab == 1 ? "bubble.left.and.bubble.right.fill" : "bubble.left.and.bubble.right")
+                    Text("Sessions")
                 }
                 .tag(1)
+
+            ProfileView()
+                .tabItem {
+                    Image(systemName: selectedTab == 2 ? "person.fill" : "person")
+                    Text("Profile")
+                }
+                .tag(2)
         }
         .accentColor(.stackGreen)
     }

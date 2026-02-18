@@ -4,9 +4,15 @@ struct GameDetailView: View {
     let game: Game
     let isHost: Bool
 
+    @Environment(AppState.self) private var appState
     @State private var participants: [ParticipantWithProfile] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
+
+    private var isParticipant: Bool {
+        guard let userId = appState.currentUser?.id else { return false }
+        return isHost || participants.contains { $0.userId == userId }
+    }
 
     var body: some View {
         ScrollView {
@@ -120,6 +126,38 @@ struct GameDetailView: View {
                         }
                     }
                     .padding(.horizontal, 16)
+                }
+
+                // Chat button — only for participants
+                if isParticipant {
+                    NavigationLink {
+                        GameChatView(
+                            game: game,
+                            currentUserId: appState.currentUser?.id ?? UUID()
+                        )
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "bubble.left.and.bubble.right.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(.stackGreen)
+                            Text("Session Chat")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(16)
+                        .background(Color.stackCardWhite)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.stackGreen.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 20)
                 }
 
                 if let error = errorMessage {
