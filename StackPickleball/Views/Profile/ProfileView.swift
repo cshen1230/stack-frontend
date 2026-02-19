@@ -105,16 +105,14 @@ struct ProfileView: View {
                     .foregroundColor(.black)
 
                 // Username
-                if let username = user.username {
-                    Button(action: { showingEditProfile = true }) {
-                        HStack(spacing: 4) {
-                            Text("@\(username)")
-                                .font(.system(size: 15))
-                                .foregroundColor(.stackSecondaryText)
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(.stackSecondaryText)
-                        }
+                Button(action: { showingEditProfile = true }) {
+                    HStack(spacing: 4) {
+                        Text("@\(user.username)")
+                            .font(.system(size: 15))
+                            .foregroundColor(.stackSecondaryText)
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.stackSecondaryText)
                     }
                 }
 
