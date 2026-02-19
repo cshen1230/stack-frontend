@@ -83,7 +83,7 @@ private struct SessionRow: View {
     let lastMessage: GameMessage?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 16) {
             // Top: Session name + last message preview
             HStack(alignment: .top) {
                 // Chat icon
@@ -126,33 +126,29 @@ private struct SessionRow: View {
                 }
             }
 
-            // Bottom: Location, time, format
-            HStack(spacing: 8) {
+            // Bottom: Location · Time · Format
+            HStack(spacing: 4) {
                 if let location = game.locationName {
-                    Label {
+                    HStack(spacing: 3) {
+                        Image(systemName: "mappin")
+                            .font(.system(size: 11))
                         Text(location)
                             .lineLimit(1)
-                    } icon: {
-                        Image(systemName: "mappin")
                     }
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
+
+                    Text("·")
+                        .fontWeight(.bold)
                 }
 
-                Spacer(minLength: 0)
-
                 Text(game.gameDatetime, format: .dateTime.month(.abbreviated).day().hour().minute())
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
+
+                Text("·")
+                    .fontWeight(.bold)
 
                 Text(game.gameFormat.displayName)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.stackGreen)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.stackGreen.opacity(0.12))
-                    .cornerRadius(4)
             }
+            .font(.system(size: 12))
+            .foregroundColor(.secondary)
         }
         .padding(12)
         .background(Color.stackCardWhite)
