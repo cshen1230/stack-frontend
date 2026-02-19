@@ -29,65 +29,67 @@ struct DiscoverView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
+            ScrollView {
                 if viewModel.isLoading && viewModel.games.isEmpty && viewModel.availablePlayers.isEmpty {
                     ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, 100)
                 } else if isContentEmpty {
                     EmptyStateView(
                         icon: emptyStateIcon,
                         title: emptyStateTitle,
                         message: emptyStateMessage
                     )
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 60)
                 } else {
-                    ScrollView {
-                        VStack(spacing: 16) {
-                            // Available Players horizontal section
-                            if showPlayers && !viewModel.availablePlayers.isEmpty {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("Available Players")
-                                        .font(.system(size: 16, weight: .bold))
-                                        .padding(.horizontal, 16)
+                    VStack(spacing: 16) {
+                        // Available Players horizontal section
+                        if showPlayers && !viewModel.availablePlayers.isEmpty {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Available Players")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .padding(.horizontal, 16)
 
-                                    ScrollView(.horizontal, showsIndicators: false) {
-                                        HStack(spacing: 10) {
-                                            ForEach(viewModel.availablePlayers) { player in
-                                                AvailablePlayerCard(player: player)
-                                            }
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 10) {
+                                        ForEach(viewModel.availablePlayers) { player in
+                                            AvailablePlayerCard(player: player)
                                         }
-                                        .padding(.horizontal, 16)
                                     }
+                                    .padding(.horizontal, 16)
                                 }
-                            }
-
-                            // Game sessions list
-                            if showSessions && !viewModel.games.isEmpty {
-                                LazyVStack(spacing: 12) {
-                                    ForEach(viewModel.games) { game in
-                                        GameCardView(
-                                            game: game,
-                                            isHost: game.creatorId == currentUserId,
-                                            isJoined: viewModel.joinedGameIds.contains(game.id),
-                                            avatarURLs: viewModel.participantAvatars[game.id] ?? [],
-                                            isExpanded: expandedGameId == game.id,
-                                            onTap: {
-                                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                                    expandedGameId = expandedGameId == game.id ? nil : game.id
-                                                }
-                                            },
-                                            onJoin: {
-                                                Task { await viewModel.rsvpToGame(game) }
-                                            },
-                                            onView: {
-                                                selectedGame = game
-                                            }
-                                        )
-                                    }
-                                }
-                                .padding(.horizontal, 16)
                             }
                         }
-                        .padding(.top, 10)
+
+                        // Game sessions list
+                        if showSessions && !viewModel.games.isEmpty {
+                            LazyVStack(spacing: 12) {
+                                ForEach(viewModel.games) { game in
+                                    GameCardView(
+                                        game: game,
+                                        isHost: game.creatorId == currentUserId,
+                                        isJoined: viewModel.joinedGameIds.contains(game.id),
+                                        avatarURLs: viewModel.participantAvatars[game.id] ?? [],
+                                        isExpanded: expandedGameId == game.id,
+                                        onTap: {
+                                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                                expandedGameId = expandedGameId == game.id ? nil : game.id
+                                            }
+                                        },
+                                        onJoin: {
+                                            Task { await viewModel.rsvpToGame(game) }
+                                        },
+                                        onView: {
+                                            selectedGame = game
+                                        }
+                                    )
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                        }
                     }
+                    .padding(.top, 10)
                 }
             }
             // Filter chips

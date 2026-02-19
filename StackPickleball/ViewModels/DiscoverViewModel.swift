@@ -48,7 +48,9 @@ class DiscoverViewModel {
             )
             if let userId = currentUserId {
                 async let fetchedIds = GameService.myJoinedGameIds(userId: userId)
-                games = try await fetchedGames
+                let allGames = try await fetchedGames
+                // Exclude games the current user created
+                games = allGames.filter { $0.creatorId != userId }
                 joinedGameIds = try await fetchedIds
             } else {
                 games = try await fetchedGames

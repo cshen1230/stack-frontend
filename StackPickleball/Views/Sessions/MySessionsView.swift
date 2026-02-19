@@ -3,6 +3,7 @@ import SwiftUI
 struct MySessionsView: View {
     @Environment(AppState.self) private var appState
     @State private var sessions: [Game] = []
+    @State private var lastMessages: [UUID: GameMessage] = [:]
     @State private var isLoading = true
     @State private var errorMessage: String?
 
@@ -22,8 +23,11 @@ struct MySessionsView: View {
                 } else {
                     List(sessions) { game in
                         NavigationLink(value: game) {
-                            SessionRow(game: game)
+                            SessionRow(game: game, lastMessage: lastMessages[game.id])
                         }
+                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                     }
                     .listStyle(.plain)
                 }
@@ -50,6 +54,20 @@ struct MySessionsView: View {
         guard let userId = currentUserId else { return }
         do {
             sessions = try await MessageService.myActiveSessions(userId: userId)
+            // Fetch last message for each session concurrently
+            await withTaskGroup(of: (UUID, GameMessage?).self) { group in
+                for session in sessions {
+                    group.addTask {
+                        let msg = try? await MessageService.lastMessage(gameId: session.id)
+                        return (session.id, msg)
+                    }
+                }
+                for await (gameId, msg) in group {
+                    if let msg {
+                        lastMessages[gameId] = msg
+                    }
+                }
+            }
         } catch is CancellationError {
         } catch {
             errorMessage = error.localizedDescription
@@ -62,36 +80,97 @@ struct MySessionsView: View {
 
 private struct SessionRow: View {
     let game: Game
+    let lastMessage: GameMessage?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(game.sessionName ?? game.creatorDisplayName)
-                .font(.system(size: 16, weight: .semibold))
+        VStack(alignment: .leading, spacing: 10) {
+            // Top: Session name + last message preview
+            HStack(alignment: .top) {
+                // Chat icon
+                ZStack {
+                    Circle()
+                        .fill(Color.stackGreen.opacity(0.15))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "bubble.left.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(.stackGreen)
+                }
 
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(game.sessionName ?? game.creatorDisplayName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+
+                    if let msg = lastMessage {
+                        Text("\(msg.users.firstName): \(msg.content)")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    } else {
+                        Text("No messages yet — say hello!")
+                            .font(.system(size: 14))
+                            .foregroundColor(.stackTimestamp)
+                            .italic()
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer(minLength: 8)
+
+                // Relative timestamp
+                if let msg = lastMessage {
+                    Text(relativeTime(from: msg.createdAt))
+                        .font(.system(size: 12))
+                        .foregroundColor(.stackTimestamp)
+                }
+            }
+
+            // Bottom: Location, time, format
             HStack(spacing: 8) {
+                if let location = game.locationName {
+                    Label {
+                        Text(location)
+                            .lineLimit(1)
+                    } icon: {
+                        Image(systemName: "mappin")
+                    }
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+                }
+
+                Spacer(minLength: 0)
+
+                Text(game.gameDatetime, format: .dateTime.month(.abbreviated).day().hour().minute())
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+
                 Text(game.gameFormat.displayName)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.stackGreen)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
-                    .background(Color.stackGreen.opacity(0.15))
+                    .background(Color.stackGreen.opacity(0.12))
                     .cornerRadius(4)
-
-                Text(game.gameDatetime, format: .dateTime.month(.abbreviated).day().hour().minute())
-                    .font(.system(size: 13))
-                    .foregroundColor(.secondary)
-            }
-
-            if let location = game.locationName {
-                HStack(spacing: 4) {
-                    Image(systemName: "mappin")
-                        .font(.system(size: 11))
-                    Text(location)
-                        .font(.system(size: 13))
-                }
-                .foregroundColor(.secondary)
             }
         }
-        .padding(.vertical, 4)
+        .padding(12)
+        .background(Color.stackCardWhite)
+        .cornerRadius(14)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.stackBorder, lineWidth: 1)
+        )
+    }
+
+    private func relativeTime(from date: Date) -> String {
+        let elapsed = Date().timeIntervalSince(date)
+        if elapsed < 60 { return "now" }
+        let minutes = Int(elapsed / 60)
+        if minutes < 60 { return "\(minutes)m ago" }
+        let hours = Int(elapsed / 3600)
+        if hours < 24 { return "\(hours)h ago" }
+        let days = Int(elapsed / 86400)
+        return "\(days)d ago"
     }
 }
