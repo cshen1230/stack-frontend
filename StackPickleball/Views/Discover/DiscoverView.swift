@@ -147,7 +147,7 @@ struct DiscoverView: View {
             .background(Color.stackBackground)
             .navigationTitle("Discover")
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
