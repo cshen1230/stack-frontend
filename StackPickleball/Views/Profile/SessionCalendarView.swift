@@ -6,6 +6,7 @@ struct SessionCalendarView: View {
 
     @State private var displayedMonth = Date()
     @State private var selectedDate: DateComponents?
+    @State private var selectedGame: Game?
 
     private let calendar = Calendar.current
     private let daysOfWeek = ["M", "T", "W", "T", "F", "S", "S"]
@@ -55,6 +56,12 @@ struct SessionCalendarView: View {
             calendarCard
             expandedSessionList
         }
+        .sheet(item: $selectedGame) { game in
+            PastSessionDetailSheet(game: game, isHost: game.creatorId == currentUserId)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(24)
+        }
     }
 
     // MARK: - Calendar Card
@@ -97,13 +104,13 @@ struct SessionCalendarView: View {
             }
 
             // Day grid
-            LazyVGrid(columns: columns, spacing: 8) {
+            LazyVGrid(columns: columns, spacing: 6) {
                 ForEach(Array(calendarDays.enumerated()), id: \.offset) { _, dc in
                     if let dc = dc {
                         dayCell(for: dc)
                     } else {
                         Color.clear
-                            .frame(height: 36)
+                            .frame(height: 44)
                     }
                 }
             }
@@ -143,28 +150,37 @@ struct SessionCalendarView: View {
                 }
             }
         } label: {
-            Text("\(dc.day ?? 0)")
-                .font(.system(size: 15, weight: isToday ? .bold : .medium))
-                .foregroundColor(isSelected ? .white : (count > 0 ? .black : .stackSecondaryText))
-                .frame(width: 36, height: 36)
-                .background(
-                    Circle()
-                        .fill(backgroundForDay(count: count, isSelected: isSelected))
-                )
+            VStack(spacing: 3) {
+                Text("\(dc.day ?? 0)")
+                    .font(.system(size: 15, weight: isToday ? .bold : .medium))
+                    .foregroundColor(dayTextColor(count: count, isSelected: isSelected, isToday: isToday))
+                    .frame(width: 34, height: 34)
+                    .background(
+                        Circle()
+                            .fill(isSelected ? Color.stackGreen : .clear)
+                    )
+
+                // Session indicator dots
+                HStack(spacing: 2) {
+                    if count > 0 {
+                        ForEach(0..<min(count, 3), id: \.self) { _ in
+                            Circle()
+                                .fill(isSelected ? Color.stackGreen : Color.stackGreen.opacity(0.7))
+                                .frame(width: 5, height: 5)
+                        }
+                    }
+                }
+                .frame(height: 5)
+            }
         }
         .buttonStyle(.plain)
     }
 
-    private func backgroundForDay(count: Int, isSelected: Bool) -> Color {
-        if isSelected {
-            return Color.stackGreen
-        }
-        switch count {
-        case 0: return .clear
-        case 1: return Color.stackGreen.opacity(0.25)
-        case 2: return Color.stackGreen.opacity(0.50)
-        default: return Color.stackGreen.opacity(0.75)
-        }
+    private func dayTextColor(count: Int, isSelected: Bool, isToday: Bool) -> Color {
+        if isSelected { return .white }
+        if count > 0 { return .black }
+        if isToday { return .stackGreen }
+        return .stackSecondaryText
     }
 
     // MARK: - Expanded Session List
@@ -185,10 +201,16 @@ struct SessionCalendarView: View {
                         game: game,
                         isHost: game.creatorId == currentUserId
                     )
+                    .onTapGesture {
+                        selectedGame = game
+                    }
                 }
             }
             .padding(.top, 16)
-            .transition(.move(edge: .top).combined(with: .opacity))
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .top)).combined(with: .move(edge: .top)),
+                removal: .opacity.combined(with: .scale(scale: 0.98, anchor: .top))
+            ))
         }
     }
 
@@ -200,6 +222,146 @@ struct SessionCalendarView: View {
                 displayedMonth = newMonth
                 selectedDate = nil
             }
+        }
+    }
+}
+
+// MARK: - Past Session Detail Sheet
+
+private struct PastSessionDetailSheet: View {
+    let game: Game
+    let isHost: Bool
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Format accent bar
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(game.gameFormat.accentColor)
+                        .frame(height: 4)
+                        .padding(.horizontal, 40)
+                        .padding(.top, 4)
+
+                    // Title + badges
+                    VStack(spacing: 8) {
+                        Text(game.sessionName ?? game.creatorDisplayName)
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.center)
+
+                        HStack(spacing: 8) {
+                            Text(game.gameFormat.displayName)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(game.gameFormat.accentColor)
+                                .cornerRadius(8)
+
+                            if isHost {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "crown.fill")
+                                        .font(.system(size: 11))
+                                    Text("Host")
+                                        .font(.system(size: 13, weight: .semibold))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(Color.orange)
+                                .cornerRadius(8)
+                            }
+                        }
+                    }
+
+                    // Info card
+                    VStack(spacing: 14) {
+                        detailRow(icon: "calendar", label: "Date",
+                                  value: game.gameDatetime.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year()))
+
+                        Divider()
+
+                        detailRow(icon: "clock", label: "Time",
+                                  value: game.gameDatetime.formatted(.dateTime.hour().minute()))
+
+                        if let location = game.locationName {
+                            Divider()
+                            detailRow(icon: "mappin.circle", label: "Location", value: location)
+                        }
+
+                        Divider()
+
+                        detailRow(icon: "person.2", label: "Players",
+                                  value: "\(game.spotsFilled)/\(game.spotsAvailable)")
+
+                        if let min = game.skillLevelMin, let max = game.skillLevelMax {
+                            Divider()
+                            detailRow(icon: "trophy", label: "DUPR Range",
+                                      value: "\(String(format: "%.1f", min)) – \(String(format: "%.1f", max))")
+                        }
+
+                        if let desc = game.description, !desc.isEmpty {
+                            Divider()
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "text.alignleft")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.stackSecondaryText)
+                                        .frame(width: 24)
+                                    Text("Notes")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.stackSecondaryText)
+                                }
+                                Text(desc)
+                                    .font(.system(size: 15))
+                                    .foregroundColor(.primary)
+                                    .padding(.leading, 32)
+                            }
+                        }
+                    }
+                    .padding(16)
+                    .background(Color.stackCardWhite)
+                    .cornerRadius(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.stackBorder, lineWidth: 1)
+                    )
+                    .padding(.horizontal, 16)
+                }
+                .padding(.top, 8)
+                .padding(.bottom, 24)
+            }
+            .background(Color.stackBackground)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(.secondary.opacity(0.6))
+                    }
+                }
+            }
+        }
+    }
+
+    private func detailRow(icon: String, label: String, value: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundColor(.stackSecondaryText)
+                .frame(width: 24)
+            Text(label)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.stackSecondaryText)
+            Spacer()
+            Text(value)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.primary)
+                .multilineTextAlignment(.trailing)
         }
     }
 }
