@@ -1,5 +1,11 @@
 import SwiftUI
 
+enum DiscoverFilter: String, CaseIterable {
+    case both = "All"
+    case sessions = "Sessions"
+    case players = "Players"
+}
+
 @Observable
 class DiscoverViewModel {
     var games: [Game] = []
@@ -9,6 +15,12 @@ class DiscoverViewModel {
     var errorMessage: String?
 
     var selectedDistance: Double = 20.0
+
+    // Available players
+    var availablePlayers: [AvailablePlayer] = []
+    var discoverFilter: DiscoverFilter = .both
+    var isCurrentUserAvailable = false
+    var currentUserNote: String? = nil
 
     // Track last-used params so we can refresh after RSVP
     private var lastLat: Double?
@@ -29,12 +41,29 @@ class DiscoverViewModel {
                 lng: longitude,
                 radiusMiles: selectedDistance
             )
+            async let fetchedPlayers = PlayerService.nearbyAvailablePlayers(
+                lat: latitude,
+                lng: longitude,
+                radiusMiles: selectedDistance
+            )
             if let userId = currentUserId {
                 async let fetchedIds = GameService.myJoinedGameIds(userId: userId)
                 games = try await fetchedGames
                 joinedGameIds = try await fetchedIds
             } else {
                 games = try await fetchedGames
+            }
+            availablePlayers = try await fetchedPlayers
+
+            // Check if current user is in the available players list
+            if let userId = currentUserId {
+                if let currentPlayer = availablePlayers.first(where: { $0.userId == userId }) {
+                    isCurrentUserAvailable = true
+                    currentUserNote = currentPlayer.note
+                } else {
+                    isCurrentUserAvailable = false
+                    currentUserNote = nil
+                }
             }
 
             // Batch-fetch participant avatars for all loaded games
@@ -46,6 +75,32 @@ class DiscoverViewModel {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    func setAvailability(note: String?, availableUntil: Date, preferredFormat: GameFormat?, lat: Double?, lng: Double?) async {
+        do {
+            try await PlayerService.setAvailability(
+                availableUntil: availableUntil,
+                latitude: lat,
+                longitude: lng,
+                preferredFormat: preferredFormat,
+                note: note
+            )
+            await loadGames(lat: lastLat, lng: lastLng, currentUserId: lastUserId)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func clearAvailability() async {
+        do {
+            try await PlayerService.clearAvailability()
+            isCurrentUserAvailable = false
+            currentUserNote = nil
+            await loadGames(lat: lastLat, lng: lastLng, currentUserId: lastUserId)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     func rsvpToGame(_ game: Game) async {

@@ -6,6 +6,7 @@ struct AvailablePlayer: Identifiable, Codable, Sendable {
     var status: AvailabilityStatus
     var availableUntil: Date
     var preferredFormat: GameFormat?
+    var note: String?
     let createdAt: Date
 
     // Joined user fields
@@ -28,6 +29,7 @@ struct AvailablePlayer: Identifiable, Codable, Sendable {
         case status
         case availableUntil = "available_until"
         case preferredFormat = "preferred_format"
+        case note
         case createdAt = "created_at"
         case username
         case firstName = "first_name"

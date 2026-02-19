@@ -8,53 +8,120 @@ struct DiscoverView: View {
     @State private var showingCreateGame = false
     @State private var expandedGameId: UUID?
     @State private var showingMap = false
+    @State private var showingAvailability = false
 
     private let distanceOptions: [Double] = [5, 10, 20, 50]
     private var currentUserId: UUID? { appState.currentUser?.id }
 
+    private var showPlayers: Bool {
+        viewModel.discoverFilter == .both || viewModel.discoverFilter == .players
+    }
+
+    private var showSessions: Bool {
+        viewModel.discoverFilter == .both || viewModel.discoverFilter == .sessions
+    }
+
+    private var isContentEmpty: Bool {
+        let noPlayers = !showPlayers || viewModel.availablePlayers.isEmpty
+        let noSessions = !showSessions || viewModel.games.isEmpty
+        return noPlayers && noSessions
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
-                if viewModel.isLoading && viewModel.games.isEmpty {
+                if viewModel.isLoading && viewModel.games.isEmpty && viewModel.availablePlayers.isEmpty {
                     ProgressView()
-                } else if viewModel.games.isEmpty {
+                } else if isContentEmpty {
                     EmptyStateView(
-                        icon: "sportscourt",
-                        title: "No Sessions Found",
-                        message: "There are no sessions available nearby. Create one to get started!"
+                        icon: emptyStateIcon,
+                        title: emptyStateTitle,
+                        message: emptyStateMessage
                     )
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 12) {
-                            ForEach(viewModel.games) { game in
-                                GameCardView(
-                                    game: game,
-                                    isHost: game.creatorId == currentUserId,
-                                    isJoined: viewModel.joinedGameIds.contains(game.id),
-                                    avatarURLs: viewModel.participantAvatars[game.id] ?? [],
-                                    isExpanded: expandedGameId == game.id,
-                                    onTap: {
-                                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                            expandedGameId = expandedGameId == game.id ? nil : game.id
+                        VStack(spacing: 16) {
+                            // Available Players horizontal section
+                            if showPlayers && !viewModel.availablePlayers.isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("Available Players")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .padding(.horizontal, 16)
+
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 10) {
+                                            ForEach(viewModel.availablePlayers) { player in
+                                                AvailablePlayerCard(player: player)
+                                            }
                                         }
-                                    },
-                                    onJoin: {
-                                        Task { await viewModel.rsvpToGame(game) }
-                                    },
-                                    onView: {
-                                        selectedGame = game
+                                        .padding(.horizontal, 16)
                                     }
-                                )
+                                }
+                            }
+
+                            // Game sessions list
+                            if showSessions && !viewModel.games.isEmpty {
+                                LazyVStack(spacing: 12) {
+                                    ForEach(viewModel.games) { game in
+                                        GameCardView(
+                                            game: game,
+                                            isHost: game.creatorId == currentUserId,
+                                            isJoined: viewModel.joinedGameIds.contains(game.id),
+                                            avatarURLs: viewModel.participantAvatars[game.id] ?? [],
+                                            isExpanded: expandedGameId == game.id,
+                                            onTap: {
+                                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                                    expandedGameId = expandedGameId == game.id ? nil : game.id
+                                                }
+                                            },
+                                            onJoin: {
+                                                Task { await viewModel.rsvpToGame(game) }
+                                            },
+                                            onView: {
+                                                selectedGame = game
+                                            }
+                                        )
+                                    }
+                                }
+                                .padding(.horizontal, 16)
                             }
                         }
-                        .padding(.horizontal, 16)
                         .padding(.top, 10)
                     }
                 }
             }
+            // Filter chips
+            .safeAreaInset(edge: .top) {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(DiscoverFilter.allCases, id: \.self) { filter in
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    viewModel.discoverFilter = filter
+                                }
+                            } label: {
+                                Text(filter.rawValue)
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(viewModel.discoverFilter == filter ? .white : .primary)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
+                                    .background(viewModel.discoverFilter == filter ? Color.stackGreen : Color.white)
+                                    .cornerRadius(20)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 20)
+                                            .stroke(viewModel.discoverFilter == filter ? Color.clear : Color.stackBorder, lineWidth: 1)
+                                    )
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                }
+                .background(Color.stackBackground)
+            }
             // Floating Map button
             .overlay(alignment: .bottom) {
-                if !viewModel.games.isEmpty {
+                if showSessions && !viewModel.games.isEmpty {
                     Button {
                         showingMap = true
                     } label: {
@@ -113,7 +180,23 @@ struct DiscoverView: View {
                     }
                 }
 
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        showingAvailability = true
+                    } label: {
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "antenna.radiowaves.left.and.right")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.primary)
+                            if viewModel.isCurrentUserAvailable {
+                                Circle()
+                                    .fill(Color.green)
+                                    .frame(width: 8, height: 8)
+                                    .offset(x: 2, y: -2)
+                            }
+                        }
+                    }
+
                     Button {
                         showingCreateGame = true
                     } label: {
@@ -143,6 +226,9 @@ struct DiscoverView: View {
             .sheet(isPresented: $showingCreateGame) {
                 CreateGameView()
             }
+            .sheet(isPresented: $showingAvailability) {
+                SetAvailabilitySheet(viewModel: viewModel)
+            }
             .fullScreenCover(isPresented: $showingMap) {
                 SessionMapView(
                     games: viewModel.games,
@@ -160,6 +246,32 @@ struct DiscoverView: View {
                 )
             }
             .errorAlert($viewModel.errorMessage)
+        }
+    }
+
+    // MARK: - Empty State Helpers
+
+    private var emptyStateIcon: String {
+        switch viewModel.discoverFilter {
+        case .both: return "sportscourt"
+        case .sessions: return "sportscourt"
+        case .players: return "person.2"
+        }
+    }
+
+    private var emptyStateTitle: String {
+        switch viewModel.discoverFilter {
+        case .both: return "No Sessions Found"
+        case .sessions: return "No Sessions Found"
+        case .players: return "No Available Players"
+        }
+    }
+
+    private var emptyStateMessage: String {
+        switch viewModel.discoverFilter {
+        case .both: return "There are no sessions available nearby. Create one to get started!"
+        case .sessions: return "There are no sessions available nearby. Create one to get started!"
+        case .players: return "No players are available nearby right now. Set yourself as available to get started!"
         }
     }
 }

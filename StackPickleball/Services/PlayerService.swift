@@ -14,13 +14,15 @@ enum PlayerService {
         var latitude: Double?
         var longitude: Double?
         var preferred_format: String?
+        var note: String?
     }
 
     static func setAvailability(
         availableUntil: Date,
         latitude: Double?,
         longitude: Double?,
-        preferredFormat: GameFormat?
+        preferredFormat: GameFormat?,
+        note: String?
     ) async throws {
         let session = try await supabase.auth.session
         let headers = ["Authorization": "Bearer \(session.accessToken)"]
@@ -28,7 +30,8 @@ enum PlayerService {
             available_until: ISO8601DateFormatter().string(from: availableUntil),
             latitude: latitude,
             longitude: longitude,
-            preferred_format: preferredFormat?.rawValue
+            preferred_format: preferredFormat?.rawValue,
+            note: note
         )
         try await supabase.functions.invoke("set-availability", options: .init(headers: headers, body: request))
     }
