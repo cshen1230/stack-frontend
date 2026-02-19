@@ -98,9 +98,7 @@ struct DiscoverView: View {
                     HStack(spacing: 8) {
                         ForEach(DiscoverFilter.allCases, id: \.self) { filter in
                             Button {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    viewModel.discoverFilter = filter
-                                }
+                                viewModel.discoverFilter = filter
                             } label: {
                                 Text(filter.rawValue)
                                     .font(.system(size: 14, weight: .medium))
