@@ -19,7 +19,7 @@ struct ProfileView: View {
 
                             // Calendar section
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("Calendar")
+                                Text("Past Sessions")
                                     .font(.system(size: 20, weight: .bold))
                                     .foregroundColor(.black)
                                     .padding(.leading, 4)
