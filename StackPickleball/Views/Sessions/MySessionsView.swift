@@ -4,6 +4,7 @@ struct MySessionsView: View {
     @Environment(AppState.self) private var appState
     @State private var sessions: [Game] = []
     @State private var lastMessages: [UUID: GameMessage] = [:]
+    @State private var participantAvatars: [UUID: [String]] = [:]
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var gameToLeave: Game?
@@ -25,7 +26,12 @@ struct MySessionsView: View {
                 } else {
                     List(sessions) { game in
                         NavigationLink(value: game) {
-                            SessionRow(game: game, lastMessage: lastMessages[game.id])
+                            SessionRow(
+                                game: game,
+                                lastMessage: lastMessages[game.id],
+                                avatarURLs: participantAvatars[game.id] ?? [],
+                                totalParticipants: game.spotsFilled
+                            )
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             if game.creatorId == currentUserId {
@@ -42,9 +48,9 @@ struct MySessionsView: View {
                                 }
                             }
                         }
-                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                        .listRowSeparator(.visible)
+                        .listRowBackground(Color.stackBackground)
                     }
                     .listStyle(.plain)
                 }
@@ -105,7 +111,11 @@ struct MySessionsView: View {
         guard let userId = currentUserId else { return }
         do {
             sessions = try await MessageService.myActiveSessions(userId: userId)
-            // Fetch last message for each session concurrently
+            let gameIds = sessions.map(\.id)
+
+            // Fetch last messages and avatars concurrently
+            async let fetchAvatars = GameService.participantAvatarsForGames(gameIds: gameIds)
+
             await withTaskGroup(of: (UUID, GameMessage?).self) { group in
                 for session in sessions {
                     group.addTask {
@@ -119,6 +129,8 @@ struct MySessionsView: View {
                     }
                 }
             }
+
+            participantAvatars = (try? await fetchAvatars) ?? [:]
         } catch is CancellationError {
         } catch {
             errorMessage = error.localizedDescription
@@ -132,82 +144,77 @@ struct MySessionsView: View {
 private struct SessionRow: View {
     let game: Game
     let lastMessage: GameMessage?
+    let avatarURLs: [String]
+    let totalParticipants: Int
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Top: Session name + last message preview
-            HStack(alignment: .top) {
-                // Chat icon
-                ZStack {
-                    Circle()
-                        .fill(Color.stackGreen.opacity(0.15))
-                        .frame(width: 44, height: 44)
-                    Image(systemName: "bubble.left.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(.stackGreen)
-                }
+        HStack(spacing: 12) {
+            // Avatar collage
+            SessionAvatarCollage(
+                avatarURLs: avatarURLs,
+                totalParticipants: totalParticipants
+            )
 
-                VStack(alignment: .leading, spacing: 3) {
+            // Text content
+            VStack(alignment: .leading, spacing: 3) {
+                // Top line: session name + timestamp
+                HStack {
                     Text(game.sessionName ?? game.creatorDisplayName)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
                         .lineLimit(1)
 
+                    Spacer(minLength: 4)
+
                     if let msg = lastMessage {
-                        Text("\(msg.users.firstName): \(msg.content)")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    } else {
-                        Text("No messages yet — say hello!")
-                            .font(.system(size: 14))
+                        Text(relativeTime(from: msg.createdAt))
+                            .font(.system(size: 12))
                             .foregroundColor(.stackTimestamp)
-                            .italic()
-                            .lineLimit(1)
                     }
                 }
 
-                Spacer(minLength: 8)
-
-                // Relative timestamp
+                // Last message preview
                 if let msg = lastMessage {
-                    Text(relativeTime(from: msg.createdAt))
-                        .font(.system(size: 12))
+                    Text("\(msg.users.firstName): \(msg.content)")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                } else {
+                    Text("No messages yet — say hello!")
+                        .font(.system(size: 14))
                         .foregroundColor(.stackTimestamp)
+                        .italic()
+                        .lineLimit(1)
                 }
-            }
 
-            // Bottom: Location · Time · Format
-            HStack(spacing: 4) {
-                if let location = game.locationName {
-                    HStack(spacing: 3) {
-                        Image(systemName: "mappin")
-                            .font(.system(size: 11))
-                        Text(location)
-                            .lineLimit(1)
+                // Bottom: Location · Time · Format
+                HStack(spacing: 4) {
+                    if let location = game.locationName {
+                        HStack(spacing: 3) {
+                            Image(systemName: "mappin")
+                                .font(.system(size: 10))
+                            Text(location)
+                                .lineLimit(1)
+                        }
+
+                        Text("·")
+                            .fontWeight(.bold)
                     }
+
+                    Text(game.gameDatetime, format: .dateTime.month(.abbreviated).day().hour().minute())
 
                     Text("·")
                         .fontWeight(.bold)
+
+                    Text(game.gameFormat.displayName)
                 }
-
-                Text(game.gameDatetime, format: .dateTime.month(.abbreviated).day().hour().minute())
-
-                Text("·")
-                    .fontWeight(.bold)
-
-                Text(game.gameFormat.displayName)
+                .font(.system(size: 11))
+                .foregroundColor(.stackTimestamp)
+                .padding(.top, 2)
             }
-            .font(.system(size: 12))
-            .foregroundColor(.secondary)
         }
-        .padding(12)
-        .background(Color.stackCardWhite)
-        .cornerRadius(14)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.stackBorder, lineWidth: 1)
-        )
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
     }
 
     private func relativeTime(from date: Date) -> String {
@@ -219,5 +226,92 @@ private struct SessionRow: View {
         if hours < 24 { return "\(hours)h ago" }
         let days = Int(elapsed / 86400)
         return "\(days)d ago"
+    }
+}
+
+// MARK: - Session Avatar Collage
+
+private struct SessionAvatarCollage: View {
+    let avatarURLs: [String]
+    let totalParticipants: Int
+
+    private var displayCount: Int { min(totalParticipants, 4) }
+    private var overflow: Int { max(0, totalParticipants - 4) }
+
+    private func positions(for count: Int) -> [(x: CGFloat, y: CGFloat, size: CGFloat)] {
+        switch count {
+        case 0, 1:
+            return [(0, 0, 48)]
+        case 2:
+            return [
+                (-7, -5, 32),
+                (7, 5, 32),
+            ]
+        case 3:
+            return [
+                (0, -8, 28),
+                (-9, 7, 26),
+                (9, 7, 26),
+            ]
+        default:
+            return [
+                (-8, -8, 26),
+                (8, -8, 26),
+                (-8, 8, 26),
+                (8, 8, 26),
+            ]
+        }
+    }
+
+    var body: some View {
+        let pos = positions(for: displayCount)
+
+        ZStack {
+            ForEach(Array(0..<max(displayCount, 1)), id: \.self) { i in
+                let url: String? = i < avatarURLs.count ? avatarURLs[i] : nil
+                avatarCircle(url: url, size: pos[i].size)
+                    .offset(x: pos[i].x, y: pos[i].y)
+            }
+
+            if overflow > 0 {
+                Text("+\(overflow)")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(.secondary)
+                    .frame(width: 22, height: 22)
+                    .background(Color(.systemGray5))
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.stackBackground, lineWidth: 1.5))
+                    .offset(x: 18, y: 18)
+            }
+        }
+        .frame(width: 54, height: 54)
+    }
+
+    @ViewBuilder
+    private func avatarCircle(url: String?, size: CGFloat) -> some View {
+        Group {
+            if let url, let imageURL = URL(string: url) {
+                AsyncImage(url: imageURL) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    placeholderCircle(size: size)
+                }
+            } else {
+                placeholderCircle(size: size)
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+        .overlay(Circle().stroke(Color.stackBackground, lineWidth: 1.5))
+    }
+
+    private func placeholderCircle(size: CGFloat) -> some View {
+        Circle()
+            .fill(Color.gray.opacity(0.25))
+            .overlay(
+                Image(systemName: "person.fill")
+                    .font(.system(size: size * 0.36))
+                    .foregroundColor(.white)
+            )
     }
 }
