@@ -11,9 +11,16 @@ struct GameChatView: View {
     @State private var errorMessage: String?
     @State private var hasMoreMessages = false
     @State private var showingSessionSettings = false
+    @State private var hostId: UUID
     @FocusState private var isInputFocused: Bool
 
-    private var isHost: Bool { game.creatorId == currentUserId }
+    init(game: Game, currentUserId: UUID) {
+        self.game = game
+        self.currentUserId = currentUserId
+        self._hostId = State(initialValue: game.creatorId)
+    }
+
+    private var isHost: Bool { hostId == currentUserId }
 
     private var canSend: Bool {
         !messageText.trimmingCharacters(in: .whitespaces).isEmpty
@@ -154,7 +161,14 @@ struct GameChatView: View {
         .navigationBarBackButtonHidden(true)
         .navigationBarHidden(true)
         .task {
-            await loadMessages()
+            // Fetch the current host from the server so we have the latest value
+            async let fetchHost: Void = {
+                if let creatorId = try? await GameService.gameCreatorId(gameId: game.id) {
+                    hostId = creatorId
+                }
+            }()
+            async let fetchMessages: Void = loadMessages()
+            _ = await (fetchHost, fetchMessages)
         }
         .refreshable {
             await loadMessages()
@@ -163,7 +177,7 @@ struct GameChatView: View {
             SessionSettingsSheet(
                 game: game,
                 currentUserId: currentUserId,
-                isHost: isHost,
+                currentHostId: $hostId,
                 onLeave: {
                     dismiss()
                 },
@@ -229,9 +243,11 @@ struct GameChatView: View {
 private struct SessionSettingsSheet: View {
     let game: Game
     let currentUserId: UUID
-    let isHost: Bool
+    @Binding var currentHostId: UUID
     let onLeave: () -> Void
     let onDelete: () -> Void
+
+    private var isHost: Bool { currentHostId == currentUserId }
 
     @Environment(\.dismiss) private var dismiss
     @State private var participants: [ParticipantWithProfile] = []
@@ -298,7 +314,7 @@ private struct SessionSettingsSheet: View {
                                             Text(participant.displayName)
                                                 .font(.system(size: 15, weight: .medium))
 
-                                            if participant.userId == game.creatorId {
+                                            if participant.userId == currentHostId {
                                                 HStack(spacing: 2) {
                                                     Image(systemName: "crown.fill")
                                                         .font(.system(size: 9))
@@ -533,7 +549,7 @@ private struct SessionSettingsSheet: View {
         isProcessing = true
         do {
             try await GameService.transferOwnership(gameId: game.id, newOwnerId: participant.userId)
-            dismiss()
+            currentHostId = participant.userId
         } catch {
             errorMessage = error.localizedDescription
         }
