@@ -56,7 +56,6 @@ struct MySessionsView: View {
                         }
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparator(.visible)
-                        .alignmentGuide(.listRowSeparatorLeading) { d in d[.leading] }
                         .listRowBackground(Color.stackBackground)
                     }
                     .listStyle(.plain)
@@ -249,7 +248,7 @@ private struct SessionRow: View {
             }
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.vertical, 14)
     }
 
     @ViewBuilder
@@ -263,7 +262,7 @@ private struct SessionRow: View {
                         .fill(Color.gray.opacity(0.25))
                         .overlay(
                             Image(systemName: "person.fill")
-                                .font(.system(size: 18))
+                                .font(.system(size: 22))
                                 .foregroundColor(.white)
                         )
                 }
@@ -272,12 +271,12 @@ private struct SessionRow: View {
                     .fill(Color.gray.opacity(0.25))
                     .overlay(
                         Image(systemName: "person.fill")
-                            .font(.system(size: 18))
+                            .font(.system(size: 22))
                             .foregroundColor(.white)
                     )
             }
         }
-        .frame(width: 48, height: 48)
+        .frame(width: 56, height: 56)
         .clipShape(Circle())
     }
 
@@ -305,24 +304,24 @@ private struct SessionAvatarCollage: View {
     private func positions(for count: Int) -> [(x: CGFloat, y: CGFloat, size: CGFloat)] {
         switch count {
         case 0, 1:
-            return [(0, 0, 48)]
+            return [(0, 0, 56)]
         case 2:
             return [
-                (-7, -5, 32),
-                (7, 5, 32),
+                (-8, -6, 38),
+                (8, 6, 38),
             ]
         case 3:
             return [
-                (0, -8, 28),
-                (-9, 7, 26),
-                (9, 7, 26),
+                (0, -10, 34),
+                (-11, 8, 30),
+                (11, 8, 30),
             ]
         default:
             return [
-                (-8, -8, 26),
-                (8, -8, 26),
-                (-8, 8, 26),
-                (8, 8, 26),
+                (-9, -9, 30),
+                (9, -9, 30),
+                (-9, 9, 30),
+                (9, 9, 30),
             ]
         }
     }
@@ -339,16 +338,16 @@ private struct SessionAvatarCollage: View {
 
             if overflow > 0 {
                 Text("+\(overflow)")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(.system(size: 10, weight: .bold))
                     .foregroundColor(.secondary)
-                    .frame(width: 22, height: 22)
+                    .frame(width: 24, height: 24)
                     .background(Color(.systemGray5))
                     .clipShape(Circle())
                     .overlay(Circle().stroke(Color.stackBackground, lineWidth: 1.5))
-                    .offset(x: 18, y: 18)
+                    .offset(x: 20, y: 20)
             }
         }
-        .frame(width: 54, height: 54)
+        .frame(width: 62, height: 62)
     }
 
     @ViewBuilder
