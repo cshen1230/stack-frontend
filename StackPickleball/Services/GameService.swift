@@ -73,6 +73,43 @@ enum GameService {
         )
     }
 
+    struct KickPlayerRequest: Encodable {
+        let game_id: String
+        let user_id: String
+    }
+
+    static func kickPlayer(gameId: UUID, userId: UUID) async throws {
+        let session = try await supabase.auth.session
+        let headers = ["Authorization": "Bearer \(session.accessToken)"]
+        try await supabase.functions.invoke(
+            "kick-player",
+            options: .init(headers: headers, body: KickPlayerRequest(game_id: gameId.uuidString, user_id: userId.uuidString))
+        )
+    }
+
+    struct TransferOwnershipRequest: Encodable {
+        let game_id: String
+        let new_owner_id: String
+    }
+
+    static func transferOwnership(gameId: UUID, newOwnerId: UUID) async throws {
+        let session = try await supabase.auth.session
+        let headers = ["Authorization": "Bearer \(session.accessToken)"]
+        try await supabase.functions.invoke(
+            "transfer-ownership",
+            options: .init(headers: headers, body: TransferOwnershipRequest(game_id: gameId.uuidString, new_owner_id: newOwnerId.uuidString))
+        )
+    }
+
+    static func deleteGame(gameId: UUID) async throws {
+        let session = try await supabase.auth.session
+        let headers = ["Authorization": "Bearer \(session.accessToken)"]
+        try await supabase.functions.invoke(
+            "delete-game",
+            options: .init(headers: headers, body: GameIdRequest(game_id: gameId.uuidString))
+        )
+    }
+
     /// Returns past games the user hosted or joined.
     static func userPastGames(userId: UUID) async throws -> [Game] {
         try await supabase.rpc(

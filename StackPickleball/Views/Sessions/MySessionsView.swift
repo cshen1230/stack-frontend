@@ -6,6 +6,8 @@ struct MySessionsView: View {
     @State private var lastMessages: [UUID: GameMessage] = [:]
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var gameToLeave: Game?
+    @State private var gameToDelete: Game?
 
     private var currentUserId: UUID? { appState.currentUser?.id }
 
@@ -24,6 +26,21 @@ struct MySessionsView: View {
                     List(sessions) { game in
                         NavigationLink(value: game) {
                             SessionRow(game: game, lastMessage: lastMessages[game.id])
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            if game.creatorId == currentUserId {
+                                Button(role: .destructive) {
+                                    gameToDelete = game
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            } else {
+                                Button(role: .destructive) {
+                                    gameToLeave = game
+                                } label: {
+                                    Label("Leave", systemImage: "rectangle.portrait.and.arrow.right")
+                                }
+                            }
                         }
                         .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                         .listRowSeparator(.hidden)
@@ -46,6 +63,40 @@ struct MySessionsView: View {
             }
             .refreshable {
                 await loadSessions()
+            }
+            .alert("Leave Session?", isPresented: Binding(
+                get: { gameToLeave != nil },
+                set: { if !$0 { gameToLeave = nil } }
+            )) {
+                Button("Cancel", role: .cancel) { gameToLeave = nil }
+                Button("Leave", role: .destructive) {
+                    if let game = gameToLeave {
+                        Task {
+                            try? await GameService.cancelRsvp(gameId: game.id)
+                            sessions.removeAll { $0.id == game.id }
+                            gameToLeave = nil
+                        }
+                    }
+                }
+            } message: {
+                Text("You will be removed from this session and its chat.")
+            }
+            .alert("Delete Session?", isPresented: Binding(
+                get: { gameToDelete != nil },
+                set: { if !$0 { gameToDelete = nil } }
+            )) {
+                Button("Cancel", role: .cancel) { gameToDelete = nil }
+                Button("Delete", role: .destructive) {
+                    if let game = gameToDelete {
+                        Task {
+                            try? await GameService.deleteGame(gameId: game.id)
+                            sessions.removeAll { $0.id == game.id }
+                            gameToDelete = nil
+                        }
+                    }
+                }
+            } message: {
+                Text("This will permanently delete the session for all participants.")
             }
         }
     }
