@@ -68,10 +68,17 @@ struct MySessionsView: View {
             .navigationBarTitleDisplayMode(.large)
             #endif
             .navigationDestination(for: Game.self) { game in
-                GameChatView(game: game, currentUserId: currentUserId ?? UUID())
+                if game.sessionType == .roundRobin {
+                    RoundRobinDetailView(game: game, isHost: game.creatorId == currentUserId)
+                } else {
+                    GameChatView(game: game, currentUserId: currentUserId ?? UUID())
+                }
             }
             .task(id: currentUserId) {
                 await loadSessions()
+            }
+            .onAppear {
+                Task { await loadSessions() }
             }
             .refreshable {
                 await loadSessions()

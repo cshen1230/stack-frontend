@@ -20,7 +20,11 @@ extension View {
         self.alert(
             "Error",
             isPresented: Binding(
-                get: { errorMessage.wrappedValue != nil },
+                get: {
+                    guard let msg = errorMessage.wrappedValue else { return false }
+                    // Suppress CancellationError popups (task cancelled during view transitions)
+                    return msg.lowercased() != "cancelled"
+                },
                 set: { if !$0 { errorMessage.wrappedValue = nil } }
             ),
             actions: { Button("OK") { errorMessage.wrappedValue = nil } },

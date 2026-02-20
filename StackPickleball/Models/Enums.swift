@@ -26,6 +26,24 @@ enum GameFormat: String, Codable, Sendable, CaseIterable {
     }
 }
 
+enum SessionType: String, Codable, Sendable, CaseIterable, Hashable {
+    case casual = "casual"
+    case roundRobin = "round_robin"
+
+    var displayName: String {
+        switch self {
+        case .casual: return "Casual"
+        case .roundRobin: return "Round Robin"
+        }
+    }
+}
+
+enum RoundRobinStatus: String, Codable, Sendable {
+    case waiting = "waiting"
+    case inProgress = "in_progress"
+    case completed = "completed"
+}
+
 enum AvailabilityStatus: String, Codable, Sendable {
     case available = "available"
     case busy = "busy"

@@ -14,6 +14,9 @@ struct Game: Identifiable, Codable, Sendable, Hashable {
     var spotsFilled: Int
     var gameFormat: GameFormat
     var sessionName: String?
+    var sessionType: SessionType?
+    var numRounds: Int?
+    var roundRobinStatus: RoundRobinStatus?
     var description: String?
     var isCancelled: Bool
     let createdAt: Date
@@ -55,6 +58,9 @@ struct Game: Identifiable, Codable, Sendable, Hashable {
         case spotsFilled = "spots_filled"
         case gameFormat = "game_format"
         case sessionName = "session_name"
+        case sessionType = "session_type"
+        case numRounds = "num_rounds"
+        case roundRobinStatus = "round_robin_status"
         case description
         case isCancelled = "is_cancelled"
         case createdAt = "created_at"

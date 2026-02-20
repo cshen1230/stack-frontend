@@ -49,9 +49,10 @@ class DiscoverViewModel {
             if let userId = currentUserId {
                 async let fetchedIds = GameService.myJoinedGameIds(userId: userId)
                 let allGames = try await fetchedGames
-                // Exclude games the current user created
-                games = allGames.filter { $0.creatorId != userId }
-                joinedGameIds = try await fetchedIds
+                let joined = try await fetchedIds
+                joinedGameIds = joined
+                // Hide sessions the user has already joined or created
+                games = allGames.filter { !joined.contains($0.id) && $0.creatorId != userId }
             } else {
                 games = try await fetchedGames
             }
@@ -73,8 +74,11 @@ class DiscoverViewModel {
             participantAvatars = try await GameService.participantAvatarsForGames(gameIds: gameIds)
         } catch is CancellationError {
             // Task was cancelled (e.g. auth state changed), ignore
+            return
         } catch {
-            errorMessage = error.localizedDescription
+            if !Task.isCancelled {
+                errorMessage = error.localizedDescription
+            }
         }
         isLoading = false
     }
@@ -108,11 +112,9 @@ class DiscoverViewModel {
     func rsvpToGame(_ game: Game) async {
         do {
             try await GameService.rsvpToGame(gameId: game.id)
-            // Optimistic update for instant UI feedback
-            if let index = games.firstIndex(where: { $0.id == game.id }) {
-                games[index].spotsFilled += 1
-            }
             joinedGameIds.insert(game.id)
+            // Remove from discover feed — it now belongs in the Sessions tab
+            games.removeAll { $0.id == game.id }
         } catch {
             errorMessage = error.localizedDescription
             // Refresh to get accurate state on error
