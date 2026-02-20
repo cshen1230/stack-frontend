@@ -105,7 +105,7 @@ enum GameService {
         let session = try await supabase.auth.session
         let headers = ["Authorization": "Bearer \(session.accessToken)"]
         try await supabase.functions.invoke(
-            "delete-game",
+            "cancel-game",
             options: .init(headers: headers, body: GameIdRequest(game_id: gameId.uuidString))
         )
     }
