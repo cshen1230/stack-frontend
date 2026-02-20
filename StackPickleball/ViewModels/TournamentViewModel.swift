@@ -15,6 +15,7 @@ class TournamentViewModel {
             } else {
                 tournaments = try await TournamentService.allUpcoming()
             }
+        } catch is CancellationError {
         } catch {
             errorMessage = error.localizedDescription
         }

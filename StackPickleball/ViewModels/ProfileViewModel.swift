@@ -16,6 +16,7 @@ class ProfileViewModel {
             async let games = GameService.userPastGames(userId: userId)
             user = try await profile
             pastGames = try await games
+        } catch is CancellationError {
         } catch {
             errorMessage = error.localizedDescription
         }
