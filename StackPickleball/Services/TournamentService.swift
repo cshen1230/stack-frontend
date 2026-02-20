@@ -16,6 +16,7 @@ enum TournamentService {
             .select()
             .gte("start_date", value: today)
             .order("start_date")
+            .limit(100)
             .execute()
             .value
     }

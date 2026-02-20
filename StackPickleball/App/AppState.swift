@@ -9,8 +9,11 @@ class AppState {
     var isLoading = true
     var selectedTab: Int = 0
 
+    private var authTask: Task<Void, Never>?
+
     func listenToAuthChanges() {
-        Task {
+        guard authTask == nil else { return }
+        authTask = Task {
             for await (event, session) in supabase.auth.authStateChanges {
                 switch event {
                 case .signedIn:

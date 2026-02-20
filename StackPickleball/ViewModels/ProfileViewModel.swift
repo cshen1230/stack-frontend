@@ -48,6 +48,12 @@ class ProfileViewModel {
         isLoading = false
     }
 
+    var gamesByDate: [DateComponents: [Game]] {
+        Dictionary(grouping: pastGames) { game in
+            Calendar.current.dateComponents([.year, .month, .day], from: game.gameDatetime)
+        }
+    }
+
     func signOut() async {
         do {
             try await AuthService.signOut()
