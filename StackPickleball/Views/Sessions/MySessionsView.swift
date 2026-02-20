@@ -4,7 +4,7 @@ struct MySessionsView: View {
     @Environment(AppState.self) private var appState
     @State private var sessions: [Game] = []
     @State private var lastMessages: [UUID: GameMessage] = [:]
-    @State private var participantAvatars: [UUID: [String]] = [:]
+    @State private var participantSummaries: [UUID: [ParticipantSummaryRow]] = [:]
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var gameToLeave: Game?
@@ -25,12 +25,18 @@ struct MySessionsView: View {
                     )
                 } else {
                     List(sessions) { game in
-                        NavigationLink(value: game) {
+                        let participants = participantSummaries[game.id] ?? []
+                        let dmPartner = dmPartner(for: game, participants: participants)
+
+                        ZStack {
+                            NavigationLink(value: game) { EmptyView() }
+                                .opacity(0)
                             SessionRow(
                                 game: game,
                                 lastMessage: lastMessages[game.id],
-                                avatarURLs: participantAvatars[game.id] ?? [],
-                                totalParticipants: game.spotsFilled
+                                avatarURLs: participants.compactMap(\.users.avatarUrl),
+                                totalParticipants: game.spotsFilled,
+                                dmPartner: dmPartner
                             )
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -50,6 +56,7 @@ struct MySessionsView: View {
                         }
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .listRowSeparator(.visible)
+                        .alignmentGuide(.listRowSeparatorLeading) { d in d[.leading] }
                         .listRowBackground(Color.stackBackground)
                     }
                     .listStyle(.plain)
@@ -107,14 +114,21 @@ struct MySessionsView: View {
         }
     }
 
+    private func dmPartner(for game: Game, participants: [ParticipantSummaryRow]) -> DMPartner? {
+        guard game.spotsAvailable == 2 else { return nil }
+        guard let userId = currentUserId else { return nil }
+        let other = participants.first { $0.userId != userId }
+        return other.map { DMPartner(name: $0.displayName, avatarURL: $0.users.avatarUrl) }
+    }
+
     private func loadSessions() async {
         guard let userId = currentUserId else { return }
         do {
             sessions = try await MessageService.myActiveSessions(userId: userId)
             let gameIds = sessions.map(\.id)
 
-            // Fetch last messages and avatars concurrently
-            async let fetchAvatars = GameService.participantAvatarsForGames(gameIds: gameIds)
+            // Fetch last messages and participant summaries concurrently
+            async let fetchSummaries = GameService.participantSummariesForGames(gameIds: gameIds)
 
             await withTaskGroup(of: (UUID, GameMessage?).self) { group in
                 for session in sessions {
@@ -130,13 +144,20 @@ struct MySessionsView: View {
                 }
             }
 
-            participantAvatars = (try? await fetchAvatars) ?? [:]
+            participantSummaries = (try? await fetchSummaries) ?? [:]
         } catch is CancellationError {
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
     }
+}
+
+// MARK: - DM Partner
+
+struct DMPartner {
+    let name: String
+    let avatarURL: String?
 }
 
 // MARK: - Session Row
@@ -146,20 +167,27 @@ private struct SessionRow: View {
     let lastMessage: GameMessage?
     let avatarURLs: [String]
     let totalParticipants: Int
+    let dmPartner: DMPartner?
+
+    private var isDM: Bool { dmPartner != nil }
 
     var body: some View {
         HStack(spacing: 12) {
-            // Avatar collage
-            SessionAvatarCollage(
-                avatarURLs: avatarURLs,
-                totalParticipants: totalParticipants
-            )
+            // Avatar: single circle for DMs, collage for group
+            if let partner = dmPartner {
+                singleAvatar(url: partner.avatarURL)
+            } else {
+                SessionAvatarCollage(
+                    avatarURLs: avatarURLs,
+                    totalParticipants: totalParticipants
+                )
+            }
 
             // Text content
             VStack(alignment: .leading, spacing: 3) {
-                // Top line: session name + timestamp
+                // Top line: name + timestamp
                 HStack {
-                    Text(game.sessionName ?? game.creatorDisplayName)
+                    Text(dmPartner?.name ?? game.sessionName ?? game.creatorDisplayName)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
                         .lineLimit(1)
@@ -175,10 +203,17 @@ private struct SessionRow: View {
 
                 // Last message preview
                 if let msg = lastMessage {
-                    Text("\(msg.users.firstName): \(msg.content)")
-                        .font(.system(size: 14))
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
+                    if isDM {
+                        Text(msg.content)
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    } else {
+                        Text("\(msg.users.firstName): \(msg.content)")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
                 } else {
                     Text("No messages yet — say hello!")
                         .font(.system(size: 14))
@@ -215,6 +250,35 @@ private struct SessionRow: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
+    }
+
+    @ViewBuilder
+    private func singleAvatar(url: String?) -> some View {
+        Group {
+            if let url, let imageURL = URL(string: url) {
+                AsyncImage(url: imageURL) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    Circle()
+                        .fill(Color.gray.opacity(0.25))
+                        .overlay(
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(.white)
+                        )
+                }
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.25))
+                    .overlay(
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(.white)
+                    )
+            }
+        }
+        .frame(width: 48, height: 48)
+        .clipShape(Circle())
     }
 
     private func relativeTime(from date: Date) -> String {

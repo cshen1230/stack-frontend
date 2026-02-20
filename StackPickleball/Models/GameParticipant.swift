@@ -55,6 +55,33 @@ struct ParticipantWithProfile: Identifiable, Codable, Sendable {
     }
 }
 
+/// Lightweight struct for batch-fetching participant summaries (name + avatar).
+struct ParticipantSummaryRow: Codable, Sendable {
+    let gameId: UUID
+    let userId: UUID
+    let users: SummaryUser
+
+    struct SummaryUser: Codable, Sendable {
+        let firstName: String
+        let lastName: String
+        let avatarUrl: String?
+
+        enum CodingKeys: String, CodingKey {
+            case firstName = "first_name"
+            case lastName = "last_name"
+            case avatarUrl = "avatar_url"
+        }
+    }
+
+    var displayName: String { "\(users.firstName) \(users.lastName)" }
+
+    enum CodingKeys: String, CodingKey {
+        case gameId = "game_id"
+        case userId = "user_id"
+        case users
+    }
+}
+
 /// Lightweight struct for batch-fetching participant avatar URLs.
 struct ParticipantAvatarRow: Codable, Sendable {
     let gameId: UUID
