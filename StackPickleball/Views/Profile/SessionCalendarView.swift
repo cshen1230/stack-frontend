@@ -143,44 +143,35 @@ struct SessionCalendarView: View {
 
         return Button {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                if selectedDate == dc {
-                    selectedDate = nil
-                } else {
-                    selectedDate = dc
-                }
+                selectedDate = selectedDate == dc ? nil : dc
             }
         } label: {
-            VStack(spacing: 3) {
-                Text("\(dc.day ?? 0)")
-                    .font(.system(size: 15, weight: isToday ? .bold : .medium))
-                    .foregroundColor(dayTextColor(count: count, isSelected: isSelected, isToday: isToday))
-                    .frame(width: 34, height: 34)
-                    .background(
-                        Circle()
-                            .fill(isSelected ? Color.stackGreen : .clear)
-                    )
-
-                // Session indicator dots
-                HStack(spacing: 2) {
-                    if count > 0 {
-                        ForEach(0..<min(count, 3), id: \.self) { _ in
-                            Circle()
-                                .fill(isSelected ? Color.stackGreen : Color.stackGreen.opacity(0.7))
-                                .frame(width: 5, height: 5)
-                        }
-                    }
-                }
-                .frame(height: 5)
-            }
+            Text("\(dc.day ?? 0)")
+                .font(.system(size: 15, weight: (isToday || count > 0) ? .bold : .medium))
+                .foregroundColor(dayTextColor(count: count, isSelected: isSelected, isToday: isToday))
+                .frame(width: 36, height: 36)
+                .background(
+                    Circle()
+                        .fill(dayBackgroundColor(count: count, isSelected: isSelected))
+                )
         }
         .buttonStyle(.plain)
+        .frame(height: 44)
     }
 
     private func dayTextColor(count: Int, isSelected: Bool, isToday: Bool) -> Color {
-        if isSelected { return .white }
-        if count > 0 { return .black }
+        if isSelected || count > 0 { return .white }
         if isToday { return .stackGreen }
         return .stackSecondaryText
+    }
+
+    /// Green circle that gets darker with more sessions
+    private func dayBackgroundColor(count: Int, isSelected: Bool) -> Color {
+        if isSelected { return Color.stackGreen }
+        if count == 0 { return .clear }
+        // Opacity scales: 1 session = 0.35, 2 = 0.55, 3+ = 0.75, 4+ = 0.9, 5+ = 1.0
+        let opacity = min(1.0, 0.2 + Double(count) * 0.2)
+        return Color.stackGreen.opacity(opacity)
     }
 
     // MARK: - Expanded Session List
