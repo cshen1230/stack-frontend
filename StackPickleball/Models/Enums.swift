@@ -36,3 +36,9 @@ enum RSVPStatus: String, Codable, Sendable {
     case waitlisted = "waitlisted"
     case cancelled = "cancelled"
 }
+
+enum FriendshipStatus: String, Codable, Sendable {
+    case pending = "pending"
+    case accepted = "accepted"
+    case declined = "declined"
+}
