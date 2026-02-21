@@ -71,8 +71,7 @@ class DiscoverViewModel {
             // Batch-fetch participant avatars for all loaded games
             let gameIds = games.map(\.id)
             participantAvatars = try await GameService.participantAvatarsForGames(gameIds: gameIds)
-        } catch is CancellationError {
-            // Task was cancelled (e.g. auth state changed), ignore
+        } catch where error.isCancellation {
         } catch {
             errorMessage = error.localizedDescription
         }

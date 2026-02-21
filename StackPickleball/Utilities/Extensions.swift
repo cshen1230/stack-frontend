@@ -29,6 +29,18 @@ extension View {
     }
 }
 
+// MARK: - Error Helpers
+
+extension Error {
+    /// True for Swift CancellationError, URLError.cancelled, and NSURLErrorCancelled.
+    var isCancellation: Bool {
+        if self is CancellationError { return true }
+        if let urlError = self as? URLError, urlError.code == .cancelled { return true }
+        return (self as NSError).code == NSURLErrorCancelled
+            && (self as NSError).domain == NSURLErrorDomain
+    }
+}
+
 // MARK: - Date Extensions
 
 extension Date {

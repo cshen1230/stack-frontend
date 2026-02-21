@@ -144,7 +144,7 @@ struct MySessionsView: View {
             }
 
             participantSummaries = (try? await fetchSummaries) ?? [:]
-        } catch is CancellationError {
+        } catch where error.isCancellation {
         } catch {
             errorMessage = error.localizedDescription
         }

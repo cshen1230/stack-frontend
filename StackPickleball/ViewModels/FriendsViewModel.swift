@@ -23,7 +23,7 @@ class FriendsViewModel {
             async let r = FriendService.getFriendRequests(userId: userId)
             friends = try await f
             friendRequests = try await r
-        } catch is CancellationError {
+        } catch where error.isCancellation {
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -46,7 +46,7 @@ class FriendsViewModel {
                     && !requestIds.contains(user.id)
                     && !pendingSentIds.contains(user.id)
             }
-        } catch is CancellationError {
+        } catch where error.isCancellation {
         } catch {
             errorMessage = error.localizedDescription
         }
