@@ -122,7 +122,7 @@ struct SessionMapView: View {
                 }
                 Spacer()
             }
-            .padding(.top, 60)
+            .padding(.top, 10)
 
             // Bottom card when a pin is selected
             if let game = selectedGame {

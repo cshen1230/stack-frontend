@@ -45,6 +45,18 @@ enum PlayerService {
         )
     }
 
+    static func currentUserAvailability(userId: UUID) async throws -> AvailablePlayer? {
+        try await supabase
+            .from("available_players")
+            .select()
+            .eq("user_id", value: userId)
+            .eq("status", value: "available")
+            .gt("available_until", value: ISO8601DateFormatter().string(from: Date()))
+            .maybeSingle()
+            .execute()
+            .value
+    }
+
     static func searchPlayers(query: String) async throws -> [User] {
         try await supabase
             .from("users")
