@@ -44,27 +44,21 @@ struct AvailablePlayerCard: View {
                     }
                 }
 
+                if let format = player.preferredFormat {
+                    Text(format.displayName)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(format.accentColor)
+                        .cornerRadius(6)
+                }
+
                 if let note = player.note, !note.isEmpty {
                     Text(note)
                         .font(.system(size: 14))
                         .foregroundColor(.secondary)
                         .lineLimit(2)
-                }
-
-                HStack(spacing: 6) {
-                    if let format = player.preferredFormat {
-                        Text(format.displayName)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background(format.accentColor)
-                            .cornerRadius(6)
-                    }
-
-                    Text(relativeTime(until: player.availableUntil))
-                        .font(.system(size: 12))
-                        .foregroundColor(.stackTimestamp)
                 }
             }
 
@@ -95,14 +89,4 @@ struct AvailablePlayerCard: View {
         return String(name.prefix(1)).uppercased()
     }
 
-    private func relativeTime(until date: Date) -> String {
-        let remaining = date.timeIntervalSinceNow
-        if remaining <= 0 { return "Expiring" }
-        let hours = Int(remaining / 3600)
-        let minutes = Int((remaining.truncatingRemainder(dividingBy: 3600)) / 60)
-        if hours > 0 {
-            return "\(hours)h \(minutes)m left"
-        }
-        return "\(minutes)m left"
-    }
 }
