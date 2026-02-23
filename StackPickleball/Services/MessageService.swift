@@ -40,8 +40,8 @@ enum MessageService {
     }
 
     struct NewMessage: Encodable {
-        let game_id: String
-        let user_id: String
+        let game_id: UUID
+        let user_id: UUID
         let content: String
     }
 
@@ -50,8 +50,8 @@ enum MessageService {
         try await supabase
             .from("game_messages")
             .insert(NewMessage(
-                game_id: gameId.uuidString,
-                user_id: session.user.id.uuidString,
+                game_id: gameId,
+                user_id: session.user.id,
                 content: content
             ))
             .execute()

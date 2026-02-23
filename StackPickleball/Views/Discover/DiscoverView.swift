@@ -213,10 +213,14 @@ struct DiscoverView: View {
                 )
             }
             .navigationDestination(item: $selectedGame) { game in
-                GameDetailView(game: game, isHost: game.creatorId == currentUserId)
+                if game.sessionType == .roundRobin {
+                    RoundRobinDetailView(game: game, isHost: game.creatorId == currentUserId)
+                } else {
+                    GameDetailView(game: game, isHost: game.creatorId == currentUserId)
+                }
             }
             .sheet(isPresented: $showingCreateGame) {
-                CreateGameView()
+                SessionTypePickerView()
             }
             .sheet(isPresented: $showingAvailability) {
                 SetAvailabilitySheet(viewModel: viewModel)

@@ -20,6 +20,8 @@ enum GameService {
         var skill_level_min: Double?
         var skill_level_max: Double?
         var description: String?
+        var session_type: String?
+        var num_rounds: Int?
     }
 
     static func createGame(
@@ -32,7 +34,9 @@ enum GameService {
         longitude: Double?,
         skillLevelMin: Double?,
         skillLevelMax: Double?,
-        description: String?
+        description: String?,
+        sessionType: SessionType = .casual,
+        numRounds: Int? = nil
     ) async throws {
         let session = try await supabase.auth.session
         let headers = ["Authorization": "Bearer \(session.accessToken)"]
@@ -46,9 +50,63 @@ enum GameService {
             longitude: longitude,
             skill_level_min: skillLevelMin,
             skill_level_max: skillLevelMax,
-            description: description
+            description: description,
+            session_type: sessionType.rawValue,
+            num_rounds: numRounds
         )
         try await supabase.functions.invoke("create-game", options: .init(headers: headers, body: request))
+    }
+
+    // MARK: - Round Robin
+
+    struct StartRoundRobinRequest: Encodable {
+        let game_id: UUID
+        let rounds: [RoundMatchPayload]
+    }
+
+    struct RoundMatchPayload: Encodable {
+        let round_number: Int
+        let court_number: Int
+        let team1_player1: UUID
+        let team1_player2: UUID?
+        let team2_player1: UUID
+        let team2_player2: UUID?
+        let bye_players: [UUID]
+    }
+
+    static func startRoundRobin(gameId: UUID, rounds: [RoundMatchPayload]) async throws {
+        let session = try await supabase.auth.session
+        let headers = ["Authorization": "Bearer \(session.accessToken)"]
+        try await supabase.functions.invoke(
+            "start-round-robin",
+            options: .init(headers: headers, body: StartRoundRobinRequest(game_id: gameId, rounds: rounds))
+        )
+    }
+
+    struct SubmitScoreRequest: Encodable {
+        let round_id: UUID
+        let team1_score: Int
+        let team2_score: Int
+    }
+
+    static func submitRoundScore(roundId: UUID, team1Score: Int, team2Score: Int) async throws {
+        let session = try await supabase.auth.session
+        let headers = ["Authorization": "Bearer \(session.accessToken)"]
+        try await supabase.functions.invoke(
+            "submit-round-score",
+            options: .init(headers: headers, body: SubmitScoreRequest(round_id: roundId, team1_score: team1Score, team2_score: team2Score))
+        )
+    }
+
+    static func roundRobinRounds(gameId: UUID) async throws -> [RoundRobinRound] {
+        try await supabase
+            .from("round_robin_rounds")
+            .select()
+            .eq("game_id", value: gameId)
+            .order("round_number")
+            .order("court_number")
+            .execute()
+            .value
     }
 
     struct GameIdRequest: Encodable {
@@ -128,6 +186,19 @@ enum GameService {
             .execute()
             .value
         return Set(participants.map(\.gameId))
+    }
+
+    /// Returns the current creator_id for a game.
+    static func gameCreatorId(gameId: UUID) async throws -> UUID {
+        struct Row: Decodable { let creatorId: UUID }
+        let row: Row = try await supabase
+            .from("games")
+            .select("creator_id")
+            .eq("id", value: gameId)
+            .single()
+            .execute()
+            .value
+        return row.creatorId
     }
 
     /// Returns participants for a specific game, joined with user profile info.
