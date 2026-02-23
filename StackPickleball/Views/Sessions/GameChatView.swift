@@ -197,7 +197,7 @@ struct GameChatView: View {
             let fetched = try await MessageService.messages(gameId: game.id, limit: pageSize)
             messages = fetched
             hasMoreMessages = fetched.count >= pageSize
-        } catch is CancellationError {
+        } catch where error.isCancellation {
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -212,7 +212,7 @@ struct GameChatView: View {
             )
             hasMoreMessages = older.count >= pageSize
             messages = older + messages
-        } catch is CancellationError {
+        } catch where error.isCancellation {
         } catch {
             errorMessage = error.localizedDescription
         }

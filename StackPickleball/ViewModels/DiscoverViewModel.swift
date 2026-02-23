@@ -56,24 +56,24 @@ class DiscoverViewModel {
             } else {
                 games = try await fetchedGames
             }
-            availablePlayers = try await fetchedPlayers
+            let allPlayers = try await fetchedPlayers
 
-            // Check if current user is in the available players list
+            // Filter out self client-side as safety net
             if let userId = currentUserId {
-                if let currentPlayer = availablePlayers.first(where: { $0.userId == userId }) {
-                    isCurrentUserAvailable = true
-                    currentUserNote = currentPlayer.note
-                } else {
-                    isCurrentUserAvailable = false
-                    currentUserNote = nil
-                }
+                availablePlayers = allPlayers.filter { $0.userId != userId }
+
+                // Check own availability separately
+                let ownStatus = try? await PlayerService.currentUserAvailability(userId: userId)
+                isCurrentUserAvailable = ownStatus != nil
+                currentUserNote = ownStatus?.note
+            } else {
+                availablePlayers = allPlayers
             }
 
             // Batch-fetch participant avatars for all loaded games
             let gameIds = games.map(\.id)
             participantAvatars = try await GameService.participantAvatarsForGames(gameIds: gameIds)
-        } catch is CancellationError {
-            // Task was cancelled (e.g. auth state changed), ignore
+        } catch where error.isCancellation {
             return
         } catch {
             if !Task.isCancelled {

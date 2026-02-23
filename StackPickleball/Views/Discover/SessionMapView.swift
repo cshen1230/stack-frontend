@@ -13,6 +13,9 @@ struct SessionMapView: View {
     @State private var position: MapCameraPosition
     @State private var pickleballCourts: [MKMapItem] = []
 
+    private let userLatitude: Double
+    private let userLongitude: Double
+
     init(
         games: [Game],
         joinedGameIds: Set<UUID>,
@@ -27,6 +30,8 @@ struct SessionMapView: View {
         self.currentUserId = currentUserId
         self.onJoin = onJoin
         self.onView = onView
+        self.userLatitude = userLatitude ?? 30.2672
+        self.userLongitude = userLongitude ?? -97.7431
 
         let center = CLLocationCoordinate2D(
             latitude: userLatitude ?? 30.2672,
@@ -69,38 +74,55 @@ struct SessionMapView: View {
                     .tint(.orange)
                 }
             }
-            .mapControls {
-                MapUserLocationButton()
-            }
+            .mapControls { }
             .ignoresSafeArea(edges: .top)
             .task {
                 await searchPickleballCourts()
             }
 
-            // Floating "List" button
+            // Floating top-right buttons
             VStack {
                 HStack {
                     Spacer()
-                    Button {
-                        dismiss()
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "list.bullet")
+
+                    HStack(spacing: 10) {
+                        Button {
+                            withAnimation {
+                                position = .region(MKCoordinateRegion(
+                                    center: CLLocationCoordinate2D(latitude: userLatitude, longitude: userLongitude),
+                                    span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+                                ))
+                            }
+                        } label: {
+                            Image(systemName: "location.fill")
                                 .font(.system(size: 14, weight: .semibold))
-                            Text("List")
-                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(width: 40, height: 40)
+                                .background(Color.black.opacity(0.8))
+                                .clipShape(Circle())
                         }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .background(Color.black.opacity(0.8))
-                        .clipShape(Capsule())
+
+                        Button {
+                            dismiss()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "list.bullet")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Text("List")
+                                    .font(.system(size: 14, weight: .semibold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(Color.black.opacity(0.8))
+                            .clipShape(Capsule())
+                        }
                     }
                     .padding(.trailing, 16)
                 }
                 Spacer()
             }
-            .padding(.top, 60)
+            .padding(.top, 10)
 
             // Bottom card when a pin is selected
             if let game = selectedGame {

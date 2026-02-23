@@ -24,13 +24,11 @@ struct SessionCalendarView: View {
         displayedMonth.formatted(.dateTime.month(.wide).year())
     }
 
-    /// All day slots for the calendar grid (including leading blanks for alignment)
     private var calendarDays: [DateComponents?] {
         guard let range = calendar.range(of: .day, in: .month, for: displayedMonth),
               let firstOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: displayedMonth))
         else { return [] }
 
-        // weekday of the 1st: shift so Monday = 0
         let firstWeekday = (calendar.component(.weekday, from: firstOfMonth) + 5) % 7
         let blanks: [DateComponents?] = Array(repeating: nil, count: firstWeekday)
 
@@ -54,7 +52,10 @@ struct SessionCalendarView: View {
     var body: some View {
         VStack(spacing: 0) {
             calendarCard
-            expandedSessionList
+
+            if !selectedGames.isEmpty {
+                expandedSessionList
+            }
         }
         .sheet(item: $selectedGame) { game in
             PastSessionDetailSheet(game: game, isHost: game.creatorId == currentUserId)
@@ -110,7 +111,7 @@ struct SessionCalendarView: View {
                         dayCell(for: dc)
                     } else {
                         Color.clear
-                            .frame(height: 44)
+                            .frame(height: 36)
                     }
                 }
             }
@@ -140,78 +141,139 @@ struct SessionCalendarView: View {
         let isSelected = selectedDate == dc
         let today = calendar.dateComponents([.year, .month, .day], from: Date())
         let isToday = dc == today
+        let hasSessions = count > 0
 
-        return Button {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                if selectedDate == dc {
-                    selectedDate = nil
-                } else {
-                    selectedDate = dc
-                }
-            }
-        } label: {
-            VStack(spacing: 3) {
-                Text("\(dc.day ?? 0)")
-                    .font(.system(size: 15, weight: isToday ? .bold : .medium))
-                    .foregroundColor(dayTextColor(count: count, isSelected: isSelected, isToday: isToday))
-                    .frame(width: 34, height: 34)
-                    .background(
-                        Circle()
-                            .fill(isSelected ? Color.stackGreen : .clear)
-                    )
-
-                // Session indicator dots
-                HStack(spacing: 2) {
-                    if count > 0 {
-                        ForEach(0..<min(count, 3), id: \.self) { _ in
-                            Circle()
-                                .fill(isSelected ? Color.stackGreen : Color.stackGreen.opacity(0.7))
-                                .frame(width: 5, height: 5)
-                        }
+        return Group {
+            if hasSessions {
+                Button {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        selectedDate = selectedDate == dc ? nil : dc
                     }
+                } label: {
+                    dayCellLabel(day: dc.day ?? 0, count: count, isSelected: isSelected, isToday: isToday)
                 }
-                .frame(height: 5)
+                .buttonStyle(.plain)
+            } else {
+                dayCellLabel(day: dc.day ?? 0, count: 0, isSelected: false, isToday: isToday)
             }
         }
-        .buttonStyle(.plain)
+        .frame(height: 36)
+    }
+
+    private func dayCellLabel(day: Int, count: Int, isSelected: Bool, isToday: Bool) -> some View {
+        Text("\(day)")
+            .font(.system(size: 15, weight: (isToday || count > 0) ? .bold : .medium))
+            .foregroundColor(dayTextColor(count: count, isSelected: isSelected, isToday: isToday))
+            .frame(width: 36, height: 36)
+            .background(
+                Circle()
+                    .fill(dayBackgroundColor(count: count, isSelected: isSelected))
+            )
     }
 
     private func dayTextColor(count: Int, isSelected: Bool, isToday: Bool) -> Color {
-        if isSelected { return .white }
-        if count > 0 { return .black }
+        if isSelected || count > 0 { return .white }
         if isToday { return .stackGreen }
         return .stackSecondaryText
     }
 
+    private func dayBackgroundColor(count: Int, isSelected: Bool) -> Color {
+        if isSelected { return Color.stackGreen }
+        if count == 0 { return .clear }
+        let opacity = min(1.0, 0.2 + Double(count) * 0.2)
+        return Color.stackGreen.opacity(opacity)
+    }
+
     // MARK: - Expanded Session List
 
-    @ViewBuilder
     private var expandedSessionList: some View {
-        if !selectedGames.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                if let date = calendar.date(from: selectedDate!) {
-                    Text(date.formatted(.dateTime.month(.wide).day().year()))
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.black)
-                        .padding(.leading, 4)
-                }
+        VStack(alignment: .leading, spacing: 10) {
+            if let sel = selectedDate, let date = calendar.date(from: sel) {
+                Text(date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.black)
+                    .padding(.leading, 4)
+            }
 
-                ForEach(selectedGames) { game in
-                    PastSessionCard(
-                        game: game,
-                        isHost: game.creatorId == currentUserId
-                    )
+            ForEach(selectedGames) { game in
+                sessionRow(game: game)
                     .onTapGesture {
                         selectedGame = game
                     }
+            }
+        }
+        .padding(.top, 16)
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    // MARK: - Inline Session Row
+
+    private func sessionRow(game: Game) -> some View {
+        let isHost = game.creatorId == currentUserId
+
+        return HStack(spacing: 12) {
+            // Format color bar
+            RoundedRectangle(cornerRadius: 3)
+                .fill(game.gameFormat.accentColor)
+                .frame(width: 4, height: 44)
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(game.sessionName ?? game.creatorDisplayName)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+
+                    if isHost {
+                        HStack(spacing: 2) {
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 9))
+                            Text("Host")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundColor(.orange)
+                    }
+                }
+
+                HStack(spacing: 8) {
+                    Text(game.gameDatetime, format: .dateTime.hour().minute())
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+
+                    Text(game.gameFormat.displayName)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.stackGreen)
+
+                    Text("\(game.spotsFilled)/\(game.spotsAvailable)")
+                        .font(.system(size: 13))
+                        .foregroundColor(.secondary)
+
+                    if let location = game.locationName {
+                        HStack(spacing: 3) {
+                            Image(systemName: "mappin")
+                                .font(.system(size: 10))
+                            Text(location)
+                                .lineLimit(1)
+                        }
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                    }
                 }
             }
-            .padding(.top, 16)
-            .transition(.asymmetric(
-                insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .top)).combined(with: .move(edge: .top)),
-                removal: .opacity.combined(with: .scale(scale: 0.98, anchor: .top))
-            ))
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.stackSecondaryText)
         }
+        .padding(12)
+        .background(Color.stackCardWhite)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.black.opacity(0.08), lineWidth: 1)
+        )
     }
 
     // MARK: - Helpers
@@ -237,14 +299,12 @@ private struct PastSessionDetailSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
-                    // Format accent bar
                     RoundedRectangle(cornerRadius: 4)
                         .fill(game.gameFormat.accentColor)
                         .frame(height: 4)
                         .padding(.horizontal, 40)
                         .padding(.top, 4)
 
-                    // Title + badges
                     VStack(spacing: 8) {
                         Text(game.sessionName ?? game.creatorDisplayName)
                             .font(.system(size: 24, weight: .bold))
@@ -276,7 +336,6 @@ private struct PastSessionDetailSheet: View {
                         }
                     }
 
-                    // Info card
                     VStack(spacing: 14) {
                         detailRow(icon: "calendar", label: "Date",
                                   value: game.gameDatetime.formatted(.dateTime.weekday(.wide).month(.abbreviated).day().year()))

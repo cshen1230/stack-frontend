@@ -8,6 +8,7 @@ struct GameDetailView: View {
     @State private var participants: [ParticipantWithProfile] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var showingInviteFriend = false
 
     private var isParticipant: Bool {
         guard let userId = appState.currentUser?.id else { return false }
@@ -128,6 +129,35 @@ struct GameDetailView: View {
                     .padding(.horizontal, 16)
                 }
 
+                // Invite friends button — only for participants when spots remain
+                if isParticipant && game.spotsRemaining > 0 {
+                    Button {
+                        showingInviteFriend = true
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "person.badge.plus")
+                                .font(.system(size: 16))
+                                .foregroundColor(.stackGreen)
+                            Text("Invite Friends")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.primary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.secondary)
+                        }
+                        .padding(16)
+                        .background(Color.stackCardWhite)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.stackGreen.opacity(0.3), lineWidth: 1)
+                        )
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 20)
+                }
+
                 // Chat button — only for participants
                 if isParticipant {
                     NavigationLink {
@@ -178,6 +208,9 @@ struct GameDetailView: View {
         #endif
         .task {
             await loadParticipants()
+        }
+        .sheet(isPresented: $showingInviteFriend) {
+            InviteFriendSheet(game: game)
         }
     }
 

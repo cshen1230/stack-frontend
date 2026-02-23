@@ -44,22 +44,14 @@ struct DiscoverView: View {
                     .padding(.top, 60)
                 } else {
                     VStack(spacing: 16) {
-                        // Available Players horizontal section
+                        // Available Players
                         if showPlayers && !viewModel.availablePlayers.isEmpty {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Available Players")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .padding(.horizontal, 16)
-
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 10) {
-                                        ForEach(viewModel.availablePlayers) { player in
-                                            AvailablePlayerCard(player: player)
-                                        }
-                                    }
-                                    .padding(.horizontal, 16)
+                            LazyVStack(spacing: 12) {
+                                ForEach(viewModel.availablePlayers) { player in
+                                    AvailablePlayerCard(player: player)
                                 }
                             }
+                            .padding(.horizontal, 16)
                         }
 
                         // Game sessions list
