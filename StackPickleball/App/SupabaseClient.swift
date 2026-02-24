@@ -22,16 +22,16 @@ enum SupabaseConfig {
         if let raw = env("SUPABASE_URL"), let parsed = URL(string: raw) {
             return parsed
         }
-        // Local Supabase dev default — update after running `supabase status`
-        return URL(string: "http://127.0.0.1:54321")!
+        // Production Supabase
+        return URL(string: "https://cmfjafuqfqfggzdwpvwo.supabase.co")!
     }
 
     static var anonKey: String {
         if let key = env("SUPABASE_ANON_KEY") ?? env("SUPABASE_PUBLISHABLE_KEY") {
             return key
         }
-        // Local Supabase dev default key
-        return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
+        // Production anon key
+        return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtZmphZnVxZnFmZ2d6ZHdwdndvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1OTM4NjIsImV4cCI6MjA4NjE2OTg2Mn0.ZdLcn1EIWDw8Vr3MI12HMXHS27XqaSYhbpJtJNOKyUE"
     }
 }
 
