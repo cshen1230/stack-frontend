@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct GameDetailView: View {
     let game: Game
@@ -9,11 +12,16 @@ struct GameDetailView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var showingInviteFriend = false
+    @State private var isJoining = false
+    @State private var hasJoined = false
+    @State private var showingCopiedToast = false
 
     private var isParticipant: Bool {
         guard let userId = appState.currentUser?.id else { return false }
-        return isHost || participants.contains { $0.userId == userId }
+        return hasJoined || isHost || participants.contains { $0.userId == userId }
     }
+
+    private var isFull: Bool { game.spotsRemaining <= 0 && !isParticipant }
 
     var body: some View {
         ScrollView {
@@ -55,13 +63,13 @@ struct GameDetailView: View {
                         }
                     }
 
-                    // DUPR Range
-                    if let min = game.skillLevelMin, let max = game.skillLevelMax {
+                    // Minimum DUPR
+                    if let min = game.skillLevelMin {
                         HStack(spacing: 6) {
                             Image(systemName: "trophy")
                                 .font(.system(size: 13))
                                 .foregroundColor(.stackSecondaryText)
-                            Text("DUPR \(String(format: "%.1f", min)) – \(String(format: "%.1f", max))")
+                            Text("DUPR \(String(format: "%.1f", min))+")
                                 .font(.system(size: 14))
                                 .foregroundColor(.primary)
                         }
@@ -127,6 +135,30 @@ struct GameDetailView: View {
                         }
                     }
                     .padding(.horizontal, 16)
+                }
+
+                // Join button — for non-participants
+                if !isParticipant && !isLoading {
+                    Button {
+                        Task { await joinSession() }
+                    } label: {
+                        HStack(spacing: 8) {
+                            if isJoining {
+                                ProgressView()
+                                    .tint(.white)
+                            }
+                            Text(isFull ? "Session Full" : "Join Session")
+                                .font(.system(size: 17, weight: .bold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(isFull ? Color.gray : Color.stackGreen)
+                        .cornerRadius(14)
+                    }
+                    .disabled(isJoining || isFull)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 24)
                 }
 
                 // Invite friends button — only for participants when spots remain
@@ -206,6 +238,17 @@ struct GameDetailView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    copyLink()
+                } label: {
+                    Image(systemName: showingCopiedToast ? "checkmark" : "square.and.arrow.up")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(showingCopiedToast ? .stackGreen : .primary)
+                }
+            }
+        }
         .task {
             await loadParticipants()
         }
@@ -222,6 +265,33 @@ struct GameDetailView: View {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    private func joinSession() async {
+        isJoining = true
+        do {
+            try await GameService.rsvpToGame(gameId: game.id)
+            hasJoined = true
+            await loadParticipants()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isJoining = false
+    }
+
+    private func copyLink() {
+        let link = "stackpickleball://session/\(game.id.uuidString)"
+        #if canImport(UIKit)
+        UIPasteboard.general.string = link
+        #endif
+        withAnimation {
+            showingCopiedToast = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation {
+                showingCopiedToast = false
+            }
+        }
     }
 }
 

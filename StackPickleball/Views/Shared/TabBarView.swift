@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct TabBarView: View {
+    @Environment(DeepLinkRouter.self) private var deepLinkRouter
     @State private var selectedTab = 0
 
     var body: some View {
@@ -27,11 +28,17 @@ struct TabBarView: View {
                 .tag(2)
         }
         .accentColor(.stackGreen)
+        .onChange(of: deepLinkRouter.pendingGameId) {
+            if deepLinkRouter.pendingGameId != nil {
+                selectedTab = 0
+            }
+        }
     }
 }
 
 #Preview {
     TabBarView()
         .environment(AppState())
+        .environment(DeepLinkRouter())
         .environmentObject(LocationManager.shared)
 }

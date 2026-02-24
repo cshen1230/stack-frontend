@@ -8,8 +8,7 @@ class CreateGameViewModel {
     var selectedLatitude: Double?
     var selectedLongitude: Double?
     var selectedDate = Date()
-    var skillLevelMin: Double = 3.0
-    var skillLevelMax: Double = 4.5
+    var skillLevelMin: Double = 0.0
     var gameFormat: GameFormat = .doubles
     var spotsAvailable: Int = 4
     var numRounds: Int = 5
@@ -41,8 +40,8 @@ class CreateGameViewModel {
                 locationName: locationName.isEmpty ? nil : locationName,
                 latitude: selectedLatitude ?? lat,
                 longitude: selectedLongitude ?? lng,
-                skillLevelMin: skillLevelMin,
-                skillLevelMax: skillLevelMax,
+                skillLevelMin: skillLevelMin > 0 ? skillLevelMin : nil,
+                skillLevelMax: nil,
                 description: description.isEmpty ? nil : description,
                 sessionType: sessionType,
                 numRounds: isRoundRobin ? numRounds : nil
@@ -61,8 +60,7 @@ class CreateGameViewModel {
         selectedLatitude = nil
         selectedLongitude = nil
         selectedDate = Date()
-        skillLevelMin = 3.0
-        skillLevelMax = 4.5
+        skillLevelMin = 0.0
         gameFormat = .doubles
         spotsAvailable = 4
         numRounds = 5

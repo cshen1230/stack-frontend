@@ -40,10 +40,17 @@ struct CreateGameView: View {
                 DatePicker("Date & Time", selection: $viewModel.selectedDate, in: Date()...)
 
                 HStack {
-                    Text("DUPR Range")
+                    Text("Minimum DUPR")
                     Spacer()
-                    Text("\(String(format: "%.1f", viewModel.skillLevelMin)) - \(String(format: "%.1f", viewModel.skillLevelMax))")
-                        .foregroundColor(.secondary)
+                    TextField("0.0", text: Binding(
+                        get: { String(format: "%.1f", viewModel.skillLevelMin) },
+                        set: { viewModel.skillLevelMin = Double($0) ?? 0.0 }
+                    ))
+                    .multilineTextAlignment(.trailing)
+                    #if os(iOS)
+                    .keyboardType(.decimalPad)
+                    #endif
+                    .frame(width: 60)
                 }
 
                 Picker("Format", selection: $viewModel.gameFormat) {
