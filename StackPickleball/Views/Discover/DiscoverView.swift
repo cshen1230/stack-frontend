@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DiscoverView: View {
     @Environment(AppState.self) private var appState
+    @Environment(DeepLinkRouter.self) private var deepLinkRouter
     @EnvironmentObject private var locationManager: LocationManager
     @State private var viewModel = DiscoverViewModel()
     @State private var selectedGame: Game?
@@ -242,6 +243,19 @@ struct DiscoverView: View {
                 )
             }
             .errorAlert($viewModel.errorMessage)
+            .onChange(of: deepLinkRouter.pendingGameId) {
+                if let gameId = deepLinkRouter.pendingGameId {
+                    deepLinkRouter.pendingGameId = nil
+                    Task {
+                        do {
+                            let game = try await GameService.fetchGame(gameId: gameId)
+                            selectedGame = game
+                        } catch {
+                            viewModel.errorMessage = "Could not load session"
+                        }
+                    }
+                }
+            }
         }
     }
 

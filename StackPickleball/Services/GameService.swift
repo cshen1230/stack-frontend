@@ -188,6 +188,96 @@ enum GameService {
         return Set(participants.map(\.gameId))
     }
 
+    /// Fetches a single game by ID (with creator profile info).
+    static func fetchGame(gameId: UUID) async throws -> Game {
+        struct GameRow: Decodable {
+            let id: UUID
+            let creatorId: UUID
+            let gameDatetime: Date
+            let locationName: String?
+            let skillLevelMin: Double?
+            let skillLevelMax: Double?
+            let spotsAvailable: Int
+            let spotsFilled: Int
+            let gameFormat: GameFormat
+            let sessionName: String?
+            let sessionType: SessionType?
+            let numRounds: Int?
+            let roundRobinStatus: RoundRobinStatus?
+            let description: String?
+            let isCancelled: Bool
+            let createdAt: Date
+            let updatedAt: Date
+            let latitude: Double?
+            let longitude: Double?
+            let users: CreatorInfo
+
+            struct CreatorInfo: Decodable {
+                let username: String?
+                let firstName: String?
+                let lastName: String?
+
+                enum CodingKeys: String, CodingKey {
+                    case username
+                    case firstName = "first_name"
+                    case lastName = "last_name"
+                }
+            }
+
+            enum CodingKeys: String, CodingKey {
+                case id, description, latitude, longitude, users
+                case creatorId = "creator_id"
+                case gameDatetime = "game_datetime"
+                case locationName = "location_name"
+                case skillLevelMin = "skill_level_min"
+                case skillLevelMax = "skill_level_max"
+                case spotsAvailable = "spots_available"
+                case spotsFilled = "spots_filled"
+                case gameFormat = "game_format"
+                case sessionName = "session_name"
+                case sessionType = "session_type"
+                case numRounds = "num_rounds"
+                case roundRobinStatus = "round_robin_status"
+                case isCancelled = "is_cancelled"
+                case createdAt = "created_at"
+                case updatedAt = "updated_at"
+            }
+        }
+
+        let row: GameRow = try await supabase
+            .from("games")
+            .select("*, users(username, first_name, last_name)")
+            .eq("id", value: gameId)
+            .single()
+            .execute()
+            .value
+
+        return Game(
+            id: row.id,
+            creatorId: row.creatorId,
+            gameDatetime: row.gameDatetime,
+            locationName: row.locationName,
+            skillLevelMin: row.skillLevelMin,
+            skillLevelMax: row.skillLevelMax,
+            spotsAvailable: row.spotsAvailable,
+            spotsFilled: row.spotsFilled,
+            gameFormat: row.gameFormat,
+            sessionName: row.sessionName,
+            sessionType: row.sessionType,
+            numRounds: row.numRounds,
+            roundRobinStatus: row.roundRobinStatus,
+            description: row.description,
+            isCancelled: row.isCancelled,
+            createdAt: row.createdAt,
+            updatedAt: row.updatedAt,
+            latitude: row.latitude,
+            longitude: row.longitude,
+            creatorUsername: row.users.username,
+            creatorFirstName: row.users.firstName,
+            creatorLastName: row.users.lastName
+        )
+    }
+
     /// Returns the current creator_id for a game.
     static func gameCreatorId(gameId: UUID) async throws -> UUID {
         struct Row: Decodable { let creatorId: UUID }
