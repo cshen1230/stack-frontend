@@ -52,54 +52,58 @@ enum RoundRobinScheduler {
         return rounds
     }
 
-    // MARK: - Doubles Schedule (Rotation + Partner Cycling)
+    // MARK: - Doubles Schedule (Circle Method for Unique Partnerships)
 
     static func generateDoublesSchedule(players: [UUID], numRounds: Int) -> [RoundSchedule] {
-        let shuffled = players.shuffled()
-        let n = shuffled.count
-        let onCourt = (n / 4) * 4
-        let numByes = n - onCourt
+        var list = players.shuffled()
+        let hasBye = list.count % 2 != 0
+        let byeId = UUID() // phantom player for odd count
+        if hasBye { list.append(byeId) }
+        let n = list.count
+        let maxUniqueRounds = n - 1
 
         var rounds: [RoundSchedule] = []
 
         for r in 0..<numRounds {
-            // Determine who sits out this round (rotate fairly)
-            var byes: [UUID] = []
-            var active: [UUID]
-            if numByes > 0 {
-                let startBye = (r * numByes) % n
-                for b in 0..<numByes {
-                    byes.append(shuffled[(startBye + b) % n])
-                }
-                active = shuffled.filter { !byes.contains($0) }
-            } else {
-                active = shuffled
+            let rotation = r % maxUniqueRounds
+
+            // Circle method: fix player[0], rotate players[1..n-1]
+            var rotated = [list[0]]
+            for i in 1..<n {
+                let idx = ((i - 1 + rotation) % (n - 1)) + 1
+                rotated.append(list[idx])
             }
 
-            // Rotate active players for partner diversity
-            let shift = r % active.count
-            let rotated = Array(active[shift...]) + Array(active[..<shift])
-
-            var matches: [MatchSlot] = []
-            let numCourts = rotated.count / 4
-
-            for c in 0..<numCourts {
-                let base = c * 4
-                let team1: [UUID]
-                let team2: [UUID]
-                // Alternate partner pairing pattern for balance
-                switch r % 3 {
-                case 0:
-                    team1 = [rotated[base], rotated[base + 1]]
-                    team2 = [rotated[base + 2], rotated[base + 3]]
-                case 1:
-                    team1 = [rotated[base], rotated[base + 2]]
-                    team2 = [rotated[base + 1], rotated[base + 3]]
-                default:
-                    team1 = [rotated[base], rotated[base + 3]]
-                    team2 = [rotated[base + 1], rotated[base + 2]]
+            // Generate partnerships by matching i with n-1-i
+            // This guarantees every pair appears exactly once across n-1 rounds
+            var partnerships: [(UUID, UUID)] = []
+            var byes: [UUID] = []
+            for i in 0..<(n / 2) {
+                let p1 = rotated[i]
+                let p2 = rotated[n - 1 - i]
+                if hasBye && (p1 == byeId || p2 == byeId) {
+                    let real = p1 == byeId ? p2 : p1
+                    byes.append(real)
+                } else {
+                    partnerships.append((p1, p2))
                 }
-                matches.append(MatchSlot(court: c + 1, team1: team1, team2: team2))
+            }
+
+            // Group partnerships into courts: each court is partnership vs partnership
+            var matches: [MatchSlot] = []
+            var court = 1
+            var idx = 0
+            while idx + 1 < partnerships.count {
+                let team1 = [partnerships[idx].0, partnerships[idx].1]
+                let team2 = [partnerships[idx + 1].0, partnerships[idx + 1].1]
+                matches.append(MatchSlot(court: court, team1: team1, team2: team2))
+                court += 1
+                idx += 2
+            }
+            // Odd number of partnerships — last pair sits out
+            if idx < partnerships.count {
+                byes.append(partnerships[idx].0)
+                byes.append(partnerships[idx].1)
             }
 
             rounds.append(RoundSchedule(roundNumber: r + 1, matches: matches, byes: byes))
