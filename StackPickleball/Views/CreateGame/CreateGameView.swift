@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CreateGameView: View {
     var sessionType: SessionType = .casual
+    var onCreated: ((CreatedSessionInfo) -> Void)?
 
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var locationManager: LocationManager
@@ -86,12 +87,12 @@ struct CreateGameView: View {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Create") {
                     Task {
-                        await viewModel.createGame(
+                        let info = await viewModel.createGame(
                             lat: locationManager.latitude,
                             lng: locationManager.longitude
                         )
-                        if viewModel.showingSuccess {
-                            dismiss()
+                        if let info {
+                            onCreated?(info)
                         }
                     }
                 }

@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct SessionTypePickerView: View {
+    var onCreated: ((CreatedSessionInfo) -> Void)?
+
     @Environment(\.dismiss) private var dismiss
     @State private var selectedType: SessionType?
 
@@ -45,7 +47,7 @@ struct SessionTypePickerView: View {
                 }
             }
             .navigationDestination(item: $selectedType) { type in
-                CreateGameView(sessionType: type)
+                CreateGameView(sessionType: type, onCreated: onCreated)
             }
         }
     }

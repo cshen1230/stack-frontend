@@ -10,6 +10,7 @@ struct DiscoverView: View {
     @State private var expandedGameId: UUID?
     @State private var showingMap = false
     @State private var showingAvailability = false
+    @State private var createdSessionInfo: CreatedSessionInfo?
 
     private let distanceOptions: [Double] = [5, 10, 20, 50]
     private var currentUserId: UUID? { appState.currentUser?.id }
@@ -224,7 +225,17 @@ struct DiscoverView: View {
                 }
             }
             .sheet(isPresented: $showingCreateGame) {
-                SessionTypePickerView()
+                SessionTypePickerView { info in
+                    showingCreateGame = false
+                    createdSessionInfo = info
+                    Task {
+                        await viewModel.loadGames(
+                            lat: locationManager.latitude,
+                            lng: locationManager.longitude,
+                            currentUserId: currentUserId
+                        )
+                    }
+                }
             }
             .sheet(isPresented: $showingAvailability) {
                 SetAvailabilitySheet(viewModel: viewModel)
@@ -250,6 +261,10 @@ struct DiscoverView: View {
                 if let game = viewModel.joinedGame {
                     JoinedSessionToast(game: game) {
                         viewModel.joinedGame = nil
+                    }
+                } else if let info = createdSessionInfo {
+                    CreatedSessionToast(info: info) {
+                        createdSessionInfo = nil
                     }
                 }
             }

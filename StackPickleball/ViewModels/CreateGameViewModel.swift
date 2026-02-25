@@ -1,5 +1,13 @@
 import SwiftUI
 
+struct CreatedSessionInfo {
+    let sessionName: String
+    let sessionType: SessionType
+    let gameFormat: GameFormat
+    let spotsAvailable: Int
+    let locationName: String?
+}
+
 @Observable
 class CreateGameViewModel {
     var sessionType: SessionType = .casual
@@ -28,7 +36,7 @@ class CreateGameViewModel {
         return GameFormat.allCases
     }
 
-    func createGame(lat: Double?, lng: Double?) async {
+    func createGame(lat: Double?, lng: Double?) async -> CreatedSessionInfo? {
         isLoading = true
         errorMessage = nil
         do {
@@ -46,12 +54,22 @@ class CreateGameViewModel {
                 sessionType: sessionType,
                 numRounds: isRoundRobin ? numRounds : nil
             )
+            let info = CreatedSessionInfo(
+                sessionName: sessionName,
+                sessionType: sessionType,
+                gameFormat: gameFormat,
+                spotsAvailable: spotsAvailable,
+                locationName: locationName.isEmpty ? nil : locationName
+            )
             showingSuccess = true
             resetForm()
+            isLoading = false
+            return info
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+        return nil
     }
 
     func resetForm() {
