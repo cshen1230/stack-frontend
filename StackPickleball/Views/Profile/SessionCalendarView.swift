@@ -5,18 +5,35 @@ struct SessionCalendarView: View {
     let currentUserId: UUID?
 
     @State private var displayedMonth = Date()
-    @State private var selectedDate: DateComponents?
+    @State private var selectedDate: String?
     @State private var selectedGame: Game?
 
     private let calendar = Calendar.current
-    private let daysOfWeek = ["M", "T", "W", "T", "F", "S", "S"]
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
+
+    // MARK: - Stable identity wrapper
+
+    private struct CalendarDay: Identifiable {
+        let id: String
+        let year: Int
+        let month: Int
+        let day: Int
+
+        var dateKey: String { "\(year)-\(month)-\(day)" }
+    }
 
     // MARK: - Computed
 
-    private var gamesByDate: [DateComponents: [Game]] {
+    private static func dateKey(year: Int, month: Int, day: Int) -> String {
+        "\(year)-\(month)-\(day)"
+    }
+
+    private var gamesByDateKey: [String: [Game]] {
         Dictionary(grouping: pastGames) { game in
-            calendar.dateComponents([.year, .month, .day], from: game.gameDatetime)
+            let y = calendar.component(.year, from: game.gameDatetime)
+            let m = calendar.component(.month, from: game.gameDatetime)
+            let d = calendar.component(.day, from: game.gameDatetime)
+            return Self.dateKey(year: y, month: m, day: d)
         }
     }
 
@@ -24,27 +41,27 @@ struct SessionCalendarView: View {
         displayedMonth.formatted(.dateTime.month(.wide).year())
     }
 
-    private var calendarDays: [DateComponents?] {
+    private var calendarDayItems: [CalendarDay] {
         guard let range = calendar.range(of: .day, in: .month, for: displayedMonth),
               let firstOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: displayedMonth))
         else { return [] }
 
         let firstWeekday = (calendar.component(.weekday, from: firstOfMonth) + 5) % 7
-        let blanks: [DateComponents?] = Array(repeating: nil, count: firstWeekday)
-
         let year = calendar.component(.year, from: displayedMonth)
         let month = calendar.component(.month, from: displayedMonth)
 
-        let days: [DateComponents?] = range.map { day in
-            DateComponents(year: year, month: month, day: day)
+        var items: [CalendarDay] = (0..<firstWeekday).map {
+            CalendarDay(id: "blank-\($0)", year: 0, month: 0, day: 0)
         }
-
-        return blanks + days
+        items += range.map { day in
+            CalendarDay(id: "\(year)-\(month)-\(day)", year: year, month: month, day: day)
+        }
+        return items
     }
 
     private var selectedGames: [Game] {
         guard let sel = selectedDate else { return [] }
-        return gamesByDate[sel] ?? []
+        return gamesByDateKey[sel] ?? []
     }
 
     // MARK: - Body
