@@ -16,6 +16,16 @@ enum FriendService {
         ).execute().value
     }
 
+    static func getSentRequests(userId: UUID) async throws -> [Friendship] {
+        try await supabase
+            .from("friendships")
+            .select()
+            .eq("user_id", value: userId)
+            .eq("status", value: "pending")
+            .execute()
+            .value
+    }
+
     // MARK: - Edge Function Requests
 
     private struct SendFriendRequestBody: Encodable {

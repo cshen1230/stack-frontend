@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct FriendsView: View {
+    @Environment(AppState.self) private var appState
     @State private var viewModel = FriendsViewModel()
 
     var body: some View {
@@ -146,9 +147,14 @@ struct FriendsView: View {
         #endif
         .task {
             await viewModel.load()
+            appState.pendingFriendRequestCount = viewModel.friendRequests.count
         }
         .refreshable {
             await viewModel.load()
+            appState.pendingFriendRequestCount = viewModel.friendRequests.count
+        }
+        .onChange(of: viewModel.friendRequests.count) {
+            appState.pendingFriendRequestCount = viewModel.friendRequests.count
         }
         .errorAlert($viewModel.errorMessage)
     }
@@ -185,4 +191,5 @@ struct FriendsView: View {
     NavigationStack {
         FriendsView()
     }
+    .environment(AppState())
 }

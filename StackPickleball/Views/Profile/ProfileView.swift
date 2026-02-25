@@ -29,6 +29,14 @@ struct ProfileView: View {
                                         .font(.system(size: 16, weight: .semibold))
                                         .foregroundColor(.primary)
                                     Spacer()
+                                    if appState.pendingFriendRequestCount > 0 {
+                                        Text("\(appState.pendingFriendRequestCount)")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .frame(minWidth: 22, minHeight: 22)
+                                            .background(Color.red)
+                                            .clipShape(Circle())
+                                    }
                                     Image(systemName: "chevron.right")
                                         .font(.system(size: 13, weight: .semibold))
                                         .foregroundColor(.secondary)
@@ -119,6 +127,7 @@ struct ProfileView: View {
             }
             .task {
                 await viewModel.loadProfile()
+                await appState.loadFriendRequestCount()
             }
             .sheet(isPresented: $showingEditProfile) {
                 EditProfileView(viewModel: viewModel)

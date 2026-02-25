@@ -15,6 +15,8 @@ struct GameDetailView: View {
     @State private var isJoining = false
     @State private var hasJoined = false
     @State private var showingCopiedToast = false
+    @State private var friendIds: Set<UUID> = []
+    @State private var pendingSentIds: Set<UUID> = []
 
     private var isParticipant: Bool {
         guard let userId = appState.currentUser?.id else { return false }
@@ -131,7 +133,19 @@ struct GameDetailView: View {
                 } else {
                     LazyVStack(spacing: 8) {
                         ForEach(participants) { participant in
-                            PlayerRow(participant: participant, isHost: participant.userId == game.creatorId)
+                            let isSelf = participant.userId == appState.currentUser?.id
+                            let isFriend = friendIds.contains(participant.userId)
+                            let isSent = pendingSentIds.contains(participant.userId)
+                            PlayerRow(
+                                participant: participant,
+                                isHost: participant.userId == game.creatorId,
+                                isSelf: isSelf,
+                                isFriend: isFriend,
+                                isSent: isSent,
+                                onAddFriend: {
+                                    Task { await sendFriendRequest(to: participant.userId) }
+                                }
+                            )
                         }
                     }
                     .padding(.horizontal, 16)
@@ -251,6 +265,7 @@ struct GameDetailView: View {
         }
         .task {
             await loadParticipants()
+            await loadFriendshipState()
         }
         .sheet(isPresented: $showingInviteFriend) {
             InviteFriendSheet(game: game)
@@ -279,6 +294,33 @@ struct GameDetailView: View {
         isJoining = false
     }
 
+    private func loadFriendshipState() async {
+        guard let userId = appState.currentUser?.id else { return }
+        do {
+            async let friends = FriendService.getFriends(userId: userId)
+            async let sentRequests = FriendService.getSentRequests(userId: userId)
+            async let incomingRequests = FriendService.getFriendRequests(userId: userId)
+            let f = try await friends
+            let sent = try await sentRequests
+            let incoming = try await incomingRequests
+            friendIds = Set(f.map(\.friendUserId))
+            // Combine outgoing (I sent) and incoming (they sent me) pending requests
+            pendingSentIds = Set(sent.map(\.friendId)).union(Set(incoming.map(\.friendUserId)))
+        } catch {
+            // non-critical — buttons just won't show friendship state
+        }
+    }
+
+    private func sendFriendRequest(to userId: UUID) async {
+        pendingSentIds.insert(userId)
+        do {
+            try await FriendService.sendFriendRequest(friendId: userId)
+        } catch {
+            pendingSentIds.remove(userId)
+            errorMessage = error.localizedDescription
+        }
+    }
+
     private func copyLink() {
         let link = "stackpickleball://session/\(game.id.uuidString)"
         #if canImport(UIKit)
@@ -300,6 +342,10 @@ struct GameDetailView: View {
 private struct PlayerRow: View {
     let participant: ParticipantWithProfile
     let isHost: Bool
+    let isSelf: Bool
+    let isFriend: Bool
+    let isSent: Bool
+    var onAddFriend: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -348,6 +394,29 @@ private struct PlayerRow: View {
             }
 
             Spacer()
+
+            // Friend action
+            if !isSelf {
+                if isFriend {
+                    HStack(spacing: 4) {
+                        Image(systemName: "person.fill.checkmark")
+                            .font(.system(size: 13))
+                        Text("Friends")
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .foregroundColor(.stackSecondaryText)
+                } else if isSent {
+                    Text("Sent")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.stackSecondaryText)
+                } else {
+                    Button(action: onAddFriend) {
+                        Image(systemName: "person.badge.plus")
+                            .font(.system(size: 18))
+                            .foregroundColor(.stackGreen)
+                    }
+                }
+            }
         }
         .padding(12)
         .background(Color.stackCardWhite)
