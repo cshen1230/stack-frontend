@@ -355,10 +355,10 @@ private struct PastSessionDetailSheet: View {
                         detailRow(icon: "person.2", label: "Players",
                                   value: "\(game.spotsFilled)/\(game.spotsAvailable)")
 
-                        if let min = game.skillLevelMin, let max = game.skillLevelMax {
+                        if let min = game.skillLevelMin {
                             Divider()
-                            detailRow(icon: "trophy", label: "DUPR Range",
-                                      value: "\(String(format: "%.1f", min)) – \(String(format: "%.1f", max))")
+                            detailRow(icon: "trophy", label: "Min DUPR",
+                                      value: "\(String(format: "%.1f", min))+")
                         }
 
                         if let desc = game.description, !desc.isEmpty {

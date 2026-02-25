@@ -2,20 +2,31 @@ import SwiftUI
 
 @Observable
 class CreateGameViewModel {
+    var sessionType: SessionType = .casual
     var sessionName = ""
     var locationName = ""
     var selectedLatitude: Double?
     var selectedLongitude: Double?
     var selectedDate = Date()
-    var skillLevelMin: Double = 3.0
-    var skillLevelMax: Double = 4.5
+    var skillLevelMin: Double = 0.0
     var gameFormat: GameFormat = .doubles
     var spotsAvailable: Int = 4
+    var numRounds: Int = 5
     var description = ""
 
     var isLoading = false
     var errorMessage: String?
     var showingSuccess = false
+
+    var isRoundRobin: Bool { sessionType == .roundRobin }
+
+    /// Formats available for the selected session type
+    var availableFormats: [GameFormat] {
+        if isRoundRobin {
+            return [.singles, .doubles, .mixedDoubles]
+        }
+        return GameFormat.allCases
+    }
 
     func createGame(lat: Double?, lng: Double?) async {
         isLoading = true
@@ -29,9 +40,11 @@ class CreateGameViewModel {
                 locationName: locationName.isEmpty ? nil : locationName,
                 latitude: selectedLatitude ?? lat,
                 longitude: selectedLongitude ?? lng,
-                skillLevelMin: skillLevelMin,
-                skillLevelMax: skillLevelMax,
-                description: description.isEmpty ? nil : description
+                skillLevelMin: skillLevelMin > 0 ? skillLevelMin : nil,
+                skillLevelMax: nil,
+                description: description.isEmpty ? nil : description,
+                sessionType: sessionType,
+                numRounds: isRoundRobin ? numRounds : nil
             )
             showingSuccess = true
             resetForm()
@@ -47,10 +60,10 @@ class CreateGameViewModel {
         selectedLatitude = nil
         selectedLongitude = nil
         selectedDate = Date()
-        skillLevelMin = 3.0
-        skillLevelMax = 4.5
+        skillLevelMin = 0.0
         gameFormat = .doubles
         spotsAvailable = 4
+        numRounds = 5
         description = ""
     }
 }

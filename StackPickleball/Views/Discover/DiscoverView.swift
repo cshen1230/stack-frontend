@@ -2,6 +2,7 @@ import SwiftUI
 
 struct DiscoverView: View {
     @Environment(AppState.self) private var appState
+    @Environment(DeepLinkRouter.self) private var deepLinkRouter
     @EnvironmentObject private var locationManager: LocationManager
     @State private var viewModel = DiscoverViewModel()
     @State private var selectedGame: Game?
@@ -216,10 +217,14 @@ struct DiscoverView: View {
                 )
             }
             .navigationDestination(item: $selectedGame) { game in
-                GameDetailView(game: game, isHost: game.creatorId == currentUserId)
+                if game.sessionType == .roundRobin {
+                    RoundRobinDetailView(game: game, isHost: game.creatorId == currentUserId)
+                } else {
+                    GameDetailView(game: game, isHost: game.creatorId == currentUserId)
+                }
             }
             .sheet(isPresented: $showingCreateGame) {
-                CreateGameView()
+                SessionTypePickerView()
             }
             .sheet(isPresented: $showingAvailability) {
                 SetAvailabilitySheet(viewModel: viewModel)
@@ -245,6 +250,19 @@ struct DiscoverView: View {
                 if let game = viewModel.joinedGame {
                     JoinedSessionToast(game: game) {
                         viewModel.joinedGame = nil
+                    }
+                }
+            }
+            .onChange(of: deepLinkRouter.pendingGameId) {
+                if let gameId = deepLinkRouter.pendingGameId {
+                    deepLinkRouter.pendingGameId = nil
+                    Task {
+                        do {
+                            let game = try await GameService.fetchGame(gameId: gameId)
+                            selectedGame = game
+                        } catch {
+                            viewModel.errorMessage = "Could not load session"
+                        }
                     }
                 }
             }

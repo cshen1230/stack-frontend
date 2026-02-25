@@ -34,15 +34,27 @@ struct GameCardView: View {
                         .font(.system(size: 13))
                         .foregroundColor(.secondary)
 
-                    if let min = game.skillLevelMin, let max = game.skillLevelMax {
-                        Text("DUPR \(String(format: "%.1f", min))–\(String(format: "%.1f", max))")
+                    if let min = game.skillLevelMin {
+                        Text("DUPR \(String(format: "%.1f", min))+")
                             .font(.system(size: 13))
                             .foregroundColor(.secondary)
                     }
 
-                    Text(game.gameFormat.displayName)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 4) {
+                        Text(game.gameFormat.displayName)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.secondary)
+
+                        if game.sessionType == .roundRobin {
+                            HStack(spacing: 2) {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                                    .font(.system(size: 9))
+                                Text("RR")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            .foregroundColor(.stackGreen)
+                        }
+                    }
                 }
             }
 

@@ -214,8 +214,8 @@ struct SessionMapView: View {
                             .font(.system(size: 13))
                             .foregroundColor(.secondary)
 
-                        if let min = game.skillLevelMin, let max = game.skillLevelMax {
-                            Text("DUPR \(String(format: "%.1f", min))–\(String(format: "%.1f", max))")
+                        if let min = game.skillLevelMin {
+                            Text("DUPR \(String(format: "%.1f", min))+")
                                 .font(.system(size: 13))
                                 .foregroundColor(.secondary)
                         }

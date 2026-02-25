@@ -81,7 +81,7 @@ struct EditProfileView: View {
                         #endif
                 }
 
-                Section("Pickleball") {
+                Section("DUPR") {
                     TextField("DUPR Rating", text: $duprRating)
                         #if os(iOS)
                         .keyboardType(.decimalPad)
