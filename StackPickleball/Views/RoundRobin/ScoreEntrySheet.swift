@@ -5,9 +5,17 @@ struct ScoreEntrySheet: View {
     let viewModel: RoundRobinViewModel
     let onDismiss: () -> Void
 
-    @State private var team1ScoreText: String = ""
-    @State private var team2ScoreText: String = ""
+    @State private var team1ScoreText: String
+    @State private var team2ScoreText: String
     @State private var isSubmitting = false
+
+    init(round: RoundRobinRound, viewModel: RoundRobinViewModel, onDismiss: @escaping () -> Void) {
+        self.round = round
+        self.viewModel = viewModel
+        self.onDismiss = onDismiss
+        self._team1ScoreText = State(initialValue: round.team1Score.map(String.init) ?? "")
+        self._team2ScoreText = State(initialValue: round.team2Score.map(String.init) ?? "")
+    }
 
     private var team1Score: Int { Int(team1ScoreText) ?? 0 }
     private var team2Score: Int { Int(team2ScoreText) ?? 0 }
@@ -78,7 +86,7 @@ struct ScoreEntrySheet: View {
                         onDismiss()
                     }
                 } label: {
-                    Text("Submit Score")
+                    Text(round.hasScore ? "Update Score" : "Submit Score")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)

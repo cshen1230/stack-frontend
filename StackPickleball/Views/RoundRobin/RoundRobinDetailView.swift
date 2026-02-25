@@ -187,9 +187,7 @@ struct RoundRobinDetailView: View {
 
                         ForEach(group.matches) { match in
                             MatchCard(match: match, viewModel: viewModel) {
-                                if !match.hasScore {
-                                    scoreRound = match
-                                }
+                                scoreRound = match
                             }
                             .padding(.horizontal, 16)
                         }
