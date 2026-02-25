@@ -182,17 +182,8 @@ struct ProfileView: View {
                         .frame(width: 1, height: 36)
 
                     statItem(
-                        label: "This Month",
-                        value: "\(sessionsThisMonth)"
-                    )
-
-                    Rectangle()
-                        .fill(Color.stackBorder)
-                        .frame(width: 1, height: 36)
-
-                    statItem(
-                        label: "Streak",
-                        value: "\(currentStreak)"
+                        label: "Friends",
+                        value: "\(viewModel.friendCount)"
                     )
                 }
                 .padding(.bottom, 4)
@@ -252,45 +243,6 @@ struct ProfileView: View {
                 .foregroundColor(.black)
         }
         .frame(maxWidth: .infinity)
-    }
-
-    // MARK: - Computed Stats
-
-    private var sessionsThisMonth: Int {
-        let cal = Calendar.current
-        let now = Date()
-        return viewModel.pastGames.filter {
-            cal.isDate($0.gameDatetime, equalTo: now, toGranularity: .month)
-        }.count
-    }
-
-    private var currentStreak: Int {
-        guard !viewModel.pastGames.isEmpty else { return 0 }
-        let cal = Calendar.current
-        // Get unique session days sorted descending
-        let uniqueDays = Set(viewModel.pastGames.map {
-            cal.startOfDay(for: $0.gameDatetime)
-        }).sorted(by: >)
-
-        var streak = 0
-        var expectedDay = cal.startOfDay(for: Date())
-
-        // If no session today, start from yesterday
-        if !uniqueDays.contains(expectedDay) {
-            guard let yesterday = cal.date(byAdding: .day, value: -1, to: expectedDay) else { return 0 }
-            expectedDay = yesterday
-        }
-
-        for day in uniqueDays {
-            if day == expectedDay {
-                streak += 1
-                guard let prev = cal.date(byAdding: .day, value: -1, to: expectedDay) else { break }
-                expectedDay = prev
-            } else if day < expectedDay {
-                break
-            }
-        }
-        return streak
     }
 
     private var avatarPlaceholder: some View {

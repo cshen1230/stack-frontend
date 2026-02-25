@@ -4,6 +4,7 @@ import SwiftUI
 class ProfileViewModel {
     var user: User?
     var pastGames: [Game] = []
+    var friendCount: Int = 0
     var isLoading = false
     var errorMessage: String?
 
@@ -14,8 +15,10 @@ class ProfileViewModel {
             guard let userId = await AuthService.currentUserId() else { return }
             async let profile = ProfileService.getProfile(userId: userId)
             async let games = GameService.userPastGames(userId: userId)
+            async let friends = FriendService.getFriends(userId: userId)
             user = try await profile
             pastGames = try await games
+            friendCount = (try? await friends.count) ?? 0
         } catch where error.isCancellation {
         } catch {
             errorMessage = error.localizedDescription
