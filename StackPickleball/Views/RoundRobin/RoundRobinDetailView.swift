@@ -334,6 +334,9 @@ private struct MatchCard: View {
                             .foregroundColor((match.team2Score ?? 0) > (match.team1Score ?? 0) ? .stackGreen : .primary)
                             .frame(maxWidth: .infinity)
                     }
+                    Text("Tap to edit")
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
                 } else {
                     Text("Tap to enter score")
                         .font(.system(size: 12))
@@ -349,6 +352,5 @@ private struct MatchCard: View {
             )
         }
         .buttonStyle(.plain)
-        .disabled(match.hasScore)
     }
 }
