@@ -65,6 +65,21 @@ struct SessionMapView: View {
                     }
                 }
 
+                // User location
+                Annotation("", coordinate: CLLocationCoordinate2D(latitude: userLatitude, longitude: userLongitude)) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.blue.opacity(0.15))
+                            .frame(width: 32, height: 32)
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 16, height: 16)
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 12, height: 12)
+                    }
+                }
+
                 // Nearby pickleball courts/parks
                 ForEach(pickleballCourts, id: \.self) { court in
                     Marker(
