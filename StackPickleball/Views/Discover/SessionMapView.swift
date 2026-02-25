@@ -12,6 +12,7 @@ struct SessionMapView: View {
     @State private var selectedGame: Game?
     @State private var position: MapCameraPosition
     @State private var pickleballCourts: [MKMapItem] = []
+    @State private var joinedGame: Game?
 
     private let userLatitude: Double
     private let userLongitude: Double
@@ -133,6 +134,13 @@ struct SessionMapView: View {
             }
         }
         .navigationBarHidden(true)
+        .overlay {
+            if let game = joinedGame {
+                JoinedSessionToast(game: game) {
+                    joinedGame = nil
+                }
+            }
+        }
     }
 
     // MARK: - Map Pin
@@ -244,7 +252,11 @@ struct SessionMapView: View {
 
                     if !isJoined {
                         if game.spotsRemaining > 0 {
-                            Button { onJoin(game) } label: {
+                            Button {
+                                onJoin(game)
+                                joinedGame = game
+                                selectedGame = nil
+                            } label: {
                                 Text("Join")
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(.white)

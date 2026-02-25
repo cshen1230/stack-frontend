@@ -70,6 +70,9 @@ struct DiscoverView: View {
                                             }
                                         },
                                         onJoin: {
+                                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                                expandedGameId = nil
+                                            }
                                             Task { await viewModel.rsvpToGame(game) }
                                         },
                                         onView: {
@@ -238,6 +241,13 @@ struct DiscoverView: View {
                 )
             }
             .errorAlert($viewModel.errorMessage)
+            .overlay {
+                if let game = viewModel.joinedGame {
+                    JoinedSessionToast(game: game) {
+                        viewModel.joinedGame = nil
+                    }
+                }
+            }
         }
     }
 

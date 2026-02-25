@@ -13,6 +13,7 @@ class DiscoverViewModel {
     var participantAvatars: [UUID: [String]] = [:]
     var isLoading = false
     var errorMessage: String?
+    var joinedGame: Game?
 
     var selectedDistance: Double = 20.0
 
@@ -113,6 +114,7 @@ class DiscoverViewModel {
                 games[index].spotsFilled += 1
             }
             joinedGameIds.insert(game.id)
+            joinedGame = game
         } catch {
             errorMessage = error.localizedDescription
             // Refresh to get accurate state on error
