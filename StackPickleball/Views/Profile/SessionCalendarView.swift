@@ -112,7 +112,7 @@ struct SessionCalendarView: View {
 
             // Day-of-week header
             LazyVGrid(columns: columns, spacing: 0) {
-                ForEach(daysOfWeek, id: \.self) { day in
+                ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
                     Text(day)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.stackGreen)
@@ -123,12 +123,12 @@ struct SessionCalendarView: View {
 
             // Day grid
             LazyVGrid(columns: columns, spacing: 6) {
-                ForEach(Array(calendarDays.enumerated()), id: \.offset) { _, dc in
-                    if let dc = dc {
-                        dayCell(for: dc)
-                    } else {
+                ForEach(calendarDayItems) { item in
+                    if item.year == 0 {
                         Color.clear
                             .frame(height: 36)
+                    } else {
+                        dayCell(for: item)
                     }
                 }
             }
@@ -153,25 +153,28 @@ struct SessionCalendarView: View {
 
     // MARK: - Day Cell
 
-    private func dayCell(for dc: DateComponents) -> some View {
-        let count = gamesByDate[dc]?.count ?? 0
-        let isSelected = selectedDate == dc
-        let today = calendar.dateComponents([.year, .month, .day], from: Date())
-        let isToday = dc == today
+    private func dayCell(for item: CalendarDay) -> some View {
+        let key = item.dateKey
+        let count = gamesByDateKey[key]?.count ?? 0
+        let isSelected = selectedDate == key
+        let now = Date()
+        let isToday = item.year == calendar.component(.year, from: now)
+            && item.month == calendar.component(.month, from: now)
+            && item.day == calendar.component(.day, from: now)
         let hasSessions = count > 0
 
         return Group {
             if hasSessions {
                 Button {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        selectedDate = selectedDate == dc ? nil : dc
+                        selectedDate = selectedDate == key ? nil : key
                     }
                 } label: {
-                    dayCellLabel(day: dc.day ?? 0, count: count, isSelected: isSelected, isToday: isToday)
+                    dayCellLabel(day: item.day, count: count, isSelected: isSelected, isToday: isToday)
                 }
                 .buttonStyle(.plain)
             } else {
-                dayCellLabel(day: dc.day ?? 0, count: 0, isSelected: false, isToday: isToday)
+                dayCellLabel(day: item.day, count: 0, isSelected: false, isToday: isToday)
             }
         }
         .frame(height: 36)
@@ -205,11 +208,15 @@ struct SessionCalendarView: View {
 
     private var expandedSessionList: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if let sel = selectedDate, let date = calendar.date(from: sel) {
-                Text(date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.black)
-                    .padding(.leading, 4)
+            if let sel = selectedDate {
+                let parts = sel.split(separator: "-").compactMap { Int($0) }
+                if parts.count == 3,
+                   let date = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])) {
+                    Text(date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.black)
+                        .padding(.leading, 4)
+                }
             }
 
             ForEach(selectedGames) { game in
