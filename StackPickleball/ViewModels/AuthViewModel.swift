@@ -8,6 +8,11 @@ class AuthViewModel {
     var errorMessage: String?
 
     func signIn() async {
+        guard !email.trimmingCharacters(in: .whitespaces).isEmpty,
+              !password.isEmpty else {
+            errorMessage = "Please enter your email and password."
+            return
+        }
         isLoading = true
         errorMessage = nil
         do {

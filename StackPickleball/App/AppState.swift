@@ -16,10 +16,12 @@ class AppState {
         authTask = Task {
             for await (event, session) in supabase.auth.authStateChanges {
                 switch event {
-                case .signedIn:
-                    isAuthenticated = true
+                case .initialSession, .signedIn, .tokenRefreshed:
                     if let userId = session?.user.id {
+                        isAuthenticated = true
                         await loadProfile(userId: userId)
+                    } else {
+                        isAuthenticated = false
                     }
                 case .signedOut:
                     isAuthenticated = false

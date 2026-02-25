@@ -78,6 +78,8 @@ struct LoginView: View {
                     .colorScheme(.light)
                 }
                 .padding(.horizontal, 24)
+                .onChange(of: viewModel.email) { viewModel.errorMessage = nil }
+                .onChange(of: viewModel.password) { viewModel.errorMessage = nil }
 
                 // Error message
                 if let error = viewModel.errorMessage {
