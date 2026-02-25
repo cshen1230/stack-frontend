@@ -1,7 +1,10 @@
 import SwiftUI
 
 struct MySessionsView: View {
+    @Binding var selectedTab: Int
+
     @Environment(AppState.self) private var appState
+    @State private var navigationPath = NavigationPath()
     @State private var sessions: [Game] = []
     @State private var lastMessages: [UUID: GameMessage] = [:]
     @State private var participantSummaries: [UUID: [ParticipantSummaryRow]] = [:]
@@ -13,7 +16,7 @@ struct MySessionsView: View {
     private var currentUserId: UUID? { appState.currentUser?.id }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             Group {
                 if isLoading {
                     ProgressView()
@@ -82,6 +85,11 @@ struct MySessionsView: View {
             }
             .refreshable {
                 await loadSessions()
+            }
+            .onChange(of: selectedTab) {
+                if selectedTab != 1 {
+                    navigationPath = NavigationPath()
+                }
             }
             .alert("Leave Session?", isPresented: Binding(
                 get: { gameToLeave != nil },

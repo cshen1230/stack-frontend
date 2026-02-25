@@ -13,7 +13,7 @@ struct TabBarView: View {
                 }
                 .tag(0)
 
-            MySessionsView()
+            MySessionsView(selectedTab: $selectedTab)
                 .tabItem {
                     Image(systemName: selectedTab == 1 ? "bubble.left.and.bubble.right.fill" : "bubble.left.and.bubble.right")
                     Text("Sessions")
