@@ -70,7 +70,7 @@ struct CreateGameView: View {
                     HStack(spacing: 6) {
                         Image(systemName: viewModel.friendsOnly ? "lock.fill" : "lock.open")
                             .foregroundColor(viewModel.friendsOnly ? .stackGreen : .secondary)
-                        Text(viewModel.friendsOnly ? "Friends Only" : "Anyone Can Join")
+                        Text("Friends Only")
                     }
                 }
                 .tint(.stackGreen)
