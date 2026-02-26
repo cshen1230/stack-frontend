@@ -25,19 +25,42 @@ struct GameDetailView: View {
 
     private var isFull: Bool { game.spotsRemaining <= 0 && !isParticipant }
 
+    private var isFriendsOnlyBlocked: Bool {
+        guard game.friendsOnly else { return false }
+        guard let userId = appState.currentUser?.id else { return true }
+        if game.creatorId == userId { return false }
+        return !friendIds.contains(game.creatorId)
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
                 // Game info card
                 VStack(alignment: .leading, spacing: 10) {
-                    // Format badge
-                    Text(game.gameFormat.displayName)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.stackGreen)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(Color.stackBadgeBg)
-                        .cornerRadius(8)
+                    // Format badge + Friends Only badge
+                    HStack(spacing: 6) {
+                        Text(game.gameFormat.displayName)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.stackGreen)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Color.stackBadgeBg)
+                            .cornerRadius(8)
+
+                        if game.friendsOnly {
+                            HStack(spacing: 3) {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 10))
+                                Text("Friends Only")
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                            .foregroundColor(.orange)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Color.orange.opacity(0.12))
+                            .cornerRadius(8)
+                        }
+                    }
 
                     // Date & Time
                     HStack(spacing: 6) {
@@ -153,26 +176,42 @@ struct GameDetailView: View {
 
                 // Join button — for non-participants
                 if !isParticipant && !isLoading {
-                    Button {
-                        Task { await joinSession() }
-                    } label: {
+                    if isFriendsOnlyBlocked {
                         HStack(spacing: 8) {
-                            if isJoining {
-                                ProgressView()
-                                    .tint(.white)
-                            }
-                            Text(isFull ? "Session Full" : "Join Session")
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 15))
+                            Text("Friends Only")
                                 .font(.system(size: 17, weight: .bold))
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
-                        .background(isFull ? Color.gray : Color.stackGreen)
+                        .background(Color.gray)
                         .cornerRadius(14)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 24)
+                    } else {
+                        Button {
+                            Task { await joinSession() }
+                        } label: {
+                            HStack(spacing: 8) {
+                                if isJoining {
+                                    ProgressView()
+                                        .tint(.white)
+                                }
+                                Text(isFull ? "Session Full" : "Join Session")
+                                    .font(.system(size: 17, weight: .bold))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(isFull ? Color.gray : Color.stackGreen)
+                            .cornerRadius(14)
+                        }
+                        .disabled(isJoining || isFull)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 24)
                     }
-                    .disabled(isJoining || isFull)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 24)
                 }
 
                 // Invite friends button — only for participants when spots remain

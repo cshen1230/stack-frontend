@@ -19,6 +19,7 @@ struct Game: Identifiable, Codable, Sendable, Hashable {
     var roundRobinStatus: RoundRobinStatus?
     var description: String?
     var isCancelled: Bool
+    var friendsOnly: Bool
     let createdAt: Date
     var updatedAt: Date
 
@@ -63,6 +64,7 @@ struct Game: Identifiable, Codable, Sendable, Hashable {
         case roundRobinStatus = "round_robin_status"
         case description
         case isCancelled = "is_cancelled"
+        case friendsOnly = "friends_only"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
         case latitude

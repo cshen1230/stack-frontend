@@ -22,6 +22,7 @@ enum GameService {
         var description: String?
         var session_type: String?
         var num_rounds: Int?
+        var friends_only: Bool
     }
 
     static func createGame(
@@ -36,7 +37,8 @@ enum GameService {
         skillLevelMax: Double?,
         description: String?,
         sessionType: SessionType = .casual,
-        numRounds: Int? = nil
+        numRounds: Int? = nil,
+        friendsOnly: Bool = false
     ) async throws {
         let session = try await supabase.auth.session
         let headers = ["Authorization": "Bearer \(session.accessToken)"]
@@ -52,7 +54,8 @@ enum GameService {
             skill_level_max: skillLevelMax,
             description: description,
             session_type: sessionType.rawValue,
-            num_rounds: numRounds
+            num_rounds: numRounds,
+            friends_only: friendsOnly
         )
         try await supabase.functions.invoke("create-game", options: .init(headers: headers, body: request))
     }
@@ -206,6 +209,7 @@ enum GameService {
             let roundRobinStatus: RoundRobinStatus?
             let description: String?
             let isCancelled: Bool
+            let friendsOnly: Bool
             let createdAt: Date
             let updatedAt: Date
             let latitude: Double?
@@ -226,6 +230,7 @@ enum GameService {
 
             enum CodingKeys: String, CodingKey {
                 case id, description, latitude, longitude, users
+                case friendsOnly = "friends_only"
                 case creatorId = "creator_id"
                 case gameDatetime = "game_datetime"
                 case locationName = "location_name"
@@ -268,6 +273,7 @@ enum GameService {
             roundRobinStatus: row.roundRobinStatus,
             description: row.description,
             isCancelled: row.isCancelled,
+            friendsOnly: row.friendsOnly,
             createdAt: row.createdAt,
             updatedAt: row.updatedAt,
             latitude: row.latitude,

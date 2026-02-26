@@ -65,6 +65,15 @@ struct CreateGameView: View {
                 if viewModel.isRoundRobin {
                     Stepper("Rounds: \(viewModel.numRounds)", value: $viewModel.numRounds, in: 1...30)
                 }
+
+                Toggle(isOn: $viewModel.friendsOnly) {
+                    HStack(spacing: 6) {
+                        Image(systemName: viewModel.friendsOnly ? "lock.fill" : "lock.open")
+                            .foregroundColor(viewModel.friendsOnly ? .stackGreen : .secondary)
+                        Text(viewModel.friendsOnly ? "Friends Only" : "Anyone Can Join")
+                    }
+                }
+                .tint(.stackGreen)
             }
 
             Section("Additional Info") {

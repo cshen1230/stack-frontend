@@ -21,6 +21,7 @@ class CreateGameViewModel {
     var spotsAvailable: Int = 4
     var numRounds: Int = 5
     var description = ""
+    var friendsOnly = false
 
     var isLoading = false
     var errorMessage: String?
@@ -52,7 +53,8 @@ class CreateGameViewModel {
                 skillLevelMax: nil,
                 description: description.isEmpty ? nil : description,
                 sessionType: sessionType,
-                numRounds: isRoundRobin ? numRounds : nil
+                numRounds: isRoundRobin ? numRounds : nil,
+                friendsOnly: friendsOnly
             )
             let info = CreatedSessionInfo(
                 sessionName: sessionName,
@@ -83,5 +85,6 @@ class CreateGameViewModel {
         spotsAvailable = 4
         numRounds = 5
         description = ""
+        friendsOnly = false
     }
 }

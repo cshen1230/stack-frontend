@@ -24,10 +24,17 @@ struct GameCardView: View {
                         .cornerRadius(4)
                 }
 
-                Text(game.sessionName ?? game.creatorDisplayName)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
+                HStack(spacing: 5) {
+                    if game.friendsOnly {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 13))
+                            .foregroundColor(.orange)
+                    }
+                    Text(game.sessionName ?? game.creatorDisplayName)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.primary)
+                        .lineLimit(2)
+                }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(game.spotsFilled)/\(game.spotsAvailable) spots")
