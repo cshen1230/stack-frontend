@@ -52,181 +52,257 @@ enum RoundRobinScheduler {
         return rounds
     }
 
-    // MARK: - Doubles Schedule (Circle Method + Opponent-Balanced Court Assignment)
+    // MARK: - Doubles Schedule (Circle Method + Exhaustive Opponent Balancing)
 
     static func generateDoublesSchedule(players: [UUID], numRounds: Int) -> [RoundSchedule] {
         var list = players.shuffled()
         let hasBye = list.count % 2 != 0
-        let byeId = UUID() // phantom player for odd count
+        let byeId = UUID()
         if hasBye { list.append(byeId) }
         let n = list.count
         let maxUniqueRounds = n - 1
 
-        // Track opponent counts across all rounds for balancing
-        var opponentCounts: [UUID: [UUID: Int]] = [:]
-
-        var rounds: [RoundSchedule] = []
+        // Step 1: Generate all rounds' partnerships via circle method (1-factorization)
+        var allRoundPartnerships: [[(UUID, UUID)]] = []
+        var allRoundByes: [[UUID]] = []
 
         for r in 0..<numRounds {
             let rotation = r % maxUniqueRounds
-
-            // Circle method: fix player[0], rotate players[1..n-1]
             var rotated = [list[0]]
             for i in 1..<n {
                 let idx = ((i - 1 + rotation) % (n - 1)) + 1
                 rotated.append(list[idx])
             }
 
-            // Generate partnerships by matching i with n-1-i
-            // This guarantees every pair appears exactly once across n-1 rounds
             var partnerships: [(UUID, UUID)] = []
             var byes: [UUID] = []
             for i in 0..<(n / 2) {
                 let p1 = rotated[i]
                 let p2 = rotated[n - 1 - i]
                 if hasBye && (p1 == byeId || p2 == byeId) {
-                    let real = p1 == byeId ? p2 : p1
-                    byes.append(real)
+                    byes.append(p1 == byeId ? p2 : p1)
                 } else {
                     partnerships.append((p1, p2))
                 }
             }
+            allRoundPartnerships.append(partnerships)
+            allRoundByes.append(byes)
+        }
 
-            // Optimally assign partnerships to courts to balance opponents
-            let bestSplit = bestCourtAssignment(partnerships: partnerships, opponentCounts: opponentCounts)
+        // Step 2: For each round, compute all possible court splits
+        let allRoundSplits = allRoundPartnerships.map { courtSplitsForRound($0) }
 
+        // Step 3: Find optimal combination across all rounds
+        let bestChoices: [Int]
+        let totalCombinations = allRoundSplits.reduce(1) { $0 * max($1.count, 1) }
+
+        if totalCombinations <= 200_000 {
+            // Exhaustive search — enumerate all combinations
+            bestChoices = exhaustiveSearch(
+                allRoundSplits: allRoundSplits,
+                allPlayers: list.filter { $0 != byeId }
+            )
+        } else {
+            // Greedy fallback for large search spaces
+            bestChoices = greedySearch(allRoundSplits: allRoundSplits)
+        }
+
+        // Step 4: Build final schedule from best choices
+        var rounds: [RoundSchedule] = []
+        for r in 0..<numRounds {
+            let split = allRoundSplits[r][bestChoices[r]]
             var matches: [MatchSlot] = []
             var court = 1
-            for (team1Pair, team2Pair) in bestSplit.matches {
-                let team1 = [team1Pair.0, team1Pair.1]
-                let team2 = [team2Pair.0, team2Pair.1]
-                matches.append(MatchSlot(court: court, team1: team1, team2: team2))
+            for (team1Pair, team2Pair) in split.matches {
+                matches.append(MatchSlot(
+                    court: court,
+                    team1: [team1Pair.0, team1Pair.1],
+                    team2: [team2Pair.0, team2Pair.1]
+                ))
                 court += 1
             }
-            // Odd number of partnerships — last pair sits out
-            for byePair in bestSplit.byes {
+            var byes = allRoundByes[r]
+            for byePair in split.byes {
                 byes.append(byePair.0)
                 byes.append(byePair.1)
             }
-
-            // Update opponent counts for this round's matches
-            for match in matches {
-                for p1 in match.team1 {
-                    for p2 in match.team2 {
-                        opponentCounts[p1, default: [:]][p2, default: 0] += 1
-                        opponentCounts[p2, default: [:]][p1, default: 0] += 1
-                    }
-                }
-            }
-
             rounds.append(RoundSchedule(roundNumber: r + 1, matches: matches, byes: byes))
         }
         return rounds
     }
 
-    // MARK: - Court Assignment Optimizer
+    // MARK: - Court Split Types
 
     private struct CourtSplit {
         let matches: [((UUID, UUID), (UUID, UUID))]
         let byes: [(UUID, UUID)]
     }
 
-    /// Try all ways to pair partnerships into courts and pick the one
-    /// that minimizes the maximum opponent-pair count.
-    private static func bestCourtAssignment(
-        partnerships: [(UUID, UUID)],
-        opponentCounts: [UUID: [UUID: Int]]
-    ) -> CourtSplit {
-        let allSplits = generateAllCourtSplits(partnerships: partnerships)
-        guard !allSplits.isEmpty else {
-            return CourtSplit(matches: [], byes: partnerships)
-        }
+    // MARK: - Exhaustive Search
 
-        var bestSplit = allSplits[0]
-        var bestScore = evaluateSplit(allSplits[0], opponentCounts: opponentCounts)
+    /// Enumerate all combinations of court splits across all rounds.
+    /// Score each by opponent balance: minimize (max - min), then std dev.
+    private static func exhaustiveSearch(
+        allRoundSplits: [[CourtSplit]],
+        allPlayers: [UUID]
+    ) -> [Int] {
+        let numRounds = allRoundSplits.count
+        let splitCounts = allRoundSplits.map { $0.count }
+        let totalCombinations = splitCounts.reduce(1, *)
 
-        for split in allSplits.dropFirst() {
-            let score = evaluateSplit(split, opponentCounts: opponentCounts)
-            if score < bestScore {
-                bestScore = score
-                bestSplit = split
+        var bestChoices = Array(repeating: 0, count: numRounds)
+        var bestMaxMinDiff = Int.max
+        var bestSumSquared = Int.max
+
+        // Iterate through all combinations using mixed-radix counting
+        var currentChoices = Array(repeating: 0, count: numRounds)
+
+        for _ in 0..<totalCombinations {
+            // Score this combination
+            let (maxMinDiff, sumSquared) = scoreCombination(
+                choices: currentChoices,
+                allRoundSplits: allRoundSplits,
+                allPlayers: allPlayers
+            )
+
+            if maxMinDiff < bestMaxMinDiff ||
+                (maxMinDiff == bestMaxMinDiff && sumSquared < bestSumSquared) {
+                bestMaxMinDiff = maxMinDiff
+                bestSumSquared = sumSquared
+                bestChoices = currentChoices
             }
-        }
 
-        return bestSplit
-    }
-
-    /// Score a split: lower is better. Primary: minimize max opponent count.
-    /// Secondary: minimize sum of squared opponent counts (spread evenly).
-    private static func evaluateSplit(
-        _ split: CourtSplit,
-        opponentCounts: [UUID: [UUID: Int]]
-    ) -> (Int, Int) {
-        var maxCount = 0
-        var sumSquared = 0
-
-        for (team1, team2) in split.matches {
-            let team1Players = [team1.0, team1.1]
-            let team2Players = [team2.0, team2.1]
-            for p1 in team1Players {
-                for p2 in team2Players {
-                    let current = opponentCounts[p1]?[p2] ?? 0
-                    let newCount = current + 1
-                    maxCount = max(maxCount, newCount)
-                    sumSquared += newCount * newCount
+            // Increment mixed-radix counter
+            var carry = true
+            for r in (0..<numRounds).reversed() {
+                if carry {
+                    currentChoices[r] += 1
+                    if currentChoices[r] >= splitCounts[r] {
+                        currentChoices[r] = 0
+                    } else {
+                        carry = false
+                    }
                 }
             }
         }
 
-        return (maxCount, sumSquared)
+        return bestChoices
     }
 
-    /// Generate all ways to split an array of partnerships into pairs (courts).
-    /// For N partnerships, this produces all perfect matchings of the partnerships.
-    /// E.g. for 4 partnerships [A,B,C,D]: (A vs B, C vs D), (A vs C, B vs D), (A vs D, B vs C)
-    private static func generateAllCourtSplits(
-        partnerships: [(UUID, UUID)]
-    ) -> [CourtSplit] {
-        guard partnerships.count >= 2 else {
-            // 0 or 1 partnerships — all sit out
-            return [CourtSplit(matches: [], byes: partnerships)]
+    /// Score a full combination: build opponent matrix, return (max-min, sumSquared).
+    private static func scoreCombination(
+        choices: [Int],
+        allRoundSplits: [[CourtSplit]],
+        allPlayers: [UUID]
+    ) -> (Int, Int) {
+        var counts: [UUID: [UUID: Int]] = [:]
+
+        for (r, choice) in choices.enumerated() {
+            let split = allRoundSplits[r][choice]
+            for (team1, team2) in split.matches {
+                let t1 = [team1.0, team1.1]
+                let t2 = [team2.0, team2.1]
+                for p1 in t1 {
+                    for p2 in t2 {
+                        counts[p1, default: [:]][p2, default: 0] += 1
+                        counts[p2, default: [:]][p1, default: 0] += 1
+                    }
+                }
+            }
         }
 
+        // Collect all pairwise opponent counts
+        var allCounts: [Int] = []
+        for i in 0..<allPlayers.count {
+            for j in (i + 1)..<allPlayers.count {
+                let c = counts[allPlayers[i]]?[allPlayers[j]] ?? 0
+                allCounts.append(c)
+            }
+        }
+
+        guard !allCounts.isEmpty else { return (0, 0) }
+
+        let maxC = allCounts.max() ?? 0
+        let minC = allCounts.min() ?? 0
+        let sumSquared = allCounts.reduce(0) { $0 + $1 * $1 }
+
+        return (maxC - minC, sumSquared)
+    }
+
+    // MARK: - Greedy Fallback
+
+    /// Round-by-round greedy: pick split that minimizes max opponent count so far.
+    private static func greedySearch(allRoundSplits: [[CourtSplit]]) -> [Int] {
+        var opponentCounts: [UUID: [UUID: Int]] = [:]
+        var choices: [Int] = []
+
+        for splits in allRoundSplits {
+            var bestIdx = 0
+            var bestMax = Int.max
+            var bestSumSq = Int.max
+
+            for (idx, split) in splits.enumerated() {
+                var tempMax = 0
+                var tempSumSq = 0
+                for (team1, team2) in split.matches {
+                    for p1 in [team1.0, team1.1] {
+                        for p2 in [team2.0, team2.1] {
+                            let c = (opponentCounts[p1]?[p2] ?? 0) + 1
+                            tempMax = max(tempMax, c)
+                            tempSumSq += c * c
+                        }
+                    }
+                }
+                if tempMax < bestMax || (tempMax == bestMax && tempSumSq < bestSumSq) {
+                    bestMax = tempMax
+                    bestSumSq = tempSumSq
+                    bestIdx = idx
+                }
+            }
+
+            // Apply chosen split to running counts
+            let chosen = splits[bestIdx]
+            for (team1, team2) in chosen.matches {
+                for p1 in [team1.0, team1.1] {
+                    for p2 in [team2.0, team2.1] {
+                        opponentCounts[p1, default: [:]][p2, default: 0] += 1
+                        opponentCounts[p2, default: [:]][p1, default: 0] += 1
+                    }
+                }
+            }
+            choices.append(bestIdx)
+        }
+        return choices
+    }
+
+    // MARK: - Court Split Generation
+
+    /// Generate all ways to split partnerships into courts (pairs of partnerships).
+    private static func courtSplitsForRound(_ partnerships: [(UUID, UUID)]) -> [CourtSplit] {
+        guard partnerships.count >= 2 else {
+            return [CourtSplit(matches: [], byes: partnerships)]
+        }
         var results: [CourtSplit] = []
-        generateSplitsRecursive(
-            remaining: partnerships,
-            currentMatches: [],
-            results: &results
-        )
+        generateSplitsRecursive(remaining: partnerships, current: [], results: &results)
         return results
     }
 
-    /// Recursively generate all perfect matchings of partnerships into courts.
-    /// Fix the first partnership, try pairing it with each other, recurse on the rest.
     private static func generateSplitsRecursive(
         remaining: [(UUID, UUID)],
-        currentMatches: [((UUID, UUID), (UUID, UUID))],
+        current: [((UUID, UUID), (UUID, UUID))],
         results: inout [CourtSplit]
     ) {
         if remaining.count < 2 {
-            // 0 remaining = perfect split, 1 remaining = that pair gets a bye
-            results.append(CourtSplit(matches: currentMatches, byes: remaining))
+            results.append(CourtSplit(matches: current, byes: remaining))
             return
         }
-
         let first = remaining[0]
         let rest = Array(remaining.dropFirst())
-
         for i in 0..<rest.count {
-            let partner = rest[i]
-            var nextRemaining = rest
-            nextRemaining.remove(at: i)
-
-            generateSplitsRecursive(
-                remaining: nextRemaining,
-                currentMatches: currentMatches + [(first, partner)],
-                results: &results
-            )
+            let opponent = rest[i]
+            var next = rest
+            next.remove(at: i)
+            generateSplitsRecursive(remaining: next, current: current + [(first, opponent)], results: &results)
         }
     }
 
