@@ -163,10 +163,16 @@ struct ProfileView: View {
                         .fill(Color.stackBorder)
                         .frame(width: 1, height: 36)
 
-                    statItem(
-                        label: "Friends",
-                        value: "\(viewModel.friendCount)"
-                    )
+                    NavigationLink {
+                        FriendsView()
+                    } label: {
+                        statItem(
+                            label: "Friends",
+                            value: "\(viewModel.friendCount)"
+                        )
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(.bottom, 4)
             }
@@ -242,56 +248,12 @@ struct ProfileView: View {
 
     private func friendsSection(proxy: ScrollViewProxy) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Text("Friends")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.black)
-                    .padding(.leading, 4)
+            Text("Friends")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.black)
+                .padding(.leading, 4)
 
-                Spacer()
-
-                NavigationLink {
-                    FriendsView()
-                } label: {
-                    HStack(spacing: 6) {
-                        Text("View Friends")
-                            .font(.system(size: 14, weight: .semibold))
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12, weight: .semibold))
-                    }
-                    .foregroundColor(.stackGreen)
-                }
-            }
-
-            VStack(spacing: 10) {
-                Button {
-                    guard !friendsViewModel.friendRequests.isEmpty else { return }
-                    withAnimation(.easeOut(duration: 0.25)) {
-                        proxy.scrollTo(friendRequestsScrollId, anchor: .top)
-                    }
-                } label: {
-                    quickActionRow(
-                        title: "Friend Requests",
-                        subtitle: friendsViewModel.friendRequests.isEmpty
-                            ? "No pending requests"
-                            : "\(friendsViewModel.friendRequests.count) pending",
-                        systemImage: "person.crop.circle.badge.plus",
-                        trailingCount: friendsViewModel.friendRequests.isEmpty ? nil : friendsViewModel.friendRequests.count
-                    )
-                }
-                .buttonStyle(.plain)
-
-                NavigationLink {
-                    FriendsView()
-                } label: {
-                    quickActionRow(
-                        title: "View Friends",
-                        subtitle: "See your friends and add more",
-                        systemImage: "person.2"
-                    )
-                }
-                .buttonStyle(.plain)
-            }
+            friendsQuickActionsCard(proxy: proxy)
 
             if !friendsViewModel.friendRequests.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
@@ -327,7 +289,62 @@ struct ProfileView: View {
         }
     }
 
-    private func quickActionRow(
+    private func friendsQuickActionsCard(proxy: ScrollViewProxy) -> some View {
+        VStack(spacing: 0) {
+            Button {
+                withAnimation(.easeOut(duration: 0.25)) {
+                    proxy.scrollTo(friendRequestsScrollId, anchor: .top)
+                }
+            } label: {
+                quickActionRowContent(
+                    title: "Friend Requests",
+                    subtitle: friendsViewModel.friendRequests.isEmpty
+                        ? "No pending requests"
+                        : "\(friendsViewModel.friendRequests.count) pending",
+                    systemImage: "person.crop.circle.badge.plus",
+                    trailingCount: friendsViewModel.friendRequests.isEmpty ? nil : friendsViewModel.friendRequests.count
+                )
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+            }
+            .buttonStyle(.plain)
+            .disabled(friendsViewModel.friendRequests.isEmpty)
+            .opacity(friendsViewModel.friendRequests.isEmpty ? 0.6 : 1)
+
+            Divider()
+                .padding(.leading, 14 + 44 + 12) // left padding + icon + spacing
+
+            NavigationLink {
+                FriendsView()
+            } label: {
+                quickActionRowContent(
+                    title: "View Friends",
+                    subtitle: "See your friends and add more",
+                    systemImage: "person.2"
+                )
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+            }
+            .buttonStyle(.plain)
+        }
+        .background(Color.white)
+        .cornerRadius(18)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.black, lineWidth: 1)
+        )
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color.stackGreen)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(Color.black, lineWidth: 1)
+                )
+                .offset(x: 3, y: 4)
+        )
+    }
+
+    private func quickActionRowContent(
         title: String,
         subtitle: String,
         systemImage: String,
@@ -368,22 +385,6 @@ struct ProfileView: View {
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundColor(.stackSecondaryText)
         }
-        .padding(14)
-        .background(Color.white)
-        .cornerRadius(18)
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.black, lineWidth: 1)
-        )
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color.stackGreen)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color.black, lineWidth: 1)
-                )
-                .offset(x: 3, y: 4)
-        )
     }
 
     private func friendRequestRow(_ request: FriendRow) -> some View {
