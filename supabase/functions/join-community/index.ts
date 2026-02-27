@@ -30,59 +30,60 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { name, member_ids, visibility } = body;
+    const { group_chat_id } = body;
 
-    if (!name || typeof name !== "string" || name.trim().length === 0) {
+    if (!group_chat_id) {
       return new Response(
-        JSON.stringify({ error: "name is required" }),
+        JSON.stringify({ error: "group_chat_id is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    if (!member_ids || !Array.isArray(member_ids) || member_ids.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "At least one member_id is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    // Validate visibility if provided
-    const validVisibilities = ["public", "invite_only", "private"];
-    const chatVisibility = visibility && validVisibilities.includes(visibility) ? visibility : "private";
-
-    // Create the group chat (admin client bypasses RLS)
-    const { data: groupChat, error: chatError } = await admin
+    // Fetch community and verify it is public
+    const { data: community, error: fetchError } = await admin
       .from("group_chats")
-      .insert({ name: name.trim(), created_by: user.id, visibility: chatVisibility })
-      .select()
+      .select("id, visibility")
+      .eq("id", group_chat_id)
       .single();
 
-    if (chatError) throw chatError;
-
-    // Add creator as admin
-    const members = [
-      { group_chat_id: groupChat.id, user_id: user.id, role: "admin" },
-    ];
-
-    // Add other members
-    for (const memberId of member_ids) {
-      if (memberId !== user.id) {
-        members.push({
-          group_chat_id: groupChat.id,
-          user_id: memberId,
-          role: "member",
-        });
-      }
+    if (fetchError || !community) {
+      return new Response(
+        JSON.stringify({ error: "Community not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    const { error: membersError } = await admin
-      .from("group_chat_members")
-      .insert(members);
+    if (community.visibility !== "public") {
+      return new Response(
+        JSON.stringify({ error: "This community requires an invite to join" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
-    if (membersError) throw membersError;
+    // Check if user is already a member
+    const { data: existing } = await admin
+      .from("group_chat_members")
+      .select("id")
+      .eq("group_chat_id", group_chat_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existing) {
+      return new Response(
+        JSON.stringify({ error: "Already a member" }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Add user as member
+    const { error: insertError } = await admin
+      .from("group_chat_members")
+      .insert({ group_chat_id, user_id: user.id, role: "member" });
+
+    if (insertError) throw insertError;
 
     return new Response(
-      JSON.stringify({ success: true, group_chat_id: groupChat.id }),
+      JSON.stringify({ success: true }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {

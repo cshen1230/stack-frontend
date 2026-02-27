@@ -8,6 +8,7 @@ struct GroupChatsListView: View {
     @State private var navigationPath = NavigationPath()
     @State private var showingCreateSheet = false
     @State private var searchText = ""
+    @State private var searchTask: Task<Void, Never>?
 
     private var filteredChats: [GroupChat] {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -24,7 +25,7 @@ struct GroupChatsListView: View {
                 if viewModel.isLoading && viewModel.groupChats.isEmpty {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else if viewModel.groupChats.isEmpty {
+                } else if viewModel.groupChats.isEmpty && viewModel.discoverableResults.isEmpty {
                     EmptyStateView(
                         icon: "bubble.left.and.text.bubble.right",
                         title: "No Communities Yet",
@@ -34,34 +35,71 @@ struct GroupChatsListView: View {
                     )
                 } else {
                     List {
-                        ForEach(filteredChats) { groupChat in
-                            ZStack {
-                                NavigationLink(value: groupChat) { EmptyView() }
-                                    .opacity(0)
-                                GroupChatRow(groupChat: groupChat)
-                            }
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button(role: .destructive) {
-                                    if groupChat.createdBy == appState.currentUser?.id && groupChat.gameId == nil {
-                                        Task { await viewModel.deleteGroupChat(groupChat) }
-                                    } else {
-                                        Task { await viewModel.leaveGroupChat(groupChat) }
+                        if !filteredChats.isEmpty {
+                            ForEach(filteredChats) { groupChat in
+                                ZStack {
+                                    NavigationLink(value: groupChat) { EmptyView() }
+                                        .opacity(0)
+                                    GroupChatRow(groupChat: groupChat)
+                                }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive) {
+                                        if groupChat.createdBy == appState.currentUser?.id && groupChat.gameId == nil {
+                                            Task { await viewModel.deleteGroupChat(groupChat) }
+                                        } else {
+                                            Task { await viewModel.leaveGroupChat(groupChat) }
+                                        }
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
                                     }
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                                .tint(.red)
+                                    .tint(.red)
 
-                                Button {
-                                    // Archive / mute placeholder
-                                } label: {
-                                    Label("Mute", systemImage: "bell.slash")
+                                    Button {
+                                        // Archive / mute placeholder
+                                    } label: {
+                                        Label("Mute", systemImage: "bell.slash")
+                                    }
+                                    .tint(Color(.systemGray))
                                 }
-                                .tint(Color(.systemGray))
+                                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                                .listRowSeparator(.visible)
+                                .listRowSeparatorTint(Color(.separator).opacity(0.3))
+                                .listRowBackground(Color(.systemBackground))
                             }
-                            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                            .listRowSeparator(.visible)
-                            .listRowSeparatorTint(Color(.separator).opacity(0.3))
+                        }
+
+                        // Discover section
+                        if !viewModel.discoverableResults.isEmpty {
+                            Section {
+                                ForEach(viewModel.discoverableResults) { community in
+                                    DiscoverableCommunityRow(community: community) {
+                                        Task {
+                                            await viewModel.joinCommunity(community)
+                                            if let joined = viewModel.groupChats.first(where: { $0.id == community.id }) {
+                                                navigationPath.append(joined)
+                                            }
+                                        }
+                                    }
+                                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                                    .listRowSeparator(.visible)
+                                    .listRowSeparatorTint(Color(.separator).opacity(0.3))
+                                    .listRowBackground(Color(.systemBackground))
+                                }
+                            } header: {
+                                Text("Discover")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.stackSecondaryText)
+                                    .textCase(nil)
+                            }
+                        }
+
+                        if viewModel.isSearching {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                    .padding(.vertical, 12)
+                                Spacer()
+                            }
                             .listRowBackground(Color(.systemBackground))
                         }
                     }
@@ -102,6 +140,19 @@ struct GroupChatsListView: View {
             }
             .refreshable {
                 await viewModel.load()
+            }
+            .onChange(of: searchText) {
+                searchTask?.cancel()
+                let query = searchText
+                if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    viewModel.discoverableResults = []
+                    return
+                }
+                searchTask = Task {
+                    try? await Task.sleep(nanoseconds: 400_000_000)
+                    guard !Task.isCancelled else { return }
+                    await viewModel.searchDiscoverable(query: query)
+                }
             }
             .onChange(of: selectedTab) {
                 if selectedTab != 2 {
@@ -255,6 +306,99 @@ private struct GroupChatRow: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM d"
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - Discoverable Community Row
+
+private struct DiscoverableCommunityRow: View {
+    let community: GroupChat
+    let onJoin: () -> Void
+
+    private var avatarColor: Color {
+        let colors: [Color] = [
+            .red, .orange, .green, .blue, .purple, .pink,
+            Color(.systemTeal), Color(.systemIndigo),
+            Color(red: 0.9, green: 0.3, blue: 0.3),
+            Color(red: 0.2, green: 0.6, blue: 0.4),
+        ]
+        let hash = abs(community.name.hashValue)
+        return colors[hash % colors.count]
+    }
+
+    private var initials: String {
+        let words = community.name.split(separator: " ")
+        if words.count >= 2 {
+            return String(words[0].prefix(1) + words[1].prefix(1)).uppercased()
+        }
+        return String(community.name.prefix(2)).uppercased()
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            // Avatar
+            if let firstUrl = community.memberAvatarUrls?.first,
+               let imageURL = URL(string: firstUrl) {
+                AsyncImage(url: imageURL) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    initialsAvatar
+                }
+                .frame(width: 48, height: 48)
+                .clipShape(Circle())
+            } else {
+                initialsAvatar
+            }
+
+            // Name + member count
+            VStack(alignment: .leading, spacing: 3) {
+                Text(community.name)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+
+                HStack(spacing: 4) {
+                    Image(systemName: "person.2")
+                        .font(.system(size: 11))
+                    Text("\(community.memberCount ?? 0) members")
+                        .font(.system(size: 13))
+                }
+                .foregroundColor(.stackSecondaryText)
+            }
+
+            Spacer()
+
+            // Join button or Invite Only label
+            if community.visibility == .public {
+                Button(action: onJoin) {
+                    Text("Join")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 7)
+                        .background(Color.stackGreen)
+                        .cornerRadius(18)
+                }
+            } else {
+                HStack(spacing: 4) {
+                    Image(systemName: "lock.open")
+                        .font(.system(size: 11))
+                    Text("Invite Only")
+                        .font(.system(size: 13, weight: .medium))
+                }
+                .foregroundColor(.stackSecondaryText)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+    }
+
+    private var initialsAvatar: some View {
+        Text(initials)
+            .font(.system(size: 16, weight: .bold))
+            .foregroundColor(.white)
+            .frame(width: 48, height: 48)
+            .background(Circle().fill(avatarColor))
     }
 }
 

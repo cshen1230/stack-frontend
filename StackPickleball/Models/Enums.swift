@@ -71,3 +71,33 @@ enum GroupChatMessageType: String, Codable, Sendable {
     case sessionShare = "session_share"
     case system = "system"
 }
+
+enum CommunityVisibility: String, Codable, Sendable, CaseIterable {
+    case `public` = "public"
+    case inviteOnly = "invite_only"
+    case `private` = "private"
+
+    var displayName: String {
+        switch self {
+        case .public: return "Public"
+        case .inviteOnly: return "Invite Only"
+        case .private: return "Private"
+        }
+    }
+
+    var description: String {
+        switch self {
+        case .public: return "Anyone can find and join"
+        case .inviteOnly: return "Findable, but invite required"
+        case .private: return "Hidden, invite required"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .public: return "globe"
+        case .inviteOnly: return "lock.open"
+        case .private: return "lock"
+        }
+    }
+}

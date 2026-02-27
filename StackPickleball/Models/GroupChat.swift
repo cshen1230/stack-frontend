@@ -11,6 +11,7 @@ struct GroupChat: Identifiable, Codable, Sendable, Hashable {
     var avatarUrl: String?
     let createdAt: Date
     var updatedAt: Date
+    var visibility: CommunityVisibility?
 
     // Populated by RPC
     var memberCount: Int?
@@ -34,6 +35,7 @@ struct GroupChat: Identifiable, Codable, Sendable, Hashable {
         case avatarUrl = "avatar_url"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case visibility
         case memberCount = "member_count"
         case lastMessageContent = "last_message_content"
         case lastMessageSenderFirstName = "last_message_sender_first_name"

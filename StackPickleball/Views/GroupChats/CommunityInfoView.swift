@@ -57,6 +57,23 @@ struct CommunityInfoView: View {
                     Text("Community · \(members.count) members")
                         .font(.system(size: 14))
                         .foregroundColor(.stackSecondaryText)
+
+                    if let visibility = groupChat.visibility {
+                        HStack(spacing: 4) {
+                            Image(systemName: visibility.iconName)
+                                .font(.system(size: 11))
+                            Text(visibility.displayName)
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundColor(visibility == .public ? .stackGreen : .stackSecondaryText)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(
+                            (visibility == .public ? Color.stackGreen : Color(.systemGray4))
+                                .opacity(0.15)
+                        )
+                        .cornerRadius(12)
+                    }
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 20)

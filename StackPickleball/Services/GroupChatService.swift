@@ -124,9 +124,10 @@ enum GroupChatService {
     struct CreateGroupChatRequest: Encodable {
         let name: String
         let member_ids: [String]
+        let visibility: String
     }
 
-    static func createGroupChat(name: String, memberIds: [UUID]) async throws {
+    static func createGroupChat(name: String, memberIds: [UUID], visibility: CommunityVisibility = .private) async throws {
         let session = try await supabase.auth.session
         let headers = ["Authorization": "Bearer \(session.accessToken)"]
         try await supabase.functions.invoke(
@@ -135,8 +136,35 @@ enum GroupChatService {
                 headers: headers,
                 body: CreateGroupChatRequest(
                     name: name,
-                    member_ids: memberIds.map(\.uuidString)
+                    member_ids: memberIds.map(\.uuidString),
+                    visibility: visibility.rawValue
                 )
+            )
+        )
+    }
+
+    // MARK: - Discoverable Communities
+
+    static func searchDiscoverableCommunities(query: String) async throws -> [GroupChat] {
+        guard let userId = await AuthService.currentUserId() else { return [] }
+        return try await supabase.rpc(
+            "search_discoverable_communities",
+            params: ["p_user_id": userId.uuidString, "p_query": query]
+        ).execute().value
+    }
+
+    struct JoinCommunityRequest: Encodable {
+        let group_chat_id: String
+    }
+
+    static func joinCommunity(groupChatId: UUID) async throws {
+        let session = try await supabase.auth.session
+        let headers = ["Authorization": "Bearer \(session.accessToken)"]
+        try await supabase.functions.invoke(
+            "join-community",
+            options: .init(
+                headers: headers,
+                body: JoinCommunityRequest(group_chat_id: groupChatId.uuidString)
             )
         )
     }

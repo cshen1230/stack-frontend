@@ -14,6 +14,7 @@ struct CreateGroupChatView: View {
     @State private var errorMessage: String?
     @State private var showingInvitePlayers = false
     @State private var isLoadingFriends = true
+    @State private var selectedVisibility: CommunityVisibility = .private
 
     struct SelectedUser: Identifiable, Equatable {
         let id: UUID
@@ -49,6 +50,45 @@ struct CreateGroupChatView: View {
                             .padding(12)
                             .background(Color(.systemGray6))
                             .cornerRadius(10)
+                    }
+                    .padding(.horizontal, 16)
+
+                    // Visibility picker
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Visibility")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.primary)
+
+                        HStack(spacing: 8) {
+                            ForEach(CommunityVisibility.allCases, id: \.self) { vis in
+                                let isSelected = selectedVisibility == vis
+                                Button {
+                                    selectedVisibility = vis
+                                } label: {
+                                    VStack(spacing: 6) {
+                                        Image(systemName: vis.iconName)
+                                            .font(.system(size: 18))
+                                        Text(vis.displayName)
+                                            .font(.system(size: 13, weight: .semibold))
+                                        Text(vis.description)
+                                            .font(.system(size: 10))
+                                            .foregroundColor(.stackSecondaryText)
+                                            .multilineTextAlignment(.center)
+                                            .lineLimit(2)
+                                    }
+                                    .foregroundColor(isSelected ? .stackGreen : .stackSecondaryText)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .padding(.horizontal, 4)
+                                    .background(isSelected ? Color.stackGreen.opacity(0.08) : Color(.systemGray6))
+                                    .cornerRadius(10)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(isSelected ? Color.stackGreen : Color.clear, lineWidth: 1.5)
+                                    )
+                                }
+                            }
+                        }
                     }
                     .padding(.horizontal, 16)
 
@@ -282,7 +322,8 @@ struct CreateGroupChatView: View {
         do {
             try await GroupChatService.createGroupChat(
                 name: name,
-                memberIds: Array(selectedUserIds)
+                memberIds: Array(selectedUserIds),
+                visibility: selectedVisibility
             )
             await onCreated?()
             dismiss()
