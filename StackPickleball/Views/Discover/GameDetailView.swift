@@ -110,14 +110,6 @@ struct GameDetailView: View {
                             .font(.system(size: 14))
                             .foregroundColor(.primary)
                     }
-
-                    // Description
-                    if let desc = game.description, !desc.isEmpty {
-                        Text(desc)
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                            .padding(.top, 4)
-                    }
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -129,6 +121,35 @@ struct GameDetailView: View {
                 )
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
+
+                // Description
+                if let desc = game.description, !desc.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "text.quote")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.stackGreen)
+                            Text("About")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.stackSecondaryText)
+                        }
+
+                        Text(desc)
+                            .font(.system(size: 15))
+                            .foregroundColor(.primary)
+                            .lineSpacing(3)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .padding(16)
+                    .background(Color.stackCardWhite)
+                    .cornerRadius(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.black, lineWidth: 1)
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                }
 
                 // Players header
                 HStack {
