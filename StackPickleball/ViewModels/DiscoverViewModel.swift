@@ -23,6 +23,10 @@ class DiscoverViewModel {
     var isCurrentUserAvailable = false
     var currentUserNote: String? = nil
 
+    // Friend status (for available player actions)
+    var friendIds: Set<UUID> = []
+    var sentRequestIds: Set<UUID> = []
+
     // Track last-used params so we can refresh after RSVP
     private var lastLat: Double?
     private var lastLng: Double?
@@ -49,11 +53,21 @@ class DiscoverViewModel {
             )
             if let userId = currentUserId {
                 async let fetchedIds = GameService.myJoinedGameIds(userId: userId)
+                async let fetchedFriends = FriendService.getFriends(userId: userId)
+                async let fetchedSent = FriendService.getSentRequests(userId: userId)
                 let allGames = try await fetchedGames
                 let joined = try await fetchedIds
                 joinedGameIds = joined
                 // Hide sessions the user has already joined or created
                 games = allGames.filter { !joined.contains($0.id) && $0.creatorId != userId }
+
+                // Non-critical friend status
+                if let friends = try? await fetchedFriends {
+                    friendIds = Set(friends.map(\.friendUserId))
+                }
+                if let sent = try? await fetchedSent {
+                    sentRequestIds = Set(sent.map(\.friendId))
+                }
             } else {
                 games = try await fetchedGames
             }
@@ -121,6 +135,24 @@ class DiscoverViewModel {
             errorMessage = error.localizedDescription
             // Refresh to get accurate state on error
             await loadGames(lat: lastLat, lng: lastLng, currentUserId: lastUserId)
+        }
+    }
+
+    func sendFriendRequest(to userId: UUID) async {
+        sentRequestIds.insert(userId)
+        do {
+            try await FriendService.sendFriendRequest(friendId: userId)
+        } catch {
+            sentRequestIds.remove(userId)
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func inviteToSession(gameId: UUID, playerId: UUID) async {
+        do {
+            try await FriendService.inviteToGame(gameId: gameId, friendId: playerId)
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 }

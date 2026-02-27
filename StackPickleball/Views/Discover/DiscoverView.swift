@@ -11,6 +11,8 @@ struct DiscoverView: View {
     @State private var showingMap = false
     @State private var showingAvailability = false
     @State private var createdSessionInfo: CreatedSessionInfo?
+    @State private var expandedPlayerId: UUID?
+    @State private var playerToInvite: AvailablePlayer?
 
     private let distanceOptions: [Double] = [5, 10, 20, 50]
     private var currentUserId: UUID? { appState.currentUser?.id }
@@ -50,7 +52,23 @@ struct DiscoverView: View {
                         if showPlayers && !viewModel.availablePlayers.isEmpty {
                             LazyVStack(spacing: 12) {
                                 ForEach(viewModel.availablePlayers) { player in
-                                    AvailablePlayerCard(player: player)
+                                    AvailablePlayerCard(
+                                        player: player,
+                                        isExpanded: expandedPlayerId == player.id,
+                                        isFriend: viewModel.friendIds.contains(player.userId),
+                                        isRequestSent: viewModel.sentRequestIds.contains(player.userId),
+                                        onTap: {
+                                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                                expandedPlayerId = expandedPlayerId == player.id ? nil : player.id
+                                            }
+                                        },
+                                        onInviteTapped: {
+                                            playerToInvite = player
+                                        },
+                                        onAddFriendTapped: {
+                                            Task { await viewModel.sendFriendRequest(to: player.userId) }
+                                        }
+                                    )
                                 }
                             }
                             .padding(.horizontal, 16)
@@ -239,6 +257,13 @@ struct DiscoverView: View {
             }
             .sheet(isPresented: $showingAvailability) {
                 SetAvailabilitySheet(viewModel: viewModel)
+            }
+            .sheet(item: $playerToInvite) { player in
+                InviteToSessionSheet(player: player) { game in
+                    await viewModel.inviteToSession(gameId: game.id, playerId: player.userId)
+                }
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
             }
             .fullScreenCover(isPresented: $showingMap) {
                 SessionMapView(
