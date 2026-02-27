@@ -178,7 +178,7 @@ struct GroupChatSettingsSheet: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "rectangle.portrait.and.arrow.right")
                                     .font(.system(size: 15))
-                                Text("Leave Group Chat")
+                                Text("Leave Community")
                                     .font(.system(size: 16, weight: .semibold))
                             }
                             .foregroundColor(.red)
@@ -200,7 +200,7 @@ struct GroupChatSettingsSheet: View {
                                 HStack(spacing: 8) {
                                     Image(systemName: "trash")
                                         .font(.system(size: 15))
-                                    Text("Delete Group Chat")
+                                    Text("Delete Community")
                                         .font(.system(size: 16, weight: .semibold))
                                 }
                                 .foregroundColor(.red)
@@ -228,7 +228,7 @@ struct GroupChatSettingsSheet: View {
                 .padding(.bottom, 24)
             }
             .background(Color.stackBackground)
-            .navigationTitle("Chat Settings")
+            .navigationTitle("Community Settings")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
@@ -240,21 +240,21 @@ struct GroupChatSettingsSheet: View {
             .task {
                 await loadMembers()
             }
-            .alert("Leave Group Chat?", isPresented: $showingLeaveConfirm) {
+            .alert("Leave Community?", isPresented: $showingLeaveConfirm) {
                 Button("Cancel", role: .cancel) {}
                 Button("Leave", role: .destructive) {
                     Task { await leaveChat() }
                 }
             } message: {
-                Text("You will be removed from this group chat.")
+                Text("You will be removed from this community.")
             }
-            .alert("Delete Group Chat?", isPresented: $showingDeleteConfirm) {
+            .alert("Delete Community?", isPresented: $showingDeleteConfirm) {
                 Button("Cancel", role: .cancel) {}
                 Button("Delete", role: .destructive) {
                     Task { await deleteChat() }
                 }
             } message: {
-                Text("This will permanently delete the group chat for all members.")
+                Text("This will permanently delete this community for all members.")
             }
             .alert(
                 "Remove \(showingRemoveConfirm?.displayName ?? "")?",
@@ -270,7 +270,7 @@ struct GroupChatSettingsSheet: View {
                     }
                 }
             } message: {
-                Text("This member will be removed from the group chat.")
+                Text("This member will be removed from the community.")
             }
             .sheet(isPresented: $showingAddMembers) {
                 AddMembersSheet(groupChatId: groupChat.id, existingMemberIds: Set(members.map(\.userId))) {

@@ -27,9 +27,9 @@ struct GroupChatsListView: View {
                 } else if viewModel.groupChats.isEmpty {
                     EmptyStateView(
                         icon: "bubble.left.and.text.bubble.right",
-                        title: "No Chats Yet",
-                        message: "Create a group chat with friends or join a session to start chatting!",
-                        buttonTitle: "New Chat",
+                        title: "No Communities Yet",
+                        message: "Create a community with friends or join a session to start connecting!",
+                        buttonTitle: "New Community",
                         buttonAction: { showingCreateSheet = true }
                     )
                 } else {
@@ -66,12 +66,12 @@ struct GroupChatsListView: View {
                         }
                     }
                     .listStyle(.plain)
-                    .searchable(text: $searchText, prompt: "Search chats and messages")
+                    .searchable(text: $searchText, prompt: "Search communities")
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(.systemBackground))
-            .navigationTitle("Chat")
+            .navigationTitle("Communities")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)
             #endif

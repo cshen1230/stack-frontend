@@ -92,16 +92,6 @@ struct SessionFlyerCard: View {
                     ForEach(Array(avatarURLs.prefix(5).enumerated()), id: \.offset) { _, url in
                         inlineAvatar(url: url)
                     }
-                    let extraCount = totalParticipants - min(avatarURLs.count, 5)
-                    if extraCount > 0 {
-                        Text("+\(extraCount)")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.secondary)
-                            .frame(width: 28, height: 28)
-                            .background(Color(.systemGray5))
-                            .clipShape(Circle())
-                            .overlay(Circle().stroke(Color.stackCardWhite, lineWidth: 1.5))
-                    }
                 }
 
                 Spacer()
@@ -114,7 +104,7 @@ struct SessionFlyerCard: View {
                         HStack(spacing: 4) {
                             Image(systemName: "bubble.left.and.text.bubble.right")
                                 .font(.system(size: 12))
-                            Text("Group Chat")
+                            Text("Community")
                                 .font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundColor(.stackGreen)

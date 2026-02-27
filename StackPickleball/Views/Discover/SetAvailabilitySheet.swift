@@ -7,11 +7,12 @@ struct SetAvailabilitySheet: View {
 
     @State private var isAvailable: Bool
     @State private var note: String
-    @State private var selectedHours: Int = 2
+    @State private var selectedHours: Int = 0
     @State private var selectedFormat: GameFormat? = nil
     @State private var isSaving = false
 
-    private let durationOptions = [1, 2, 3, 4]
+    // 0 = "Until I stop" (unlimited)
+    private let durationOptions = [0, 1, 2, 3, 4]
     private let formatOptions: [GameFormat?] = [nil, .singles, .doubles, .mixedDoubles, .drill]
 
     init(viewModel: DiscoverViewModel) {
@@ -58,8 +59,8 @@ struct SetAvailabilitySheet: View {
                                     Button {
                                         selectedHours = hours
                                     } label: {
-                                        Text("\(hours)h")
-                                            .font(.system(size: 15, weight: .semibold))
+                                        Text(hours == 0 ? "Until I stop" : "\(hours)h")
+                                            .font(.system(size: hours == 0 ? 13 : 15, weight: .semibold))
                                             .foregroundColor(selectedHours == hours ? .white : .primary)
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 10)
@@ -138,7 +139,9 @@ struct SetAvailabilitySheet: View {
                     Button {
                         isSaving = true
                         Task {
-                            let until = Date().addingTimeInterval(TimeInterval(selectedHours * 3600))
+                            // 0 = "Until I stop": set to 24h from now (user turns off manually)
+                            let hours = selectedHours == 0 ? 24 : selectedHours
+                            let until = Date().addingTimeInterval(TimeInterval(hours * 3600))
                             await viewModel.setAvailability(
                                 note: note.isEmpty ? nil : note,
                                 availableUntil: until,

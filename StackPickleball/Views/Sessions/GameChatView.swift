@@ -444,7 +444,7 @@ private struct SessionSettingsSheet: View {
                     Task { await leaveSession() }
                 }
             } message: {
-                Text("You will be removed from this session and its chat.")
+                Text("You will be removed from this session and its community.")
             }
             .alert("Delete Session?", isPresented: $showingDeleteConfirm) {
                 Button("Cancel", role: .cancel) {}

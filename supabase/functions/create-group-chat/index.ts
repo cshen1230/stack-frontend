@@ -1,5 +1,5 @@
 import { corsHeaders } from "../_shared/cors.ts";
-import { createUserClient } from "../_shared/supabase-client.ts";
+import { createAdminClient } from "../_shared/supabase-client.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -7,12 +7,21 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const supabase = createUserClient(req);
+    const admin = createAdminClient();
 
+    // Verify user from the JWT in the Authorization header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Missing Authorization header" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const token = authHeader.replace("Bearer ", "");
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await admin.auth.getUser(token);
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -37,8 +46,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create the group chat
-    const { data: groupChat, error: chatError } = await supabase
+    // Create the group chat (admin client bypasses RLS)
+    const { data: groupChat, error: chatError } = await admin
       .from("group_chats")
       .insert({ name: name.trim(), created_by: user.id })
       .select()
@@ -62,7 +71,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { error: membersError } = await supabase
+    const { error: membersError } = await admin
       .from("group_chat_members")
       .insert(members);
 
@@ -70,7 +79,7 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify({ success: true, group_chat_id: groupChat.id }),
-      { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (err) {
     return new Response(

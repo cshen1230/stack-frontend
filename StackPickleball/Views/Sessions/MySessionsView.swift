@@ -109,7 +109,7 @@ struct MySessionsView: View {
                     }
                 }
             } message: {
-                Text("You will be removed from this session and its chat.")
+                Text("You will be removed from this session and its community.")
             }
             .alert("Delete Session?", isPresented: Binding(
                 get: { gameToDelete != nil },

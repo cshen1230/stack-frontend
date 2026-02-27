@@ -11,7 +11,7 @@ struct GroupChatDetailView: View {
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var hasMoreMessages = false
-    @State private var showingSettings = false
+    @State private var showingCommunityInfo = false
     @State private var showingShareSession = false
     @FocusState private var isInputFocused: Bool
 
@@ -34,22 +34,27 @@ struct GroupChatDetailView: View {
 
                 Spacer()
 
-                VStack(spacing: 1) {
-                    Text(groupChat.name)
-                        .font(.system(size: 16, weight: .semibold))
-                    if let count = groupChat.memberCount {
-                        Text("\(count) members")
-                            .font(.system(size: 11))
-                            .foregroundColor(.stackSecondaryText)
+                Button {
+                    showingCommunityInfo = true
+                } label: {
+                    VStack(spacing: 1) {
+                        Text(groupChat.name)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
+                        if let count = groupChat.memberCount {
+                            Text("\(count) members")
+                                .font(.system(size: 11))
+                                .foregroundColor(.stackSecondaryText)
+                        }
                     }
                 }
 
                 Spacer()
 
                 Button {
-                    showingSettings = true
+                    showingCommunityInfo = true
                 } label: {
-                    Image(systemName: "ellipsis")
+                    Image(systemName: "info.circle")
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
@@ -77,7 +82,7 @@ struct GroupChatDetailView: View {
                                 .font(.system(size: 22, weight: .bold))
                                 .foregroundColor(.primary)
 
-                            Text("Say hello to your group!")
+                            Text("Say hello to your community!")
                                 .font(.system(size: 15))
                                 .foregroundColor(.secondary)
                         }
@@ -187,15 +192,32 @@ struct GroupChatDetailView: View {
         .refreshable {
             await loadMessages()
         }
-        .sheet(isPresented: $showingSettings) {
-            GroupChatSettingsSheet(
-                groupChat: groupChat,
-                currentUserId: currentUserId,
-                onLeave: { dismiss() },
-                onDelete: { dismiss() }
-            )
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
+        .fullScreenCover(isPresented: $showingCommunityInfo) {
+            NavigationStack {
+                CommunityInfoView(
+                    groupChat: groupChat,
+                    currentUserId: currentUserId,
+                    onLeave: {
+                        showingCommunityInfo = false
+                        dismiss()
+                    },
+                    onDelete: {
+                        showingCommunityInfo = false
+                        dismiss()
+                    }
+                )
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            showingCommunityInfo = false
+                        } label: {
+                            Image(systemName: "arrow.left")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.primary)
+                        }
+                    }
+                }
+            }
         }
         .sheet(isPresented: $showingShareSession) {
             ShareSessionSheet(groupChatId: groupChat.id) {

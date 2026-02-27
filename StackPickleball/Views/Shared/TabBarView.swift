@@ -23,8 +23,8 @@ struct TabBarView: View {
 
             GroupChatsListView(selectedTab: $selectedTab)
                 .tabItem {
-                    Image(systemName: selectedTab == 2 ? "bubble.left.and.text.bubble.right.fill" : "bubble.left.and.text.bubble.right")
-                    Text("Chats")
+                    Image(systemName: selectedTab == 2 ? "person.3.fill" : "person.3")
+                    Text("Communities")
                 }
                 .tag(2)
 

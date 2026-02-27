@@ -285,7 +285,7 @@ struct GameDetailView: View {
                             Image(systemName: "bubble.left.and.text.bubble.right.fill")
                                 .font(.system(size: 16))
                                 .foregroundColor(.stackGreen)
-                            Text("Group Chat")
+                            Text("Community")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.primary)
                             Spacer()
