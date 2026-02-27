@@ -17,48 +17,6 @@ struct ProfileView: View {
                             // Profile card with overlapping avatar
                             profileCard(user: user)
 
-                            // Friends button
-                            NavigationLink {
-                                FriendsView()
-                            } label: {
-                                HStack(spacing: 10) {
-                                    Image(systemName: "person.2.fill")
-                                        .font(.system(size: 16))
-                                        .foregroundColor(.stackGreen)
-                                    Text("Friends")
-                                        .font(.system(size: 16, weight: .semibold))
-                                        .foregroundColor(.primary)
-                                    Spacer()
-                                    if appState.pendingFriendRequestCount > 0 {
-                                        Text("\(appState.pendingFriendRequestCount)")
-                                            .font(.system(size: 12, weight: .bold))
-                                            .foregroundColor(.white)
-                                            .frame(minWidth: 22, minHeight: 22)
-                                            .background(Color.red)
-                                            .clipShape(Circle())
-                                    }
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 13, weight: .semibold))
-                                        .foregroundColor(.secondary)
-                                }
-                                .padding(16)
-                                .background(Color.stackCardWhite)
-                                .cornerRadius(14)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .stroke(Color.black, lineWidth: 1)
-                                )
-                                .background(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .fill(Color.stackGreen)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 14)
-                                                .stroke(Color.black, lineWidth: 1)
-                                        )
-                                        .offset(x: 3, y: 4)
-                                )
-                            }
-
                             // Calendar section
                             VStack(alignment: .leading, spacing: 12) {
                                 Text("Past Sessions")

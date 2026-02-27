@@ -3,42 +3,32 @@ import SwiftUI
 import UIKit
 #endif
 
-struct GameDetailView: View {
+struct SessionFlyerDetailView: View {
     let game: Game
     let isHost: Bool
 
     @Environment(AppState.self) private var appState
+    @Environment(\.dismiss) private var dismiss
     @State private var participants: [ParticipantWithProfile] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
     @State private var showingInviteFriend = false
-    @State private var isJoining = false
-    @State private var hasJoined = false
     @State private var showingCopiedToast = false
+    @State private var groupChatId: UUID?
     @State private var friendIds: Set<UUID> = []
     @State private var pendingSentIds: Set<UUID> = []
-    @State private var groupChatId: UUID?
 
     private var isParticipant: Bool {
         guard let userId = appState.currentUser?.id else { return false }
-        return hasJoined || isHost || participants.contains { $0.userId == userId }
-    }
-
-    private var isFull: Bool { game.spotsRemaining <= 0 && !isParticipant }
-
-    private var isFriendsOnlyBlocked: Bool {
-        guard game.friendsOnly else { return false }
-        guard let userId = appState.currentUser?.id else { return true }
-        if game.creatorId == userId { return false }
-        return !friendIds.contains(game.creatorId)
+        return isHost || participants.contains { $0.userId == userId }
     }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
-                // Game info card
-                VStack(alignment: .leading, spacing: 10) {
-                    // Format badge + Friends Only badge
+                // Flyer card
+                VStack(alignment: .leading, spacing: 12) {
+                    // Format badges
                     HStack(spacing: 6) {
                         Text(game.gameFormat.displayName)
                             .font(.system(size: 12, weight: .semibold))
@@ -60,6 +50,16 @@ struct GameDetailView: View {
                             .padding(.vertical, 4)
                             .background(Color.orange.opacity(0.12))
                             .cornerRadius(8)
+                        }
+
+                        if let sessionType = game.sessionType, sessionType == .roundRobin {
+                            Text("Round Robin")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.blue)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(Color.blue.opacity(0.12))
+                                .cornerRadius(8)
                         }
                     }
 
@@ -89,7 +89,7 @@ struct GameDetailView: View {
                         }
                     }
 
-                    // Minimum DUPR
+                    // DUPR
                     if let min = game.skillLevelMin {
                         HStack(spacing: 6) {
                             Image(systemName: "trophy")
@@ -130,101 +130,16 @@ struct GameDetailView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
 
-                // Players header
-                HStack {
-                    Text("Players (\(participants.count))")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.primary)
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.top, 24)
-                .padding(.bottom, 8)
-
-                // Player list
-                if isLoading {
-                    HStack {
-                        Spacer()
-                        ProgressView()
-                        Spacer()
-                    }
-                    .padding(.top, 20)
-                } else if participants.isEmpty {
-                    Text("No players yet")
-                        .font(.system(size: 15))
-                        .foregroundColor(.secondary)
-                        .padding(.top, 20)
-                } else {
-                    LazyVStack(spacing: 8) {
-                        ForEach(participants) { participant in
-                            let isSelf = participant.userId == appState.currentUser?.id
-                            let isFriend = friendIds.contains(participant.userId)
-                            let isSent = pendingSentIds.contains(participant.userId)
-                            PlayerRow(
-                                participant: participant,
-                                isHost: participant.userId == game.creatorId,
-                                isSelf: isSelf,
-                                isFriend: isFriend,
-                                isSent: isSent,
-                                onAddFriend: {
-                                    Task { await sendFriendRequest(to: participant.userId) }
-                                }
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                }
-
-                // Join button — for non-participants
-                if !isParticipant && !isLoading {
-                    if isFriendsOnlyBlocked {
-                        HStack(spacing: 8) {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 15))
-                            Text("Friends Only")
-                                .font(.system(size: 17, weight: .bold))
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.gray)
-                        .cornerRadius(14)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 24)
-                    } else {
-                        Button {
-                            Task { await joinSession() }
-                        } label: {
-                            HStack(spacing: 8) {
-                                if isJoining {
-                                    ProgressView()
-                                        .tint(.white)
-                                }
-                                Text(isFull ? "Session Full" : "Join Session")
-                                    .font(.system(size: 17, weight: .bold))
-                            }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(isFull ? Color.gray : Color.stackGreen)
-                            .cornerRadius(14)
-                        }
-                        .disabled(isJoining || isFull)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 24)
-                    }
-                }
-
-                // Invite friends button — only for participants when spots remain
-                if isParticipant && game.spotsRemaining > 0 {
+                // Group Chat button
+                if isParticipant, let chatId = groupChatId {
                     Button {
-                        showingInviteFriend = true
+                        appState.pendingGroupChatId = chatId
                     } label: {
                         HStack(spacing: 10) {
-                            Image(systemName: "person.badge.plus")
+                            Image(systemName: "bubble.left.and.text.bubble.right.fill")
                                 .font(.system(size: 16))
                                 .foregroundColor(.stackGreen)
-                            Text("Invite Friends")
+                            Text("Group Chat")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.primary)
                             Spacer()
@@ -244,7 +159,7 @@ struct GameDetailView: View {
                     .padding(.top, 20)
                 }
 
-                // Chat button — only for participants
+                // Session Chat (existing game chat)
                 if isParticipant {
                     NavigationLink {
                         GameChatView(
@@ -273,19 +188,19 @@ struct GameDetailView: View {
                         )
                     }
                     .padding(.horizontal, 16)
-                    .padding(.top, 20)
+                    .padding(.top, 12)
                 }
 
-                // Group Chat button — only for participants with a linked group chat
-                if isParticipant, let chatId = groupChatId {
+                // Invite friends
+                if isParticipant && game.spotsRemaining > 0 {
                     Button {
-                        appState.pendingGroupChatId = chatId
+                        showingInviteFriend = true
                     } label: {
                         HStack(spacing: 10) {
-                            Image(systemName: "bubble.left.and.text.bubble.right.fill")
+                            Image(systemName: "person.badge.plus")
                                 .font(.system(size: 16))
                                 .foregroundColor(.stackGreen)
-                            Text("Group Chat")
+                            Text("Invite Friends")
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundColor(.primary)
                             Spacer()
@@ -305,6 +220,48 @@ struct GameDetailView: View {
                     .padding(.top, 12)
                 }
 
+                // Players header
+                HStack {
+                    Text("Players (\(participants.count))")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.primary)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 24)
+                .padding(.bottom, 8)
+
+                // Player list
+                if isLoading {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                        Spacer()
+                    }
+                    .padding(.top, 20)
+                } else if participants.isEmpty {
+                    Text("No players yet")
+                        .font(.system(size: 15))
+                        .foregroundColor(.secondary)
+                        .padding(.top, 20)
+                } else {
+                    LazyVStack(spacing: 8) {
+                        ForEach(participants) { participant in
+                            FlyerPlayerRow(
+                                participant: participant,
+                                isHost: participant.userId == game.creatorId,
+                                isSelf: participant.userId == appState.currentUser?.id,
+                                isFriend: friendIds.contains(participant.userId),
+                                isSent: pendingSentIds.contains(participant.userId),
+                                onAddFriend: {
+                                    Task { await sendFriendRequest(to: participant.userId) }
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+
                 if let error = errorMessage {
                     Text(error)
                         .foregroundColor(.red)
@@ -317,7 +274,7 @@ struct GameDetailView: View {
             }
         }
         .background(Color.stackBackground)
-        .navigationTitle(game.sessionName ?? game.creatorDisplayName + "'s Game")
+        .navigationTitle(game.sessionName ?? game.creatorDisplayName + "'s Session")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
@@ -333,10 +290,10 @@ struct GameDetailView: View {
             }
         }
         .task {
-            await loadParticipants()
-            async let friendsTask: Void = loadFriendshipState()
-            async let chatTask: Void = loadGroupChatId()
-            _ = await (friendsTask, chatTask)
+            async let loadParts: Void = loadParticipants()
+            async let loadChat: Void = loadGroupChat()
+            async let loadFriends: Void = loadFriendshipState()
+            _ = await (loadParts, loadChat, loadFriends)
         }
         .sheet(isPresented: $showingInviteFriend) {
             InviteFriendSheet(game: game)
@@ -353,16 +310,13 @@ struct GameDetailView: View {
         isLoading = false
     }
 
-    private func joinSession() async {
-        isJoining = true
+    private func loadGroupChat() async {
         do {
-            try await GameService.rsvpToGame(gameId: game.id)
-            hasJoined = true
-            await loadParticipants()
+            let chat = try await GroupChatService.groupChatForGame(gameId: game.id)
+            groupChatId = chat?.id
         } catch {
-            errorMessage = error.localizedDescription
+            // non-critical
         }
-        isJoining = false
     }
 
     private func loadFriendshipState() async {
@@ -375,10 +329,9 @@ struct GameDetailView: View {
             let sent = try await sentRequests
             let incoming = try await incomingRequests
             friendIds = Set(f.map(\.friendUserId))
-            // Combine outgoing (I sent) and incoming (they sent me) pending requests
             pendingSentIds = Set(sent.map(\.friendId)).union(Set(incoming.map(\.friendUserId)))
         } catch {
-            // non-critical — buttons just won't show friendship state
+            // non-critical
         }
     }
 
@@ -389,15 +342,6 @@ struct GameDetailView: View {
         } catch {
             pendingSentIds.remove(userId)
             errorMessage = error.localizedDescription
-        }
-    }
-
-    private func loadGroupChatId() async {
-        do {
-            let chat = try await GroupChatService.groupChatForGame(gameId: game.id)
-            groupChatId = chat?.id
-        } catch {
-            // non-critical
         }
     }
 
@@ -417,9 +361,9 @@ struct GameDetailView: View {
     }
 }
 
-// MARK: - Player Row
+// MARK: - Player Row for Flyer
 
-private struct PlayerRow: View {
+private struct FlyerPlayerRow: View {
     let participant: ParticipantWithProfile
     let isHost: Bool
     let isSelf: Bool
@@ -429,14 +373,11 @@ private struct PlayerRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Profile picture
             if let avatarUrl = participant.users.avatarUrl, let url = URL(string: avatarUrl) {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFill()
+                        image.resizable().scaledToFill()
                     default:
                         avatarPlaceholder
                     }
@@ -448,7 +389,6 @@ private struct PlayerRow: View {
                     .frame(width: 48, height: 48)
             }
 
-            // Name + DUPR
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(participant.displayName)
@@ -475,7 +415,6 @@ private struct PlayerRow: View {
 
             Spacer()
 
-            // Friend action
             if !isSelf {
                 if isFriend {
                     HStack(spacing: 4) {

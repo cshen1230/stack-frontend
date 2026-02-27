@@ -60,3 +60,14 @@ enum FriendshipStatus: String, Codable, Sendable {
     case accepted = "accepted"
     case declined = "declined"
 }
+
+enum GroupChatRole: String, Codable, Sendable {
+    case admin = "admin"
+    case member = "member"
+}
+
+enum GroupChatMessageType: String, Codable, Sendable {
+    case text = "text"
+    case sessionShare = "session_share"
+    case system = "system"
+}

@@ -16,27 +16,34 @@ struct TabBarView: View {
 
             MySessionsView(selectedTab: $selectedTab)
                 .tabItem {
-                    Image(systemName: selectedTab == 1 ? "bubble.left.and.bubble.right.fill" : "bubble.left.and.bubble.right")
+                    Image(systemName: selectedTab == 1 ? "calendar.badge.clock" : "calendar.badge.clock")
                     Text("Sessions")
                 }
                 .tag(1)
+
+            GroupChatsListView(selectedTab: $selectedTab)
+                .tabItem {
+                    Image(systemName: selectedTab == 2 ? "bubble.left.and.text.bubble.right.fill" : "bubble.left.and.text.bubble.right")
+                    Text("Chats")
+                }
+                .tag(2)
 
             NavigationStack {
                 FriendsView()
             }
             .tabItem {
-                Image(systemName: selectedTab == 2 ? "person.2.fill" : "person.2")
+                Image(systemName: selectedTab == 3 ? "person.2.fill" : "person.2")
                 Text("Friends")
             }
             .badge(appState.pendingFriendRequestCount)
-            .tag(2)
+            .tag(3)
 
             ProfileView()
                 .tabItem {
-                    Image(systemName: selectedTab == 3 ? "person.fill" : "person")
+                    Image(systemName: selectedTab == 4 ? "person.fill" : "person")
                     Text("Profile")
                 }
-                .tag(3)
+                .tag(4)
         }
         .accentColor(.stackGreen)
         .onChange(of: deepLinkRouter.pendingGameId) {
@@ -44,8 +51,20 @@ struct TabBarView: View {
                 selectedTab = 0
             }
         }
+        .onChange(of: deepLinkRouter.pendingGroupChatId) {
+            if let chatId = deepLinkRouter.pendingGroupChatId {
+                appState.pendingGroupChatId = chatId
+                deepLinkRouter.pendingGroupChatId = nil
+                selectedTab = 2
+            }
+        }
+        .onChange(of: appState.pendingGroupChatId) {
+            if appState.pendingGroupChatId != nil {
+                selectedTab = 2
+            }
+        }
         .onChange(of: selectedTab) {
-            if selectedTab == 2 {
+            if selectedTab == 3 {
                 Task { await appState.loadFriendRequestCount() }
             }
         }
