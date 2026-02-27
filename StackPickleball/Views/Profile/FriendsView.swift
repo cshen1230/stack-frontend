@@ -42,54 +42,6 @@ struct FriendsView: View {
                 }
             }
 
-            // Pending requests
-            if !viewModel.friendRequests.isEmpty {
-                Section("Friend Requests") {
-                    ForEach(viewModel.friendRequests) { request in
-                        HStack(spacing: 12) {
-                            avatarImage(url: request.avatarUrl, size: 40)
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(request.displayName)
-                                    .font(.system(size: 15, weight: .semibold))
-                                if let dupr = request.duprRating {
-                                    Text("DUPR \(String(format: "%.1f", dupr))")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.stackGreen)
-                                }
-                            }
-
-                            Spacer()
-
-                            Button {
-                                Task { await viewModel.acceptRequest(request) }
-                            } label: {
-                                Text("Accept")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(Color.stackGreen)
-                                    .cornerRadius(8)
-                            }
-
-                            Button {
-                                Task { await viewModel.declineRequest(request) }
-                            } label: {
-                                Text("Decline")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(.stackSecondaryText)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
-                                    .background(Color.stackFilterInactive)
-                                    .cornerRadius(8)
-                            }
-                        }
-                        .padding(.vertical, 2)
-                    }
-                }
-            }
-
             // Friends list
             Section(viewModel.friends.isEmpty ? "" : "Friends") {
                 if viewModel.isLoading && viewModel.friends.isEmpty {

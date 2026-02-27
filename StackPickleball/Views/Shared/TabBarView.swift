@@ -28,22 +28,13 @@ struct TabBarView: View {
                 }
                 .tag(2)
 
-            NavigationStack {
-                FriendsView()
-            }
-            .tabItem {
-                Image(systemName: selectedTab == 3 ? "person.2.fill" : "person.2")
-                Text("Friends")
-            }
-            .badge(appState.pendingFriendRequestCount)
-            .tag(3)
-
             ProfileView()
                 .tabItem {
-                    Image(systemName: selectedTab == 4 ? "person.fill" : "person")
+                    Image(systemName: selectedTab == 3 ? "person.fill" : "person")
                     Text("Profile")
                 }
-                .tag(4)
+                .badge(appState.pendingFriendRequestCount)
+                .tag(3)
         }
         .accentColor(.stackGreen)
         .onChange(of: deepLinkRouter.pendingGameId) {
