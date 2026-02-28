@@ -103,13 +103,18 @@ struct EditProfileView: View {
                             isSaving = true
                             var uploadedAvatarUrl: String?
                             if let avatarData, let userId = viewModel.user?.id {
-                                // Compress to JPEG
                                 #if canImport(UIKit)
                                 let jpeg = UIImage(data: avatarData)?.jpegData(compressionQuality: 0.8) ?? avatarData
                                 #else
                                 let jpeg = avatarData
                                 #endif
-                                uploadedAvatarUrl = try? await ProfileService.uploadAvatar(userId: userId, imageData: jpeg)
+                                do {
+                                    uploadedAvatarUrl = try await ProfileService.uploadAvatar(userId: userId, imageData: jpeg)
+                                } catch {
+                                    viewModel.errorMessage = "Failed to upload photo: \(error.localizedDescription)"
+                                    isSaving = false
+                                    return
+                                }
                             }
                             await viewModel.updateProfile(
                                 firstName: firstName.isEmpty ? nil : firstName,
@@ -120,7 +125,9 @@ struct EditProfileView: View {
                                 avatarUrl: uploadedAvatarUrl
                             )
                             isSaving = false
-                            dismiss()
+                            if viewModel.errorMessage == nil {
+                                dismiss()
+                            }
                         }
                     }
                     .fontWeight(.semibold)
