@@ -78,27 +78,48 @@ enum GameService {
     }
 
     static func startRoundRobin(gameId: UUID, rounds: [RoundMatchPayload]) async throws {
-        let session = try await supabase.auth.session
-        let headers = ["Authorization": "Bearer \(session.accessToken)"]
-        try await supabase.functions.invoke(
-            "start-round-robin",
-            options: .init(headers: headers, body: StartRoundRobinRequest(game_id: gameId, rounds: rounds))
-        )
-    }
+        // Insert all round rows directly
+        struct RoundRow: Encodable {
+            let game_id: UUID
+            let round_number: Int
+            let court_number: Int
+            let team1_player1: UUID
+            let team1_player2: UUID?
+            let team2_player1: UUID
+            let team2_player2: UUID?
+            let bye_players: [UUID]
+        }
 
-    struct SubmitScoreRequest: Encodable {
-        let round_id: UUID
-        let team1_score: Int
-        let team2_score: Int
+        let rows = rounds.map { r in
+            RoundRow(
+                game_id: gameId,
+                round_number: r.round_number,
+                court_number: r.court_number,
+                team1_player1: r.team1_player1,
+                team1_player2: r.team1_player2,
+                team2_player1: r.team2_player1,
+                team2_player2: r.team2_player2,
+                bye_players: r.bye_players
+            )
+        }
+
+        try await supabase.from("round_robin_rounds").insert(rows).execute()
+
+        // Update game status to in_progress
+        try await supabase.from("games")
+            .update(["round_robin_status": "in_progress"])
+            .eq("id", value: gameId)
+            .execute()
     }
 
     static func submitRoundScore(roundId: UUID, team1Score: Int, team2Score: Int) async throws {
-        let session = try await supabase.auth.session
-        let headers = ["Authorization": "Bearer \(session.accessToken)"]
-        try await supabase.functions.invoke(
-            "submit-round-score",
-            options: .init(headers: headers, body: SubmitScoreRequest(round_id: roundId, team1_score: team1Score, team2_score: team2Score))
-        )
+        try await supabase.from("round_robin_rounds")
+            .update([
+                "team1_score": team1Score,
+                "team2_score": team2Score
+            ])
+            .eq("id", value: roundId)
+            .execute()
     }
 
     static func roundRobinRounds(gameId: UUID) async throws -> [RoundRobinRound] {

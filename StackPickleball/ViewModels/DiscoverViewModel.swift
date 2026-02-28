@@ -58,8 +58,8 @@ class DiscoverViewModel {
                 let allGames = try await fetchedGames
                 let joined = try await fetchedIds
                 joinedGameIds = joined
-                // Hide sessions the user has already joined or created
-                games = allGames.filter { !joined.contains($0.id) && $0.creatorId != userId }
+                // Hide sessions the user has already joined, created, or that are full
+                games = allGames.filter { !joined.contains($0.id) && $0.creatorId != userId && $0.spotsRemaining > 0 }
 
                 // Non-critical friend status
                 if let friends = try? await fetchedFriends {
