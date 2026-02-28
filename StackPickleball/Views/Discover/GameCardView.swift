@@ -41,12 +41,6 @@ struct GameCardView: View {
                         .font(.system(size: 13))
                         .foregroundColor(.secondary)
 
-                    if let min = game.skillLevelMin {
-                        Text("DUPR \(String(format: "%.1f", min))+")
-                            .font(.system(size: 13))
-                            .foregroundColor(.secondary)
-                    }
-
                     HStack(spacing: 4) {
                         Text(game.gameFormat.displayName)
                             .font(.system(size: 13, weight: .medium))
@@ -60,6 +54,12 @@ struct GameCardView: View {
                                     .font(.system(size: 11, weight: .semibold))
                             }
                             .foregroundColor(.stackGreen)
+
+                            if let min = game.skillLevelMin, min > 0 {
+                                Text("DUPR \(String(format: "%.1f", min))+")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(.stackGreen)
+                            }
                         }
                     }
                 }
