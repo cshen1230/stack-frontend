@@ -21,7 +21,7 @@ struct RoundRobinDetailView: View {
                 Spacer()
                 ProgressView()
                 Spacer()
-            } else if game.roundRobinStatus == .waiting || viewModel.rounds.isEmpty {
+            } else if viewModel.rounds.isEmpty {
                 waitingView
             } else {
                 // Segmented tabs
