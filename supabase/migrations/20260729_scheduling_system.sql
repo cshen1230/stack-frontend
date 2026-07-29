@@ -60,9 +60,12 @@ CREATE POLICY "Users can delete own devices"
     USING (auth.uid() = user_id);
 
 
--- 3. Add available_from to available_players
+-- 3. Add available_from and note columns to available_players
 ALTER TABLE available_players
     ADD COLUMN IF NOT EXISTS available_from TIMESTAMPTZ DEFAULT now();
+
+ALTER TABLE available_players
+    ADD COLUMN IF NOT EXISTS note TEXT;
 
 
 -- 4. RPC: friends_ready_to_play
@@ -93,7 +96,7 @@ AS $$
         u.avatar_url,
         ap.available_from,
         ap.available_until,
-        ap.preferred_format,
+        ap.preferred_format::TEXT,
         ap.note
     FROM available_players ap
     JOIN users u ON u.id = ap.user_id
