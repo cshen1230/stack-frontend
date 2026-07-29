@@ -10,7 +10,7 @@ struct HomeView: View {
     @State private var showingReadyToPlay = false
     @State private var showingMap = false
     @State private var expandedGameId: UUID?
-    @State private var expandedFriendId: UUID?
+    @State private var selectedReadyFriend: ReadyFriend?
     @State private var createdSessionInfo: CreatedSessionInfo?
 
     private let distanceOptions: [Double] = [5, 10, 20, 50]
@@ -29,13 +29,12 @@ struct HomeView: View {
                         readyToPlayBanner
                             .padding(.horizontal, 16)
 
-                        // Friends Ready to Play
+                        // Stories-style ready friends row
                         if !viewModel.readyFriends.isEmpty {
                             VStack(alignment: .leading, spacing: 10) {
-                                HStack {
-                                    Text("Friends Ready to Play")
+                                HStack(spacing: 6) {
+                                    Text("Ready Now")
                                         .font(.system(size: 18, weight: .bold))
-                                    Spacer()
                                     Text("\(viewModel.readyFriends.count)")
                                         .font(.system(size: 14, weight: .bold))
                                         .foregroundColor(.white)
@@ -45,27 +44,23 @@ struct HomeView: View {
                                 }
                                 .padding(.horizontal, 16)
 
-                                LazyVStack(spacing: 12) {
-                                    ForEach(viewModel.readyFriends) { friend in
-                                        ReadyFriendCard(
-                                            friend: friend,
-                                            isExpanded: expandedFriendId == friend.id,
-                                            onTap: {
-                                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                                    expandedFriendId = expandedFriendId == friend.id ? nil : friend.id
-                                                }
-                                            },
-                                            onCreateGame: {
-                                                showingCreateGame = true
-                                            },
-                                            onInviteToGame: {
-                                                // Navigate to invite flow
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 12) {
+                                        ForEach(viewModel.readyFriends) { friend in
+                                            ReadyFriendBubble(friend: friend) {
+                                                selectedReadyFriend = friend
                                             }
-                                        )
+                                        }
                                     }
+                                    .padding(.horizontal, 16)
                                 }
-                                .padding(.horizontal, 16)
                             }
+                        }
+
+                        // Smart match suggestion card
+                        if !viewModel.readyFriends.isEmpty {
+                            smartSuggestionCard
+                                .padding(.horizontal, 16)
                         }
 
                         // Open Games Near You
@@ -266,6 +261,17 @@ struct HomeView: View {
             .sheet(isPresented: $showingReadyToPlay) {
                 ReadyToPlaySheet(viewModel: viewModel)
             }
+            .sheet(item: $selectedReadyFriend) { friend in
+                ReadyFriendDetailSheet(
+                    friend: friend,
+                    onCreateGame: {
+                        showingCreateGame = true
+                    },
+                    onInviteToGame: {
+                        // Navigate to invite flow
+                    }
+                )
+            }
             .fullScreenCover(isPresented: $showingMap) {
                 SessionMapView(
                     games: viewModel.nearbyGames,
@@ -308,6 +314,52 @@ struct HomeView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Smart Suggestion Card
+
+    @ViewBuilder
+    private var smartSuggestionCard: some View {
+        let count = viewModel.readyFriends.count
+        let message: String = {
+            if count >= 2 {
+                return "\(count) friends are ready now — start a game?"
+            } else if let friend = viewModel.readyFriends.first {
+                let name = friend.firstName ?? friend.username ?? "A friend"
+                return "\(name) is ready to play — invite them to a game?"
+            }
+            return ""
+        }()
+
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(message)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+
+            Button {
+                showingCreateGame = true
+            } label: {
+                Text("Create Game")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Color.stackGreen)
+                    .cornerRadius(8)
+            }
+        }
+        .padding(14)
+        .background(Color.stackCardWhite)
+        .cornerRadius(14)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.stackGreen.opacity(0.3), lineWidth: 1)
+        )
     }
 
     // MARK: - Ready to Play Banner

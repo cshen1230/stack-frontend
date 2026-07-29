@@ -1,6 +1,6 @@
 import Foundation
 
-struct ReadyFriend: Identifiable, Codable, Sendable {
+struct ReadyFriend: Identifiable, Codable, Sendable, Hashable {
     let userId: UUID
     var username: String?
     var firstName: String?
