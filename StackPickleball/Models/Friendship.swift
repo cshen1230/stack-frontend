@@ -26,11 +26,14 @@ struct FriendRow: Identifiable, Codable, Sendable {
     let firstName: String
     let lastName: String
     let duprRating: Double?
+    let duprVerified: Bool?
     let avatarUrl: String?
     let status: FriendshipStatus
     let createdAt: Date
 
     var id: UUID { friendshipId }
+
+    var isDuprConnected: Bool { duprVerified == true }
 
     var displayName: String {
         "\(firstName) \(lastName)"
@@ -43,6 +46,7 @@ struct FriendRow: Identifiable, Codable, Sendable {
         case firstName = "first_name"
         case lastName = "last_name"
         case duprRating = "dupr_rating"
+        case duprVerified = "dupr_verified"
         case avatarUrl = "avatar_url"
         case status
         case createdAt = "created_at"

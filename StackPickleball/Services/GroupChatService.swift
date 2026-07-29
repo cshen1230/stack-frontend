@@ -26,7 +26,7 @@ enum GroupChatService {
     static func members(groupChatId: UUID) async throws -> [GroupChatMember] {
         try await supabase
             .from("group_chat_members")
-            .select("id, group_chat_id, user_id, role, joined_at, users(first_name, last_name, avatar_url, dupr_rating)")
+            .select("id, group_chat_id, user_id, role, joined_at, users(first_name, last_name, avatar_url, dupr_rating, dupr_verified)")
             .eq("group_chat_id", value: groupChatId)
             .order("joined_at")
             .execute()

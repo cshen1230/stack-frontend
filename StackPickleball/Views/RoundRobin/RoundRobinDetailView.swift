@@ -267,9 +267,16 @@ struct RoundRobinDetailView: View {
                                 }
                             }
                             if let rating = p.users.duprRating {
-                                Text("DUPR \(String(format: "%.1f", rating))")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(.stackGreen)
+                                HStack(spacing: 3) {
+                                    if p.users.isDuprConnected {
+                                        Image(systemName: "checkmark.seal.fill")
+                                            .font(.system(size: 11))
+                                            .foregroundColor(.stackGreen)
+                                    }
+                                    Text("DUPR \(String(format: "%.1f", rating))")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(.stackGreen)
+                                }
                             }
                         }
                         Spacer()

@@ -1,0 +1,115 @@
+import SwiftUI
+
+@Observable
+class HomeViewModel {
+    var readyFriends: [ReadyFriend] = []
+    var nearbyGames: [Game] = []
+    var participantAvatars: [UUID: [String]] = [:]
+    var joinedGameIds: Set<UUID> = []
+    var isCurrentUserReady = false
+    var currentReadyNote: String?
+    var isLoading = false
+    var errorMessage: String?
+    var joinedGame: Game?
+
+    var selectedDistance: Double = 20.0
+
+    private var lastLat: Double?
+    private var lastLng: Double?
+    private var lastUserId: UUID?
+
+    func loadHome(currentUserId: UUID?, lat: Double?, lng: Double?) async {
+        isLoading = true
+        errorMessage = nil
+        lastLat = lat
+        lastLng = lng
+        lastUserId = currentUserId
+
+        let latitude = lat ?? 30.2672
+        let longitude = lng ?? -97.7431
+
+        do {
+            async let fetchedGames = GameService.nearbyGames(
+                lat: latitude,
+                lng: longitude,
+                radiusMiles: selectedDistance
+            )
+
+            if let userId = currentUserId {
+                async let fetchedReady = ScheduleService.friendsReadyToPlay(userId: userId)
+                async let fetchedIds = GameService.myJoinedGameIds(userId: userId)
+
+                let allGames = try await fetchedGames
+                let joined = try await fetchedIds
+                joinedGameIds = joined
+                nearbyGames = allGames.filter { !joined.contains($0.id) && $0.creatorId != userId }
+                readyFriends = try await fetchedReady
+
+                // Check own availability
+                let ownStatus = try? await PlayerService.currentUserAvailability(userId: userId)
+                isCurrentUserReady = ownStatus != nil
+                currentReadyNote = ownStatus?.note
+            } else {
+                nearbyGames = try await fetchedGames
+            }
+
+            let gameIds = nearbyGames.map(\.id)
+            participantAvatars = try await GameService.participantAvatarsForGames(gameIds: gameIds)
+        } catch where error.isCancellation {
+            return
+        } catch {
+            if !Task.isCancelled {
+                errorMessage = error.localizedDescription
+            }
+        }
+        isLoading = false
+    }
+
+    func broadcastReady(
+        from: Date,
+        until: Date,
+        format: GameFormat?,
+        note: String?,
+        lat: Double?,
+        lng: Double?
+    ) async {
+        do {
+            try await PlayerService.setAvailability(
+                availableFrom: from,
+                availableUntil: until,
+                latitude: lat,
+                longitude: lng,
+                preferredFormat: format,
+                note: note
+            )
+            isCurrentUserReady = true
+            currentReadyNote = note
+            await loadHome(currentUserId: lastUserId, lat: lastLat, lng: lastLng)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func stopReady() async {
+        do {
+            try await PlayerService.clearAvailability()
+            isCurrentUserReady = false
+            currentReadyNote = nil
+            await loadHome(currentUserId: lastUserId, lat: lastLat, lng: lastLng)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func rsvpToGame(_ game: Game) async {
+        do {
+            try await GameService.rsvpToGame(gameId: game.id)
+            joinedGameIds.insert(game.id)
+            joinedGame = game
+            nearbyGames.removeAll { $0.id == game.id }
+        } catch {
+            errorMessage = error.localizedDescription
+            await loadHome(currentUserId: lastUserId, lat: lastLat, lng: lastLng)
+        }
+    }
+}

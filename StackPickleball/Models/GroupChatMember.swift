@@ -13,12 +13,16 @@ struct GroupChatMember: Identifiable, Codable, Sendable {
         let lastName: String
         let avatarUrl: String?
         let duprRating: Double?
+        let duprVerified: Bool?
+
+        var isDuprConnected: Bool { duprVerified == true }
 
         enum CodingKeys: String, CodingKey {
             case firstName = "first_name"
             case lastName = "last_name"
             case avatarUrl = "avatar_url"
             case duprRating = "dupr_rating"
+            case duprVerified = "dupr_verified"
         }
     }
 

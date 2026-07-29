@@ -8,9 +8,10 @@ struct OnboardingView: View {
     @State private var middleName = ""
     @State private var lastName = ""
     @State private var username = ""
-    @State private var duprRating = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
+    @State private var duprConnected = false
+    @State private var duprProfile: DUPRService.DUPRProfile?
 
     var body: some View {
         ZStack {
@@ -55,11 +56,19 @@ struct OnboardingView: View {
                             .textInputAutocapitalization(.never)
                             #endif
 
-                        // DUPR Rating
-                        formField(icon: "trophy", placeholder: "DUPR Rating (e.g. 3.5)", text: $duprRating)
-                            #if os(iOS)
-                            .keyboardType(.decimalPad)
-                            #endif
+                        // DUPR Connect
+                        DUPRConnectView(
+                            onConnected: { profile in
+                                duprProfile = profile
+                                duprConnected = true
+                            },
+                            onSkip: {
+                                duprConnected = false
+                                duprProfile = nil
+                            },
+                            allowSkip: true,
+                            isConnected: duprConnected
+                        )
                     }
                     .padding(.horizontal, 24)
 
@@ -125,14 +134,11 @@ struct OnboardingView: View {
             errorMessage = "Username must be at least 3 characters"
             return
         }
-        guard let rating = Double(duprRating), rating >= 1.0, rating <= 8.0 else {
-            errorMessage = "Enter a valid DUPR rating (1.0 - 8.0)"
-            return
-        }
 
         isLoading = true
         Task {
             do {
+                let rating = duprProfile?.dupr_rating ?? 2.5
                 try await ProfileService.createProfile(
                     firstName: firstName.trimmingCharacters(in: .whitespaces),
                     lastName: lastName.trimmingCharacters(in: .whitespaces),

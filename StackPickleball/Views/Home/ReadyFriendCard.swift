@@ -1,20 +1,18 @@
 import SwiftUI
 
-struct AvailablePlayerCard: View {
-    let player: AvailablePlayer
+struct ReadyFriendCard: View {
+    let friend: ReadyFriend
     var isExpanded: Bool = false
-    var isFriend: Bool = false
-    var isRequestSent: Bool = false
     var onTap: (() -> Void)?
-    var onInviteTapped: (() -> Void)?
-    var onAddFriendTapped: (() -> Void)?
+    var onCreateGame: (() -> Void)?
+    var onInviteToGame: (() -> Void)?
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                // Avatar with green dot
+                // Avatar with pulsing green dot
                 ZStack(alignment: .bottomTrailing) {
-                    if let urlStr = player.avatarUrl, let url = URL(string: urlStr) {
+                    if let urlStr = friend.avatarUrl, let url = URL(string: urlStr) {
                         AsyncImage(url: url) { image in
                             image.resizable().scaledToFill()
                         } placeholder: {
@@ -32,17 +30,16 @@ struct AvailablePlayerCard: View {
                         .overlay(Circle().stroke(Color.white, lineWidth: 2))
                 }
 
-                // Name, note, metadata
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
-                        Text(player.displayName)
+                        Text(friend.displayName)
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.primary)
                             .lineLimit(1)
 
-                        if let rating = player.duprRating {
+                        if let rating = friend.duprRating {
                             HStack(spacing: 3) {
-                                if player.isDuprConnected {
+                                if friend.isDuprConnected {
                                     Image(systemName: "checkmark.seal.fill")
                                         .font(.system(size: 10))
                                         .foregroundColor(.stackDUPRBadge)
@@ -58,7 +55,17 @@ struct AvailablePlayerCard: View {
                         }
                     }
 
-                    if let format = player.preferredFormat {
+                    // Time window
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 11))
+                            .foregroundColor(.stackSecondaryText)
+                        Text(timeWindowText)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.stackSecondaryText)
+                    }
+
+                    if let format = friend.preferredFormat {
                         Text(format.displayName)
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(.white)
@@ -68,7 +75,7 @@ struct AvailablePlayerCard: View {
                             .cornerRadius(6)
                     }
 
-                    if let note = player.note, !note.isEmpty {
+                    if let note = friend.note, !note.isEmpty {
                         Text(note)
                             .font(.system(size: 14))
                             .foregroundColor(.secondary)
@@ -91,12 +98,12 @@ struct AvailablePlayerCard: View {
 
                 HStack(spacing: 10) {
                     Button {
-                        onInviteTapped?()
+                        onCreateGame?()
                     } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "calendar.badge.plus")
+                            Image(systemName: "plus.circle")
                                 .font(.system(size: 13))
-                            Text("Invite to Session")
+                            Text("Create Game")
                                 .font(.system(size: 13, weight: .semibold))
                         }
                         .foregroundColor(.white)
@@ -106,23 +113,20 @@ struct AvailablePlayerCard: View {
                         .cornerRadius(10)
                     }
 
-                    if !isFriend {
-                        Button {
-                            onAddFriendTapped?()
-                        } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: isRequestSent ? "checkmark" : "person.badge.plus")
-                                    .font(.system(size: 13))
-                                Text(isRequestSent ? "Request Sent" : "Add Friend")
-                                    .font(.system(size: 13, weight: .semibold))
-                            }
-                            .foregroundColor(isRequestSent ? .stackSecondaryText : .stackGreen)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .background(isRequestSent ? Color(.systemGray5) : Color.stackGreen.opacity(0.1))
-                            .cornerRadius(10)
+                    Button {
+                        onInviteToGame?()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "calendar.badge.plus")
+                                .font(.system(size: 13))
+                            Text("Invite to Game")
+                                .font(.system(size: 13, weight: .semibold))
                         }
-                        .disabled(isRequestSent)
+                        .foregroundColor(.stackGreen)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color.stackGreen.opacity(0.1))
+                        .cornerRadius(10)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -141,19 +145,30 @@ struct AvailablePlayerCard: View {
         }
     }
 
+    private var timeWindowText: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        let untilStr = formatter.string(from: friend.availableUntil)
+        if let from = friend.availableFrom {
+            let fromStr = formatter.string(from: from)
+            return "\(fromStr) – \(untilStr)"
+        }
+        return "until \(untilStr)"
+    }
+
     private var initialCircle: some View {
         Circle()
             .fill(Color.stackGreen.opacity(0.15))
             .frame(width: 48, height: 48)
             .overlay(
-                Text(playerInitial)
+                Text(friendInitial)
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.stackGreen)
             )
     }
 
-    private var playerInitial: String {
-        let name = player.firstName ?? player.username ?? "?"
+    private var friendInitial: String {
+        let name = friend.firstName ?? friend.username ?? "?"
         return String(name.prefix(1)).uppercased()
     }
 }

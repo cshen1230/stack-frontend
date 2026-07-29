@@ -38,9 +38,16 @@ struct InviteFriendSheet: View {
                                 Text(friend.displayName)
                                     .font(.system(size: 15, weight: .semibold))
                                 if let dupr = friend.duprRating {
-                                    Text("DUPR \(String(format: "%.1f", dupr))")
-                                        .font(.system(size: 13))
-                                        .foregroundColor(.stackGreen)
+                                    HStack(spacing: 3) {
+                                        if friend.isDuprConnected {
+                                            Image(systemName: "checkmark.seal.fill")
+                                                .font(.system(size: 11))
+                                                .foregroundColor(.stackGreen)
+                                        }
+                                        Text("DUPR \(String(format: "%.1f", dupr))")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(.stackGreen)
+                                    }
                                 }
                             }
 

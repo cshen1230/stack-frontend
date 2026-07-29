@@ -428,9 +428,16 @@ private struct FlyerPlayerRow: View {
                 }
 
                 if let rating = participant.users.duprRating {
-                    Text("DUPR \(String(format: "%.1f", rating))")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.stackGreen)
+                    HStack(spacing: 3) {
+                        if participant.users.isDuprConnected {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: 11))
+                                .foregroundColor(.stackGreen)
+                        }
+                        Text("DUPR \(String(format: "%.1f", rating))")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.stackGreen)
+                    }
                 }
             }
 

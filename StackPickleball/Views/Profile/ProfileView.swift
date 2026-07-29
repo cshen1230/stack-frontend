@@ -20,6 +20,17 @@ struct ProfileView: View {
                                 // Profile card with overlapping avatar
                                 profileCard(user: user)
 
+                                // DUPR connect prompt for unverified users
+                                if !user.isDuprConnected {
+                                    DUPRConnectView(
+                                        onConnected: { _ in
+                                            Task { await viewModel.loadProfile() }
+                                        },
+                                        allowSkip: false,
+                                        isConnected: false
+                                    )
+                                }
+
                                 friendsSection(proxy: proxy)
 
                                 // Calendar section
@@ -133,7 +144,35 @@ struct ProfileView: View {
                 }
 
                 // DUPR badge
-                if let dupr = user.duprRating {
+                if user.isDuprConnected {
+                    VStack(spacing: 4) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.white)
+                            Text("DUPR Verified")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(Color.stackDUPRBadge)
+                        .cornerRadius(18)
+
+                        HStack(spacing: 12) {
+                            if let singles = user.duprSinglesRating {
+                                Text("Singles: \(String(format: "%.2f", singles))")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(.stackSecondaryText)
+                            }
+                            if let doubles = user.duprDoublesRating {
+                                Text("Doubles: \(String(format: "%.2f", doubles))")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(.stackSecondaryText)
+                            }
+                        }
+                    }
+                } else if let dupr = user.duprRating {
                     HStack(spacing: 6) {
                         Image(systemName: "trophy.fill")
                             .font(.system(size: 14))
@@ -144,8 +183,16 @@ struct ProfileView: View {
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
-                    .background(Color.stackDUPRBadge)
+                    .background(Color.stackDUPRBadge.opacity(0.7))
                     .cornerRadius(18)
+                } else {
+                    Text("Beginner")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.stackSecondaryText)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(Color.stackFilterInactive)
+                        .cornerRadius(18)
                 }
 
                 // Stats row
@@ -397,9 +444,16 @@ struct ProfileView: View {
                     .foregroundColor(.black)
 
                 if let dupr = request.duprRating {
-                    Text("DUPR \(String(format: "%.1f", dupr))")
-                        .font(.system(size: 13))
-                        .foregroundColor(.stackGreen)
+                    HStack(spacing: 3) {
+                        if request.isDuprConnected {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: 11))
+                                .foregroundColor(.stackGreen)
+                        }
+                        Text("DUPR \(String(format: "%.1f", dupr))")
+                            .font(.system(size: 13))
+                            .foregroundColor(.stackGreen)
+                    }
                 } else {
                     Text("@\(request.username)")
                         .font(.system(size: 13))

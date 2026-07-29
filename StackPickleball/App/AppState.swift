@@ -11,6 +11,9 @@ class AppState {
     var pendingFriendRequestCount: Int = 0
     var pendingGroupChatId: UUID?
     var unreadGroupChatCount: Int = 0
+    var isUserReady: Bool = false
+    var readyUntil: Date?
+    var readyFriendCount: Int = 0
 
     private var authTask: Task<Void, Never>?
 

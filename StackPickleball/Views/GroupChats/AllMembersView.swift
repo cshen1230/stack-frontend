@@ -51,9 +51,16 @@ struct AllMembersView: View {
                                         .foregroundColor(.stackGreen)
                                 }
                                 if let rating = member.users.duprRating {
-                                    Text("DUPR \(String(format: "%.1f", rating))")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.stackSecondaryText)
+                                    HStack(spacing: 3) {
+                                        if member.users.isDuprConnected {
+                                            Image(systemName: "checkmark.seal.fill")
+                                                .font(.system(size: 10))
+                                                .foregroundColor(.stackSecondaryText)
+                                        }
+                                        Text("DUPR \(String(format: "%.1f", rating))")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.stackSecondaryText)
+                                    }
                                 }
                             }
                         }

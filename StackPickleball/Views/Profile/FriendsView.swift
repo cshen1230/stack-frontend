@@ -69,9 +69,16 @@ struct FriendsView: View {
                                         .font(.system(size: 13))
                                         .foregroundColor(.stackSecondaryText)
                                     if let dupr = friend.duprRating {
-                                        Text("\(String(format: "%.1f", dupr)) DUPR")
-                                            .font(.system(size: 12, weight: .medium))
-                                            .foregroundColor(.stackGreen)
+                                        HStack(spacing: 3) {
+                                            if friend.isDuprConnected {
+                                                Image(systemName: "checkmark.seal.fill")
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(.stackGreen)
+                                            }
+                                            Text("\(String(format: "%.1f", dupr)) DUPR")
+                                                .font(.system(size: 12, weight: .medium))
+                                                .foregroundColor(.stackGreen)
+                                        }
                                     }
                                 }
                             }

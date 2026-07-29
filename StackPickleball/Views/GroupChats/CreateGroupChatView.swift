@@ -188,9 +188,16 @@ struct CreateGroupChatView: View {
                                                     .font(.system(size: 15, weight: .medium))
                                                     .foregroundColor(.primary)
                                                 if let rating = friend.duprRating {
-                                                    Text("DUPR \(String(format: "%.1f", rating))")
-                                                        .font(.system(size: 12))
-                                                        .foregroundColor(.stackGreen)
+                                                    HStack(spacing: 3) {
+                                                        if friend.isDuprConnected {
+                                                            Image(systemName: "checkmark.seal.fill")
+                                                                .font(.system(size: 10))
+                                                                .foregroundColor(.stackGreen)
+                                                        }
+                                                        Text("DUPR \(String(format: "%.1f", rating))")
+                                                            .font(.system(size: 12))
+                                                            .foregroundColor(.stackGreen)
+                                                    }
                                                 }
                                             }
 

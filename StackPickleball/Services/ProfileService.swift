@@ -17,7 +17,7 @@ enum ProfileService {
         let last_name: String
         var middle_name: String?
         let username: String
-        let dupr_rating: Double
+        let dupr_rating: Double?
         var latitude: Double?
         var longitude: Double?
     }
@@ -27,7 +27,7 @@ enum ProfileService {
         lastName: String,
         middleName: String?,
         username: String,
-        duprRating: Double,
+        duprRating: Double?,
         latitude: Double?,
         longitude: Double?
     ) async throws {

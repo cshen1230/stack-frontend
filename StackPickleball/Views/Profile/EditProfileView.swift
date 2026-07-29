@@ -14,6 +14,7 @@ struct EditProfileView: View {
     @State private var avatarImage: Image?
     @State private var avatarData: Data?
     @State private var isSaving = false
+    @State private var duprConnected = false
 
     var body: some View {
         NavigationStack {
@@ -82,10 +83,44 @@ struct EditProfileView: View {
                 }
 
                 Section("DUPR") {
-                    TextField("DUPR Rating", text: $duprRating)
-                        #if os(iOS)
-                        .keyboardType(.decimalPad)
-                        #endif
+                    if duprConnected {
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .foregroundColor(.stackGreen)
+                            Text("DUPR Verified")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.stackGreen)
+                        }
+
+                        if let singles = viewModel.user?.duprSinglesRating {
+                            HStack {
+                                Text("Singles")
+                                    .foregroundColor(.stackSecondaryText)
+                                Spacer()
+                                Text(String(format: "%.2f", singles))
+                            }
+                        }
+
+                        if let doubles = viewModel.user?.duprDoublesRating {
+                            HStack {
+                                Text("Doubles")
+                                    .foregroundColor(.stackSecondaryText)
+                                Spacer()
+                                Text(String(format: "%.2f", doubles))
+                            }
+                        }
+                    } else {
+                        DUPRConnectView(
+                            onConnected: { _ in
+                                duprConnected = true
+                                Task { await viewModel.loadProfile() }
+                            },
+                            allowSkip: false,
+                            isConnected: false
+                        )
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                    }
                 }
             }
             .navigationTitle("Edit Profile")
@@ -121,7 +156,7 @@ struct EditProfileView: View {
                                 lastName: lastName.isEmpty ? nil : lastName,
                                 middleName: middleName,
                                 username: username.isEmpty ? nil : username,
-                                duprRating: Double(duprRating),
+                                duprRating: duprConnected ? nil : Double(duprRating),
                                 avatarUrl: uploadedAvatarUrl
                             )
                             isSaving = false
@@ -141,6 +176,7 @@ struct EditProfileView: View {
                     lastName = user.lastName
                     username = user.username
                     duprRating = user.duprRating.map { String(format: "%.1f", $0) } ?? ""
+                    duprConnected = user.isDuprConnected
                 }
             }
         }

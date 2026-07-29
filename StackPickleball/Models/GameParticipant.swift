@@ -30,13 +30,17 @@ struct ParticipantWithProfile: Identifiable, Codable, Sendable {
         let firstName: String
         let lastName: String
         let duprRating: Double?
+        let duprVerified: Bool?
         let avatarUrl: String?
+
+        var isDuprConnected: Bool { duprVerified == true }
 
         enum CodingKeys: String, CodingKey {
             case username
             case firstName = "first_name"
             case lastName = "last_name"
             case duprRating = "dupr_rating"
+            case duprVerified = "dupr_verified"
             case avatarUrl = "avatar_url"
         }
     }

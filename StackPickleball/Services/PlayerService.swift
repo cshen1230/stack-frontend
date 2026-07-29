@@ -10,6 +10,7 @@ enum PlayerService {
     }
 
     struct SetAvailabilityRequest: Encodable {
+        let available_from: String
         let available_until: String
         var latitude: Double?
         var longitude: Double?
@@ -18,6 +19,7 @@ enum PlayerService {
     }
 
     static func setAvailability(
+        availableFrom: Date = Date(),
         availableUntil: Date,
         latitude: Double?,
         longitude: Double?,
@@ -26,21 +28,23 @@ enum PlayerService {
     ) async throws {
         let session = try await supabase.auth.session
         let headers = ["Authorization": "Bearer \(session.accessToken)"]
+        let formatter = ISO8601DateFormatter()
         let request = SetAvailabilityRequest(
-            available_until: ISO8601DateFormatter().string(from: availableUntil),
+            available_from: formatter.string(from: availableFrom),
+            available_until: formatter.string(from: availableUntil),
             latitude: latitude,
             longitude: longitude,
             preferred_format: preferredFormat?.rawValue,
             note: note
         )
-        try await supabase.functions.invoke("set-availability", options: .init(headers: headers, body: request))
+        try await supabase.functions.invoke("broadcast-ready", options: .init(headers: headers, body: request))
     }
 
     static func clearAvailability() async throws {
         let session = try await supabase.auth.session
         let headers = ["Authorization": "Bearer \(session.accessToken)"]
         try await supabase.functions.invoke(
-            "set-availability",
+            "broadcast-ready",
             options: .init(method: .delete, headers: headers)
         )
     }

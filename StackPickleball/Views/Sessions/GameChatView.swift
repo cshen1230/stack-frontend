@@ -326,9 +326,16 @@ private struct SessionSettingsSheet: View {
                                         }
 
                                         if let rating = participant.users.duprRating {
-                                            Text("DUPR \(String(format: "%.1f", rating))")
-                                                .font(.system(size: 12))
-                                                .foregroundColor(.stackGreen)
+                                            HStack(spacing: 3) {
+                                                if participant.users.isDuprConnected {
+                                                    Image(systemName: "checkmark.seal.fill")
+                                                        .font(.system(size: 10))
+                                                        .foregroundColor(.stackGreen)
+                                                }
+                                                Text("DUPR \(String(format: "%.1f", rating))")
+                                                    .font(.system(size: 12))
+                                                    .foregroundColor(.stackGreen)
+                                            }
                                         }
                                     }
 

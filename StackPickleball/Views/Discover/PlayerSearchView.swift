@@ -31,7 +31,7 @@ struct PlayerSearchView: View {
 
                     if let dupr = player.duprRating {
                         HStack(spacing: 4) {
-                            Image(systemName: "trophy.fill")
+                            Image(systemName: player.isDuprConnected ? "checkmark.seal.fill" : "trophy.fill")
                                 .font(.system(size: 12))
                                 .foregroundColor(.white)
                             Text(String(format: "%.1f", dupr))

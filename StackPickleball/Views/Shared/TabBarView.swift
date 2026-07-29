@@ -7,17 +7,17 @@ struct TabBarView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            DiscoverView()
+            HomeView()
                 .tabItem {
-                    Image(systemName: selectedTab == 0 ? "magnifyingglass.circle.fill" : "magnifyingglass")
-                    Text("Discover")
+                    Image(systemName: selectedTab == 0 ? "house.fill" : "house")
+                    Text("Home")
                 }
                 .tag(0)
 
-            MySessionsView(selectedTab: $selectedTab)
+            ScheduleTab(selectedTab: $selectedTab)
                 .tabItem {
-                    Image(systemName: selectedTab == 1 ? "calendar.badge.clock" : "calendar.badge.clock")
-                    Text("Sessions")
+                    Image(systemName: selectedTab == 1 ? "calendar" : "calendar")
+                    Text("Schedule")
                 }
                 .tag(1)
 
