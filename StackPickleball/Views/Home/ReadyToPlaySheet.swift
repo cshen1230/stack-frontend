@@ -15,7 +15,7 @@ struct ReadyToPlaySheet: View {
     enum FromOption: String, CaseIterable {
         case now = "Right now"
         case inOneHour = "In 1 hour"
-        case custom = "Pick a time"
+        case custom = "Pick a date & time"
     }
 
     private let durationOptions = [1, 2, 3, 4]
@@ -31,6 +31,13 @@ struct ReadyToPlaySheet: View {
 
     private var untilDate: Date {
         fromDate.addingTimeInterval(TimeInterval(selectedHours * 3600))
+    }
+
+    private var untilDateLabel: String {
+        if Calendar.current.isDateInToday(untilDate) {
+            return untilDate.formatted(date: .omitted, time: .shortened)
+        }
+        return untilDate.formatted(date: .abbreviated, time: .shortened)
     }
 
     var body: some View {
@@ -64,7 +71,7 @@ struct ReadyToPlaySheet: View {
                         }
 
                         if fromOption == .custom {
-                            DatePicker("From", selection: $customFromTime, displayedComponents: .hourAndMinute)
+                            DatePicker("From", selection: $customFromTime, in: Date()..., displayedComponents: [.date, .hourAndMinute])
                                 .datePickerStyle(.compact)
                                 .padding(.top, 4)
                         }
@@ -96,7 +103,7 @@ struct ReadyToPlaySheet: View {
                         }
 
                         // Show computed end time
-                        Text("Until \(untilDate.formatted(date: .omitted, time: .shortened))")
+                        Text("Until \(untilDateLabel)")
                             .font(.system(size: 13))
                             .foregroundColor(.stackSecondaryText)
                             .padding(.top, 2)
