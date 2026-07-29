@@ -16,14 +16,14 @@ enum ScheduleService {
             .value
     }
 
-    struct ScheduleWindow: Encodable {
+    struct ScheduleWindow: Encodable, Sendable {
         let day_of_week: Int
         let start_time: String
         let end_time: String
         var preferred_format: String?
     }
 
-    struct SaveScheduleRequest: Encodable {
+    struct SaveScheduleRequest: Encodable, Sendable {
         let windows: [ScheduleWindow]
     }
 
@@ -54,16 +54,21 @@ enum ScheduleService {
         ).execute().value
     }
 
+    struct FriendsSchedulesParams: Encodable, Sendable {
+        let p_user_id: String
+        let p_day_of_week: Int
+    }
+
     static func friendsSchedules(userId: UUID, dayOfWeek: Int) async throws -> [FriendScheduleRow] {
         try await supabase.rpc(
             "friends_schedules",
-            params: ["p_user_id": userId.uuidString, "p_day_of_week": dayOfWeek]
+            params: FriendsSchedulesParams(p_user_id: userId.uuidString, p_day_of_week: dayOfWeek)
         ).execute().value
     }
 
     // MARK: - Device Tokens
 
-    struct DeviceTokenRequest: Encodable {
+    struct DeviceTokenRow: Encodable, Sendable {
         let user_id: String
         let device_token: String
         let platform: String
@@ -72,12 +77,10 @@ enum ScheduleService {
     static func registerDeviceToken(_ token: String) async throws {
         let session = try await supabase.auth.session
         let userId = session.user.id
+        let row = DeviceTokenRow(user_id: userId.uuidString, device_token: token, platform: "ios")
         try await supabase
             .from("user_devices")
-            .upsert(
-                DeviceTokenRequest(user_id: userId.uuidString, device_token: token, platform: "ios"),
-                onConflict: "user_id,device_token"
-            )
+            .insert(row)
             .execute()
     }
 }
