@@ -153,7 +153,18 @@ struct OnboardingView: View {
                     await appState.loadProfile(userId: userId)
                 }
             } catch {
-                errorMessage = error.localizedDescription
+                let message = "\(error)"
+                if message.lowercased().contains("username") || message.contains("duplicate") || message.contains("unique") || message.contains("23505") || message.contains("users_username_key") {
+                    errorMessage = "Username already exists. Please choose a different one."
+                } else {
+                    // Check if username exists as a fallback for generic edge function errors
+                    let taken = (try? await ProfileService.isUsernameTaken(username)) ?? false
+                    if taken {
+                        errorMessage = "Username already exists. Please choose a different one."
+                    } else {
+                        errorMessage = "Something went wrong. Please try again."
+                    }
+                }
             }
             isLoading = false
         }

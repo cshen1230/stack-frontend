@@ -83,6 +83,20 @@ enum ProfileService {
             .execute()
     }
 
+    static func isUsernameTaken(_ username: String) async throws -> Bool {
+        struct UsernameRow: Decodable {
+            let username: String
+        }
+        let results: [UsernameRow] = try await supabase
+            .from("users")
+            .select("username")
+            .eq("username", value: username)
+            .limit(1)
+            .execute()
+            .value
+        return !results.isEmpty
+    }
+
     static func uploadAvatar(userId: UUID, imageData: Data) async throws -> String {
         let path = "\(userId.uuidString)/avatar.jpg"
         try await supabase.storage.from("avatars").upload(
