@@ -21,20 +21,13 @@ struct TabBarView: View {
                 }
                 .tag(1)
 
-            GroupChatsListView(selectedTab: $selectedTab)
-                .tabItem {
-                    Image(systemName: selectedTab == 2 ? "person.3.fill" : "person.3")
-                    Text("Communities")
-                }
-                .tag(2)
-
             ProfileView()
                 .tabItem {
-                    Image(systemName: selectedTab == 3 ? "person.fill" : "person")
+                    Image(systemName: selectedTab == 2 ? "person.fill" : "person")
                     Text("Profile")
                 }
                 .badge(appState.pendingFriendRequestCount)
-                .tag(3)
+                .tag(2)
         }
         .accentColor(.stackGreen)
         .onChange(of: deepLinkRouter.pendingGameId) {
@@ -42,20 +35,8 @@ struct TabBarView: View {
                 selectedTab = 0
             }
         }
-        .onChange(of: deepLinkRouter.pendingGroupChatId) {
-            if let chatId = deepLinkRouter.pendingGroupChatId {
-                appState.pendingGroupChatId = chatId
-                deepLinkRouter.pendingGroupChatId = nil
-                selectedTab = 2
-            }
-        }
-        .onChange(of: appState.pendingGroupChatId) {
-            if appState.pendingGroupChatId != nil {
-                selectedTab = 2
-            }
-        }
         .onChange(of: selectedTab) {
-            if selectedTab == 3 {
+            if selectedTab == 2 {
                 Task { await appState.loadFriendRequestCount() }
             }
         }
