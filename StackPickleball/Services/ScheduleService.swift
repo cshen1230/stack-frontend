@@ -1,7 +1,36 @@
 import Foundation
 import Supabase
 
+private struct ScheduleWindowPayload: Encodable, Sendable {
+    let day_of_week: Int
+    let start_time: String
+    let end_time: String
+    var preferred_format: String?
+}
+
+private struct SaveScheduleBody: Encodable, Sendable {
+    let windows: [ScheduleWindowPayload]
+}
+
+private struct FriendsSchedulesParams: Encodable, Sendable {
+    let p_user_id: String
+    let p_day_of_week: Int
+}
+
+private struct DeviceTokenRow: Encodable, Sendable {
+    let user_id: String
+    let device_token: String
+    let platform: String
+}
+
 enum ScheduleService {
+
+    struct ScheduleWindow {
+        let day_of_week: Int
+        let start_time: String
+        let end_time: String
+        var preferred_format: String?
+    }
 
     // MARK: - My Recurring Schedule
 
@@ -16,23 +45,20 @@ enum ScheduleService {
             .value
     }
 
-    struct ScheduleWindow: Encodable, Sendable {
-        let day_of_week: Int
-        let start_time: String
-        let end_time: String
-        var preferred_format: String?
-    }
-
-    struct SaveScheduleRequest: Encodable, Sendable {
-        let windows: [ScheduleWindow]
-    }
-
     static func saveSchedule(windows: [ScheduleWindow]) async throws {
         let session = try await supabase.auth.session
         let headers = ["Authorization": "Bearer \(session.accessToken)"]
+        let payloads = windows.map {
+            ScheduleWindowPayload(
+                day_of_week: $0.day_of_week,
+                start_time: $0.start_time,
+                end_time: $0.end_time,
+                preferred_format: $0.preferred_format
+            )
+        }
         try await supabase.functions.invoke(
             "set-schedule",
-            options: .init(headers: headers, body: SaveScheduleRequest(windows: windows))
+            options: .init(headers: headers, body: SaveScheduleBody(windows: payloads))
         )
     }
 
@@ -54,11 +80,6 @@ enum ScheduleService {
         ).execute().value
     }
 
-    struct FriendsSchedulesParams: Encodable, Sendable {
-        let p_user_id: String
-        let p_day_of_week: Int
-    }
-
     static func friendsSchedules(userId: UUID, dayOfWeek: Int) async throws -> [FriendScheduleRow] {
         try await supabase.rpc(
             "friends_schedules",
@@ -67,12 +88,6 @@ enum ScheduleService {
     }
 
     // MARK: - Device Tokens
-
-    struct DeviceTokenRow: Encodable, Sendable {
-        let user_id: String
-        let device_token: String
-        let platform: String
-    }
 
     static func registerDeviceToken(_ token: String) async throws {
         let session = try await supabase.auth.session
