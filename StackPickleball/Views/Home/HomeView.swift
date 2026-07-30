@@ -7,11 +7,9 @@ struct HomeView: View {
     @EnvironmentObject private var locationManager: LocationManager
     @State private var viewModel = HomeViewModel()
     @State private var selectedGame: Game?
-    @State private var showingCreateGame = false
     @State private var showingReadyToPlay = false
     @State private var showingMap = false
     @State private var expandedGameId: UUID?
-    @State private var selectedReadyFriend: ReadyFriend?
     @State private var createdSessionInfo: CreatedSessionInfo?
     @State private var showingAddFriends = false
 
@@ -36,16 +34,22 @@ struct HomeView: View {
                         readyToPlayBanner
                             .padding(.horizontal, 16)
 
-                        // Who's ready at what time today
-                        if !viewModel.readyFriends.isEmpty {
-                            readyTodaySection
+                        // Who's free, and where you plan a session — same calendar.
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Plan a Session")
+                                .font(.system(size: 18, weight: .bold))
                                 .padding(.horizontal, 16)
-                        }
 
-                        // Smart match suggestion card
-                        if !viewModel.readyFriends.isEmpty {
-                            smartSuggestionCard
-                                .padding(.horizontal, 16)
+                            DayPlannerBoard(friends: viewModel.readyFriends) { info in
+                                createdSessionInfo = info
+                                Task {
+                                    await viewModel.loadHome(
+                                        currentUserId: currentUserId,
+                                        lat: locationManager.latitude,
+                                        lng: locationManager.longitude
+                                    )
+                                }
+                            }
                         }
 
                         // Open Games Near You
@@ -86,22 +90,6 @@ struct HomeView: View {
 
                         // Quick Actions
                         HStack(spacing: 12) {
-                            Button {
-                                showingCreateGame = true
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.system(size: 15))
-                                    Text("Create Game")
-                                        .font(.system(size: 14, weight: .semibold))
-                                }
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color.stackGreen)
-                                .cornerRadius(12)
-                            }
-
                             Button {
                                 appState.selectedTab = 1
                             } label: {
@@ -209,13 +197,6 @@ struct HomeView: View {
                                 .foregroundColor(.primary)
                         }
 
-                        Button {
-                            showingCreateGame = true
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(.primary)
-                        }
                     }
                 }
             }
@@ -241,19 +222,6 @@ struct HomeView: View {
                     GameDetailView(game: game, isHost: game.creatorId == currentUserId)
                 }
             }
-            .sheet(isPresented: $showingCreateGame) {
-                DayPlannerView(readyFriends: viewModel.readyFriends) { info in
-                    showingCreateGame = false
-                    createdSessionInfo = info
-                    Task {
-                        await viewModel.loadHome(
-                            currentUserId: currentUserId,
-                            lat: locationManager.latitude,
-                            lng: locationManager.longitude
-                        )
-                    }
-                }
-            }
             .sheet(isPresented: $showingReadyToPlay) {
                 ReadyToPlaySheet(viewModel: viewModel)
             }
@@ -261,17 +229,6 @@ struct HomeView: View {
                 NavigationStack {
                     FriendsView(initiallyShowSearch: true)
                 }
-            }
-            .sheet(item: $selectedReadyFriend) { friend in
-                ReadyFriendDetailSheet(
-                    friend: friend,
-                    onCreateGame: {
-                        showingCreateGame = true
-                    },
-                    onInviteToGame: {
-                        // Navigate to invite flow
-                    }
-                )
             }
             .fullScreenCover(isPresented: $showingMap) {
                 SessionMapView(
@@ -315,83 +272,6 @@ struct HomeView: View {
                 }
             }
         }
-    }
-
-    // MARK: - Ready Today
-
-    private var readyTodaySection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                Text("Ready Today")
-                    .font(.system(size: 18, weight: .bold))
-                Text("\(viewModel.readyFriends.count)")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 24, height: 24)
-                    .background(Color.stackGreen)
-                    .clipShape(Circle())
-            }
-            .padding(.bottom, 6)
-
-            ForEach(Array(viewModel.readyFriends.enumerated()), id: \.element.id) { index, friend in
-                if index > 0 {
-                    Divider().padding(.leading, 74)
-                }
-                ReadyTimeRow(friend: friend, now: now) {
-                    selectedReadyFriend = friend
-                }
-            }
-        }
-    }
-
-    // MARK: - Smart Suggestion Card
-
-    @ViewBuilder
-    private var smartSuggestionCard: some View {
-        let readyNow = viewModel.friendsReadyNow(at: now)
-        let message: String = {
-            if readyNow.count >= 2 {
-                return "\(readyNow.count) friends are ready now — start a game?"
-            } else if let friend = readyNow.first {
-                let name = friend.firstName ?? friend.username ?? "A friend"
-                return "\(name) is ready to play — invite them to a game?"
-            } else if let next = viewModel.readyFriends.first {
-                // Nobody yet, but someone's window opens later today.
-                let name = next.firstName ?? next.username ?? "A friend"
-                return "\(name) is ready at \(next.startLabel(at: now)) — line up a game?"
-            }
-            return ""
-        }()
-
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(message)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 0)
-
-            Button {
-                showingCreateGame = true
-            } label: {
-                Text("Create Game")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Color.stackGreen)
-                    .cornerRadius(8)
-            }
-        }
-        .padding(14)
-        .background(Color.stackCardWhite)
-        .cornerRadius(14)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.stackGreen.opacity(0.3), lineWidth: 1)
-        )
     }
 
     // MARK: - Ready to Play Banner

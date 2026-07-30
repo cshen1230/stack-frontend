@@ -23,11 +23,6 @@ class HomeViewModel {
         currentAvailability?.isActive(at: now) ?? false
     }
 
-    /// Friends whose window is open right now, as opposed to later today.
-    func friendsReadyNow(at now: Date = Date()) -> [ReadyFriend] {
-        readyFriends.filter { $0.isActive(at: now) }
-    }
-
     func loadHome(currentUserId: UUID?, lat: Double?, lng: Double?) async {
         isLoading = true
         errorMessage = nil
@@ -54,10 +49,10 @@ class HomeViewModel {
                 joinedGameIds = joined
                 nearbyGames = allGames.filter { !joined.contains($0.id) && $0.creatorId != userId }
 
-                // The RPC returns every window that hasn't expired, including ones days out.
-                // Home is a picture of today, ordered by when each person becomes free.
+                // Every window that hasn't expired, near or far — the planner lets you page
+                // through days, so filtering to today here would leave the rest blank. Each
+                // day's calendar picks out what belongs to it.
                 readyFriends = try await fetchedReady
-                    .filter { $0.fallsOnToday() }
                     .sorted { $0.windowStart < $1.windowStart }
 
                 // Check own availability

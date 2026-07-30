@@ -9,6 +9,9 @@ struct DayTimelineView: View {
     /// Live while dragging, so the parent can show the range it's about to create.
     @Binding var selection: ClosedRange<Date>?
     var onSelectionCommitted: (ClosedRange<Date>) -> Void
+    /// Tapping someone's band opens their details. A tap is distinct from the hold-and-drag
+    /// that plans a session, so the two gestures don't collide.
+    var onFriendTapped: (ReadyFriend) -> Void = { _ in }
 
     private let hourHeight: CGFloat = 56
     private let gutterWidth: CGFloat = 52
@@ -132,6 +135,7 @@ struct DayTimelineView: View {
                     x: width * CGFloat(band.column) + 2,
                     y: CGFloat(band.startMinutes) / 60 * hourHeight
                 )
+                .onTapGesture { onFriendTapped(band.friend) }
         }
     }
 
