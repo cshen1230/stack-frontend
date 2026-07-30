@@ -4,7 +4,12 @@ import SwiftUI
 /// either implied by the drag or has a sane default — the only things worth a decision are the
 /// session type and who's coming.
 @Observable
-class SessionDraftViewModel {
+class SessionDraftViewModel: Identifiable {
+    /// `sheet(item:)` needs identity. Each draft is its own planning session, so this is a
+    /// fresh value rather than anything derived from `range` — two drafts can share a start
+    /// time, and editing the range must not change which sheet is on screen.
+    let id = UUID()
+
     var range: ClosedRange<Date>
     var sessionType: SessionType = .casual
     var gameFormat: GameFormat = .doubles
