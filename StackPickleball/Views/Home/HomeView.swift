@@ -12,6 +12,7 @@ struct HomeView: View {
     @State private var expandedGameId: UUID?
     @State private var selectedReadyFriend: ReadyFriend?
     @State private var createdSessionInfo: CreatedSessionInfo?
+    @State private var showingAddFriends = false
 
     private let distanceOptions: [Double] = [5, 10, 20, 50]
     private var currentUserId: UUID? { appState.currentUser?.id }
@@ -215,12 +216,22 @@ struct HomeView: View {
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingCreateGame = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.primary)
+                    HStack(spacing: 16) {
+                        Button {
+                            showingAddFriends = true
+                        } label: {
+                            Image(systemName: "person.badge.plus")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.primary)
+                        }
+
+                        Button {
+                            showingCreateGame = true
+                        } label: {
+                            Image(systemName: "plus")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.primary)
+                        }
                     }
                 }
             }
@@ -260,6 +271,11 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showingReadyToPlay) {
                 ReadyToPlaySheet(viewModel: viewModel)
+            }
+            .sheet(isPresented: $showingAddFriends) {
+                NavigationStack {
+                    FriendsView(initiallyShowSearch: true)
+                }
             }
             .sheet(item: $selectedReadyFriend) { friend in
                 ReadyFriendDetailSheet(

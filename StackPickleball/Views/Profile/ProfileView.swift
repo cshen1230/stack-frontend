@@ -362,11 +362,27 @@ struct ProfileView: View {
                 .padding(.leading, 14 + 44 + 12) // left padding + icon + spacing
 
             NavigationLink {
+                FriendsView(initiallyShowSearch: true)
+            } label: {
+                quickActionRowContent(
+                    title: "Add Friends",
+                    subtitle: "Search players by name",
+                    systemImage: "person.badge.plus"
+                )
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+            }
+            .buttonStyle(.plain)
+
+            Divider()
+                .padding(.leading, 14 + 44 + 12)
+
+            NavigationLink {
                 FriendsView()
             } label: {
                 quickActionRowContent(
                     title: "View Friends",
-                    subtitle: "See your friends and add more",
+                    subtitle: "\(viewModel.friendCount) friends",
                     systemImage: "person.2"
                 )
                 .padding(.horizontal, 14)

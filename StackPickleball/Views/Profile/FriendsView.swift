@@ -3,6 +3,8 @@ import SwiftUI
 struct FriendsView: View {
     @Environment(AppState.self) private var appState
     @State private var viewModel = FriendsViewModel()
+    var initiallyShowSearch: Bool = false
+    @State private var isSearchActive: Bool = false
 
     var body: some View {
         List {
@@ -96,14 +98,19 @@ struct FriendsView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .searchable(text: $viewModel.searchText, prompt: "Search players by name")
+        .searchable(text: $viewModel.searchText, isPresented: $isSearchActive, prompt: "Search players by name")
         .onChange(of: viewModel.searchText) {
             Task { await viewModel.search() }
         }
-        .navigationTitle("Friends")
+        .navigationTitle(initiallyShowSearch ? "Add Friends" : "Friends")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
+        .onAppear {
+            if initiallyShowSearch {
+                isSearchActive = true
+            }
+        }
         .task {
             await viewModel.load()
             appState.pendingFriendRequestCount = viewModel.friendRequests.count
