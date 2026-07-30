@@ -1,5 +1,4 @@
 import SwiftUI
-import Combine
 
 struct HomeView: View {
     @Environment(AppState.self) private var appState
@@ -7,16 +6,10 @@ struct HomeView: View {
     @EnvironmentObject private var locationManager: LocationManager
     @State private var viewModel = HomeViewModel()
     @State private var selectedGame: Game?
-    @State private var showingReadyToPlay = false
     @State private var showingMap = false
     @State private var expandedGameId: UUID?
     @State private var createdSessionInfo: CreatedSessionInfo?
     @State private var showingAddFriends = false
-
-    /// Drives the "Now" vs "at 1:45 PM" labels, so a window that opens while the user is
-    /// looking at the screen starts reading as live without a reload.
-    @State private var now = Date()
-    private let clock = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
 
     private let distanceOptions: [Double] = [5, 10, 20, 50]
     private var currentUserId: UUID? { appState.currentUser?.id }
@@ -24,23 +17,19 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                if viewModel.isLoading && viewModel.nearbyGames.isEmpty && viewModel.readyFriends.isEmpty {
+                if viewModel.isLoading && viewModel.nearbyGames.isEmpty && viewModel.schedulesByWeekday.isEmpty {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                         .padding(.top, 100)
                 } else {
                     VStack(spacing: 20) {
-                        // Ready to Play banner
-                        readyToPlayBanner
-                            .padding(.horizontal, 16)
-
                         // Who's free, and where you plan a session — same calendar.
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Plan a Session")
                                 .font(.system(size: 18, weight: .bold))
                                 .padding(.horizontal, 16)
 
-                            DayPlannerBoard(friends: viewModel.readyFriends) { info in
+                            DayPlannerBoard(schedulesByWeekday: viewModel.schedulesByWeekday) { info in
                                 createdSessionInfo = info
                                 Task {
                                     await viewModel.loadHome(
@@ -113,11 +102,11 @@ struct HomeView: View {
                         .padding(.horizontal, 16)
 
                         // Empty state when no friends ready and no games
-                        if viewModel.readyFriends.isEmpty && viewModel.nearbyGames.isEmpty {
+                        if viewModel.schedulesByWeekday.isEmpty && viewModel.nearbyGames.isEmpty {
                             EmptyStateView(
                                 icon: "house",
                                 title: "No Activity Nearby",
-                                message: "No friends are ready and no open games nearby. Tap \"Ready to Play\" to let friends know you're available!"
+                                message: "No friends have posted times and there are no open games nearby. Add friends, or block out a slot above to start a session."
                             )
                             .padding(.top, 20)
                         }
@@ -207,7 +196,6 @@ struct HomeView: View {
                     lng: locationManager.longitude
                 )
             }
-            .onReceive(clock) { now = $0 }
             .refreshable {
                 await viewModel.loadHome(
                     currentUserId: currentUserId,
@@ -221,9 +209,6 @@ struct HomeView: View {
                 } else {
                     GameDetailView(game: game, isHost: game.creatorId == currentUserId)
                 }
-            }
-            .sheet(isPresented: $showingReadyToPlay) {
-                ReadyToPlaySheet(viewModel: viewModel)
             }
             .sheet(isPresented: $showingAddFriends) {
                 NavigationStack {
@@ -274,83 +259,6 @@ struct HomeView: View {
         }
     }
 
-    // MARK: - Ready to Play Banner
-
-    /// Your window, plus your note if you left one.
-    private func bannerSubtitle(for availability: AvailablePlayer, isNow: Bool, now: Date) -> String {
-        let window = isNow ? "Until \(availability.endLabel)" : availability.windowLabel(at: now)
-        if let note = availability.note, !note.isEmpty {
-            return "\(window) · \(note)"
-        }
-        return window
-    }
-
-    @ViewBuilder
-    private var readyToPlayBanner: some View {
-        if let availability = viewModel.currentAvailability {
-            // Broadcasting — but only say "ready" if the window has actually opened.
-            let isNow = viewModel.isCurrentUserReadyNow(at: now)
-
-            HStack(spacing: 12) {
-                if isNow {
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 10, height: 10)
-                } else {
-                    Image(systemName: "clock")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.white)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(isNow ? "You're Ready to Play" : "Ready at \(availability.startLabel(at: now))")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(.white)
-
-                    Text(bannerSubtitle(for: availability, isNow: isNow, now: now))
-                        .font(.system(size: 13))
-                        .foregroundColor(.white.opacity(0.8))
-                        .lineLimit(1)
-                }
-
-                Spacer()
-
-                Button {
-                    Task { await viewModel.stopReady() }
-                } label: {
-                    Text("Stop")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.stackGreen)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.white)
-                        .cornerRadius(8)
-                }
-            }
-            .padding(16)
-            .background(Color.stackGreen)
-            .cornerRadius(16)
-        } else {
-            // Ready button
-            Button {
-                showingReadyToPlay = true
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: "antenna.radiowaves.left.and.right")
-                        .font(.system(size: 18, weight: .semibold))
-                    Text("Ready to Play")
-                        .font(.system(size: 17, weight: .bold))
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
-                }
-                .foregroundColor(.white)
-                .padding(16)
-                .background(Color.stackGreen)
-                .cornerRadius(16)
-            }
-        }
-    }
 }
 
 #Preview {

@@ -4,7 +4,7 @@ import SwiftUI
 /// count all came from the drag or from defaults — all that's left is the type and the guests.
 struct SessionDraftSheet: View {
     @Bindable var viewModel: SessionDraftViewModel
-    let readyFriends: [ReadyFriend]
+    let slots: [FriendAvailability]
     var onCreated: (CreatedSessionInfo) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -50,7 +50,7 @@ struct SessionDraftSheet: View {
                 }
             }
             .task {
-                await viewModel.load(currentUserId: currentUserId, readyFriends: readyFriends)
+                await viewModel.load(currentUserId: currentUserId, slots: slots)
             }
             .errorAlert($viewModel.errorMessage)
         }
@@ -152,14 +152,14 @@ struct SessionDraftSheet: View {
     private var invitesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             if !viewModel.freeThen.isEmpty {
-                sectionLabel("Free then", accent: true)
+                sectionLabel("Usually free then", accent: true)
                 VStack(spacing: 0) {
                     ForEach(viewModel.freeThen) { friend in
                         inviteRow(
                             id: friend.userId,
                             name: friend.displayName,
                             avatarUrl: friend.avatarUrl,
-                            detail: "Free \(friend.windowLabel())"
+                            detail: "Usually plays \(friend.timeRangeLabel)"
                         )
                     }
                 }

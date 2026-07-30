@@ -79,7 +79,7 @@ struct ScheduleTab: View {
                 }
             }
             .sheet(isPresented: $showingCreateGame) {
-                DayPlannerView(readyFriends: viewModel.friendsReady) { info in
+                DayPlannerView(schedulesByWeekday: viewModel.schedulesByWeekday) { info in
                     showingCreateGame = false
                     createdSessionInfo = info
                     if let userId = currentUserId {
@@ -238,32 +238,6 @@ struct ScheduleTab: View {
                     .padding(.horizontal, 16)
                 }
 
-                // Ready Now section
-                if !viewModel.friendsReady.isEmpty {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(Color.green)
-                                .frame(width: 8, height: 8)
-                            Text("Ready Now")
-                                .font(.system(size: 16, weight: .bold))
-                        }
-                        .padding(.horizontal, 16)
-
-                        LazyVStack(spacing: 8) {
-                            ForEach(viewModel.friendsReady) { friend in
-                                ReadyFriendCard(
-                                    friend: friend,
-                                    onCreateGame: {
-                                        showingCreateGame = true
-                                    }
-                                )
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                    }
-                }
-
                 // Usually Available section
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Usually Available on \(dayNames[viewModel.selectedDayOfWeek])")
@@ -293,7 +267,7 @@ struct ScheduleTab: View {
                 }
 
                 // Create game button when friends are shown
-                if !viewModel.friendsReady.isEmpty || !viewModel.friendSchedules.isEmpty {
+                if !viewModel.friendSchedules.isEmpty {
                     Button {
                         showingCreateGame = true
                     } label: {

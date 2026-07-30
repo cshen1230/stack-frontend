@@ -4,14 +4,14 @@ import SwiftUI
 /// on the grid to block out a session.
 struct DayTimelineView: View {
     let day: Date
-    let friends: [ReadyFriend]
+    let slots: [FriendAvailability]
     let now: Date
     /// Live while dragging, so the parent can show the range it's about to create.
     @Binding var selection: ClosedRange<Date>?
     var onSelectionCommitted: (ClosedRange<Date>) -> Void
     /// Tapping someone's band opens their details. A tap is distinct from the hold-and-drag
     /// that plans a session, so the two gestures don't collide.
-    var onFriendTapped: (ReadyFriend) -> Void = { _ in }
+    var onFriendTapped: (FriendAvailability) -> Void = { _ in }
 
     private let hourHeight: CGFloat = 56
     private let gutterWidth: CGFloat = 52
@@ -123,10 +123,10 @@ struct DayTimelineView: View {
 
     @ViewBuilder
     private func availabilityBands(laneWidth: CGFloat) -> some View {
-        let bands = DayPlan.bands(for: friends, on: day)
+        let bands = DayPlan.bands(for: slots, on: day)
         ForEach(bands) { band in
             let width = laneWidth / CGFloat(band.columnCount)
-            AvailabilityBandView(band: band, isLive: band.friend.isActive(at: now))
+            AvailabilityBandView(band: band, isLive: band.slot.end > now && band.slot.start <= now)
                 .frame(
                     width: max(width - 4, 40),
                     height: max(CGFloat(band.durationMinutes) / 60 * hourHeight - 3, 22)
@@ -135,7 +135,7 @@ struct DayTimelineView: View {
                     x: width * CGFloat(band.column) + 2,
                     y: CGFloat(band.startMinutes) / 60 * hourHeight
                 )
-                .onTapGesture { onFriendTapped(band.friend) }
+                .onTapGesture { onFriendTapped(band.slot) }
         }
     }
 
@@ -214,7 +214,7 @@ private struct AvailabilityBandView: View {
                 )
 
             if band.durationMinutes >= 45 || band.columnCount == 1 {
-                Text(band.friend.firstName ?? band.friend.username ?? "?")
+                Text(band.slot.shortName)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.primary)
                     .lineLimit(1)
@@ -236,7 +236,6 @@ private struct AvailabilityBandView: View {
     }
 
     private var initial: String {
-        let name = band.friend.firstName ?? band.friend.username ?? "?"
-        return String(name.prefix(1)).uppercased()
+        String(band.slot.shortName.prefix(1)).uppercased()
     }
 }

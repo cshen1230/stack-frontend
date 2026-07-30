@@ -3,7 +3,7 @@ import SwiftUI
 /// Modal wrapper around `DayPlannerBoard`, for the places that reach session creation from a
 /// button rather than having the board on screen already.
 struct DayPlannerView: View {
-    let readyFriends: [ReadyFriend]
+    let schedulesByWeekday: [Int: [FriendScheduleRow]]
     var onCreated: (CreatedSessionInfo) -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -11,7 +11,7 @@ struct DayPlannerView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                DayPlannerBoard(friends: readyFriends) { info in
+                DayPlannerBoard(schedulesByWeekday: schedulesByWeekday) { info in
                     onCreated(info)
                     dismiss()
                 }

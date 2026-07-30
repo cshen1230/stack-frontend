@@ -50,7 +50,7 @@ enum DayPlan {
 
     /// One friend's availability, placed on the timeline.
     struct Band: Identifiable {
-        let friend: ReadyFriend
+        let slot: FriendAvailability
         /// Minutes from the top of the timeline.
         let startMinutes: Double
         let endMinutes: Double
@@ -58,26 +58,26 @@ enum DayPlan {
         var column: Int = 0
         var columnCount: Int = 1
 
-        var id: UUID { friend.userId }
+        var id: String { slot.id }
         var durationMinutes: Double { endMinutes - startMinutes }
     }
 
-    /// Clips each friend's window to the visible day and lays overlapping ones out in lanes,
-    /// so two people free at the same time sit next to each other rather than on top.
+    /// Clips each window to the visible day and lays overlapping ones out in lanes, so two
+    /// people free at the same time sit next to each other rather than on top.
     static func bands(
-        for friends: [ReadyFriend],
+        for slots: [FriendAvailability],
         on day: Date,
         calendar: Calendar = .current
     ) -> [Band] {
         let start = dayStart(of: day, calendar: calendar)
         let end = dayEnd(of: day, calendar: calendar)
 
-        var placed: [Band] = friends.compactMap { friend in
-            let from = max(friend.availableFrom ?? start, start)
-            let to = min(friend.availableUntil, end)
+        var placed: [Band] = slots.compactMap { slot in
+            let from = max(slot.start, start)
+            let to = min(slot.end, end)
             guard to > from else { return nil }
             return Band(
-                friend: friend,
+                slot: slot,
                 startMinutes: from.timeIntervalSince(start) / 60,
                 endMinutes: to.timeIntervalSince(start) / 60
             )
@@ -109,13 +109,10 @@ enum DayPlan {
     }
 
     /// Everyone free for the whole of `range` — the people worth inviting to it.
-    static func friends(
-        _ friends: [ReadyFriend],
+    static func slots(
+        _ slots: [FriendAvailability],
         freeDuring range: ClosedRange<Date>
-    ) -> [ReadyFriend] {
-        friends.filter { friend in
-            let from = friend.availableFrom ?? .distantPast
-            return from <= range.lowerBound && friend.availableUntil >= range.upperBound
-        }
+    ) -> [FriendAvailability] {
+        slots.filter { $0.covers(range) }
     }
 }

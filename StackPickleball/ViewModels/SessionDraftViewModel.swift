@@ -19,9 +19,9 @@ class SessionDraftViewModel: Identifiable {
     var latitude: Double?
     var longitude: Double?
 
-    /// Friends free for the whole slot — offered first, and pre-selected, since they're the
-    /// reason you drew this block.
-    var freeThen: [ReadyFriend] = []
+    /// Friends who usually play across the whole slot — offered first, and pre-selected,
+    /// since they're the reason you drew this block.
+    var freeThen: [FriendAvailability] = []
     var otherFriends: [FriendRow] = []
     var searchResults: [User] = []
     var searchQuery = "" {
@@ -76,8 +76,10 @@ class SessionDraftViewModel: Identifiable {
 
     // MARK: - Loading
 
-    func load(currentUserId: UUID?, readyFriends: [ReadyFriend]) async {
-        freeThen = DayPlan.friends(readyFriends, freeDuring: range)
+    func load(currentUserId: UUID?, slots: [FriendAvailability]) async {
+        // One row per person even if they have several windows that day.
+        var seen: Set<UUID> = []
+        freeThen = DayPlan.slots(slots, freeDuring: range).filter { seen.insert($0.userId).inserted }
         for friend in freeThen {
             invitedIds.insert(friend.userId)
             invitedNames[friend.userId] = friend.displayName

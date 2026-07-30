@@ -2,68 +2,6 @@ import Foundation
 import Supabase
 
 enum PlayerService {
-    static func nearbyAvailablePlayers(lat: Double, lng: Double, radiusMiles: Double = 20) async throws -> [AvailablePlayer] {
-        try await supabase.rpc(
-            "nearby_available_players",
-            params: ["lat": lat, "lng": lng, "radius_miles": radiusMiles]
-        ).execute().value
-    }
-
-    struct SetAvailabilityRequest: Encodable {
-        let available_from: String
-        let available_until: String
-        var latitude: Double?
-        var longitude: Double?
-        var preferred_format: String?
-        var note: String?
-    }
-
-    static func setAvailability(
-        availableFrom: Date = Date(),
-        availableUntil: Date,
-        latitude: Double?,
-        longitude: Double?,
-        preferredFormat: GameFormat?,
-        note: String?
-    ) async throws {
-        let session = try await supabase.auth.session
-        let headers = ["Authorization": "Bearer \(session.accessToken)"]
-        let formatter = ISO8601DateFormatter()
-        let request = SetAvailabilityRequest(
-            available_from: formatter.string(from: availableFrom),
-            available_until: formatter.string(from: availableUntil),
-            latitude: latitude,
-            longitude: longitude,
-            preferred_format: preferredFormat?.rawValue,
-            note: note
-        )
-        try await supabase.functions.invoke("broadcast-ready", options: .init(headers: headers, body: request))
-    }
-
-    static func clearAvailability() async throws {
-        let session = try await supabase.auth.session
-        let headers = ["Authorization": "Bearer \(session.accessToken)"]
-        try await supabase.functions.invoke(
-            "broadcast-ready",
-            options: .init(method: .delete, headers: headers)
-        )
-    }
-
-    static func currentUserAvailability(userId: UUID) async throws -> AvailablePlayer? {
-        let results: [AvailablePlayer] = try await supabase
-            .from("available_players")
-            .select()
-            .eq("user_id", value: userId)
-            .eq("status", value: "available")
-            .gt("available_until", value: ISO8601DateFormatter().string(from: Date()))
-            // Earliest window first, so a window that has already opened wins over a later one.
-            .order("available_from")
-            .limit(1)
-            .execute()
-            .value
-        return results.first
-    }
-
     static func searchPlayers(query: String) async throws -> [User] {
         try await supabase
             .from("users")

@@ -62,11 +62,23 @@ enum ScheduleService {
 
     // MARK: - Friends
 
-    static func friendsReadyToPlay(userId: UUID) async throws -> [ReadyFriend] {
-        try await supabase.rpc(
-            "friends_ready_to_play",
-            params: ["p_user_id": userId.uuidString]
-        ).execute().value
+    /// Every weekday's friend availability at once, keyed by `Calendar`'s 1-based weekday so
+    /// callers can look up a date directly. The planner pages across days, so fetching one day
+    /// at a time would put a network round trip behind every tap of the day strip.
+    static func friendsSchedulesByWeekday(userId: UUID) async throws -> [Int: [FriendScheduleRow]] {
+        try await withThrowingTaskGroup(of: (Int, [FriendScheduleRow]).self) { group in
+            // `user_schedules.day_of_week` is 0-based from Sunday; Calendar's weekday is 1-based.
+            for storedDay in 0...6 {
+                group.addTask {
+                    (storedDay + 1, try await friendsSchedules(userId: userId, dayOfWeek: storedDay))
+                }
+            }
+            var result: [Int: [FriendScheduleRow]] = [:]
+            for try await (weekday, rows) in group {
+                result[weekday] = rows
+            }
+            return result
+        }
     }
 
     static func friendsSchedules(userId: UUID, dayOfWeek: Int) async throws -> [FriendScheduleRow] {

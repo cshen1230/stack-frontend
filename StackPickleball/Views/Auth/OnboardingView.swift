@@ -12,6 +12,9 @@ struct OnboardingView: View {
     @State private var errorMessage: String?
     @State private var duprConnected = false
     @State private var duprProfile: DUPRService.DUPRProfile?
+    /// Asked once here so friends' calendars have something on them from day one, instead of
+    /// everyone having to remember to broadcast.
+    @State private var dayParts: [Int: Set<DayPart>] = [:]
 
     var body: some View {
         ZStack {
@@ -69,6 +72,8 @@ struct OnboardingView: View {
                             allowSkip: true,
                             isConnected: duprConnected
                         )
+
+                        availabilitySection
                     }
                     .padding(.horizontal, 24)
 
@@ -99,6 +104,26 @@ struct OnboardingView: View {
                 }
             }
         }
+    }
+
+    private var availabilitySection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("When do you usually play?")
+                .font(.system(size: 16, weight: .bold))
+
+            Text("Tap the times that usually work. Friends see these on the calendar so they know when to invite you \u{2014} you can change them any time.")
+                .font(.system(size: 13))
+                .foregroundColor(.stackSecondaryText)
+
+            DayPartGrid(selection: $dayParts)
+        }
+        .padding(16)
+        .background(Color.white)
+        .cornerRadius(14)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color(hex: "#E5E7EB"), lineWidth: 1)
+        )
     }
 
     @ViewBuilder
@@ -148,6 +173,12 @@ struct OnboardingView: View {
                     latitude: locationManager.latitude,
                     longitude: locationManager.longitude
                 )
+                // Availability is optional — a failure here shouldn't strand someone who
+                // has already created their profile.
+                if dayParts.hasAnySelection {
+                    try? await ScheduleService.saveSchedule(windows: dayParts.scheduleWindows)
+                }
+
                 // Reload profile in app state
                 if let userId = await AuthService.currentUserId() {
                     await appState.loadProfile(userId: userId)
