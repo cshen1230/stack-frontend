@@ -77,25 +77,30 @@ struct DayPlannerBoard: View {
                 onFriendTapped: { selectedFriend = $0 }
             )
             .padding(.horizontal, 16)
-            // Kept on the timeline rather than the root so it doesn't contend with the
-            // draft sheet below — two `sheet(item:)` on one view don't coexist reliably.
+            // Attached to the timeline rather than the root so it doesn't contend with the
+            // draft sheet below — stacking two presentations on one view is unreliable.
             .sheet(item: $selectedFriend) { friend in
                 ReadyFriendDetailSheet(friend: friend, onCreateGame: {}, onInviteToGame: {})
             }
         }
         .onReceive(clock) { now = $0 }
         .onChange(of: selectedDay) { selection = nil }
-        .sheet(item: $draft) { model in
-            SessionDraftSheet(viewModel: model, readyFriends: friendsOnSelectedDay) { info in
-                draft = nil
-                selection = nil
-                onCreated(info)
+        // Driven by isPresented rather than item: the draft is a reference type built at the
+        // moment of the drag, and presentation here follows "is there a draft", not identity.
+        .sheet(isPresented: isDrafting, onDismiss: { selection = nil }) {
+            if let draft {
+                SessionDraftSheet(viewModel: draft, readyFriends: friendsOnSelectedDay) { info in
+                    onCreated(info)
+                }
             }
         }
-        .onChange(of: draft == nil) {
-            // Dismissed without creating — clear the highlight.
-            if draft == nil { selection = nil }
-        }
+    }
+
+    private var isDrafting: Binding<Bool> {
+        Binding(
+            get: { draft != nil },
+            set: { if !$0 { draft = nil } }
+        )
     }
 
     private var hint: String {
