@@ -117,8 +117,8 @@ struct HomeView: View {
                                 .cornerRadius(12)
                             }
 
-                            NavigationLink {
-                                // Just switch to schedule tab
+                            Button {
+                                appState.selectedTab = 1
                             } label: {
                                 HStack(spacing: 6) {
                                     Image(systemName: "calendar")
