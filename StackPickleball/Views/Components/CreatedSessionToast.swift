@@ -31,7 +31,7 @@ struct CreatedSessionToast: View {
 
                 // Session details
                 VStack(spacing: 4) {
-                    Text(info.sessionName)
+                    Text(info.headline)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
                         .lineLimit(1)

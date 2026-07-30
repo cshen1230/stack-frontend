@@ -16,6 +16,15 @@ enum GameFormat: String, Codable, Sendable, CaseIterable {
         }
     }
 
+    /// How many players the format takes, so nobody has to set a spot count by hand.
+    var defaultPlayerCount: Int {
+        switch self {
+        case .singles: return 2
+        case .doubles, .mixedDoubles: return 4
+        case .drill: return 4
+        }
+    }
+
     var accentColor: Color {
         switch self {
         case .singles: return Color(red: 0.6, green: 0.2, blue: 0.8)    // Purple

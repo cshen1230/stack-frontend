@@ -25,6 +25,15 @@ enum GameService {
         var friends_only: Bool
     }
 
+    /// Just the id off the create-game response. Decoding the whole row here would need the
+    /// PostgREST date strategy that `functions.invoke` doesn't use; callers that want the full
+    /// game can `fetchGame` with this.
+    private struct CreateGameResponse: Decodable {
+        struct CreatedGame: Decodable { let id: UUID }
+        let game: CreatedGame
+    }
+
+    @discardableResult
     static func createGame(
         gameDatetime: Date,
         spotsAvailable: Int,
@@ -39,7 +48,7 @@ enum GameService {
         sessionType: SessionType = .casual,
         numRounds: Int? = nil,
         friendsOnly: Bool = false
-    ) async throws {
+    ) async throws -> UUID {
         let session = try await supabase.auth.session
         let headers = ["Authorization": "Bearer \(session.accessToken)"]
         let request = CreateGameRequest(
@@ -57,7 +66,11 @@ enum GameService {
             num_rounds: numRounds,
             friends_only: friendsOnly
         )
-        try await supabase.functions.invoke("create-game", options: .init(headers: headers, body: request))
+        let response: CreateGameResponse = try await supabase.functions.invoke(
+            "create-game",
+            options: .init(headers: headers, body: request)
+        )
+        return response.game.id
     }
 
     // MARK: - Round Robin

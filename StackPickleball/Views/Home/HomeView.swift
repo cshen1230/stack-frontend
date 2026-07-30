@@ -241,7 +241,7 @@ struct HomeView: View {
                 }
             }
             .sheet(isPresented: $showingCreateGame) {
-                SessionTypePickerView { info in
+                DayPlannerView(readyFriends: viewModel.readyFriends) { info in
                     showingCreateGame = false
                     createdSessionInfo = info
                     Task {

@@ -5,6 +5,10 @@ struct ProfileView: View {
     @State private var viewModel = ProfileViewModel()
     @State private var friendsViewModel = FriendsViewModel()
     @State private var showingEditProfile = false
+    /// Your standing weekly pattern — a setting you set once, not a place you visit, so it
+    /// lives here rather than competing with the Schedule tab.
+    @State private var scheduleViewModel = ScheduleViewModel()
+    @State private var showingScheduleEditor = false
     private let friendRequestsScrollId = "friendRequests"
 
     var body: some View {
@@ -104,6 +108,9 @@ struct ProfileView: View {
                 await viewModel.loadProfile()
                 await friendsViewModel.load()
                 appState.pendingFriendRequestCount = friendsViewModel.friendRequests.count
+                if let userId = appState.currentUser?.id {
+                    await scheduleViewModel.loadSchedule(userId: userId)
+                }
             }
             .refreshable {
                 await viewModel.loadProfile()
@@ -116,8 +123,17 @@ struct ProfileView: View {
             .sheet(isPresented: $showingEditProfile) {
                 EditProfileView(viewModel: viewModel)
             }
+            .sheet(isPresented: $showingScheduleEditor) {
+                MyScheduleEditorSheet(viewModel: scheduleViewModel)
+            }
             .errorAlert($viewModel.errorMessage)
         }
+    }
+
+    /// How many weekly windows are set, so the row says something before you tap it.
+    private var weeklyAvailabilitySubtitle: String {
+        let count = scheduleViewModel.mySchedule.count
+        return count == 0 ? "Set the times you usually play" : "\(count) window\(count == 1 ? "" : "s") set"
     }
 
     // MARK: - Profile Card
@@ -384,6 +400,22 @@ struct ProfileView: View {
                     title: "View Friends",
                     subtitle: "\(viewModel.friendCount) friends",
                     systemImage: "person.2"
+                )
+                .padding(.horizontal, 14)
+                .padding(.vertical, 12)
+            }
+            .buttonStyle(.plain)
+
+            Divider()
+                .padding(.leading, 14 + 44 + 12)
+
+            Button {
+                showingScheduleEditor = true
+            } label: {
+                quickActionRowContent(
+                    title: "Weekly Availability",
+                    subtitle: weeklyAvailabilitySubtitle,
+                    systemImage: "calendar"
                 )
                 .padding(.horizontal, 14)
                 .padding(.vertical, 12)

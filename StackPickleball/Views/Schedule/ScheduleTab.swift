@@ -1,8 +1,10 @@
 import SwiftUI
 
+/// "My Schedule" used to live here too, but a standing weekly pattern is a set-and-forget
+/// setting, not a place you visit — it moved to Profile so this tab is only about what's
+/// actually happening.
 enum ScheduleSection: String, CaseIterable {
     case sessions = "Sessions"
-    case mySchedule = "My Schedule"
     case friends = "Friends"
 }
 
@@ -13,7 +15,6 @@ struct ScheduleTab: View {
     @State private var viewModel = ScheduleViewModel()
     @State private var navigationPath = NavigationPath()
     @State private var selectedSection: ScheduleSection = .sessions
-    @State private var showingScheduleEditor = false
     @State private var showingCreateGame = false
     @State private var createdSessionInfo: CreatedSessionInfo?
     @State private var gameToLeave: Game?
@@ -41,8 +42,6 @@ struct ScheduleTab: View {
                     switch selectedSection {
                     case .sessions:
                         sessionsSection
-                    case .mySchedule:
-                        myScheduleSection
                     case .friends:
                         friendsSection
                     }
@@ -79,11 +78,8 @@ struct ScheduleTab: View {
                     Task { await viewModel.loadFriendSchedules(userId: userId) }
                 }
             }
-            .sheet(isPresented: $showingScheduleEditor) {
-                MyScheduleEditorSheet(viewModel: viewModel)
-            }
             .sheet(isPresented: $showingCreateGame) {
-                SessionTypePickerView { info in
+                DayPlannerView(readyFriends: viewModel.friendsReady) { info in
                     showingCreateGame = false
                     createdSessionInfo = info
                     if let userId = currentUserId {
@@ -206,95 +202,6 @@ struct ScheduleTab: View {
                 .padding(.top, 8)
                 .padding(.bottom, 16)
             }
-        }
-    }
-
-    // MARK: - My Schedule Section
-
-    @ViewBuilder
-    private var myScheduleSection: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                // Week overview
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("Weekly Availability")
-                            .font(.system(size: 16, weight: .bold))
-                        Spacer()
-                        Button {
-                            showingScheduleEditor = true
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "pencil")
-                                    .font(.system(size: 13))
-                                Text("Edit")
-                                    .font(.system(size: 14, weight: .semibold))
-                            }
-                            .foregroundColor(.stackGreen)
-                        }
-                    }
-
-                    if viewModel.mySchedule.isEmpty {
-                        VStack(spacing: 8) {
-                            Image(systemName: "calendar.badge.plus")
-                                .font(.system(size: 28))
-                                .foregroundColor(.stackSecondaryText)
-                            Text("No schedule set")
-                                .font(.system(size: 15))
-                                .foregroundColor(.secondary)
-                            Text("Tap Edit to add your weekly availability windows")
-                                .font(.system(size: 13))
-                                .foregroundColor(.stackSecondaryText)
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 24)
-                    } else {
-                        // Group by day
-                        ForEach(0..<7, id: \.self) { day in
-                            let dayWindows = viewModel.mySchedule.filter { $0.dayOfWeek == day }
-                            if !dayWindows.isEmpty {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(dayNames[day])
-                                        .font(.system(size: 14, weight: .semibold))
-                                        .foregroundColor(.stackSecondaryText)
-
-                                    ForEach(dayWindows) { window in
-                                        HStack(spacing: 8) {
-                                            Image(systemName: "clock")
-                                                .font(.system(size: 12))
-                                                .foregroundColor(.stackGreen)
-                                            Text(formatTimeRange(start: window.startTime, end: window.endTime))
-                                                .font(.system(size: 14))
-                                                .foregroundColor(.primary)
-                                            if let format = window.preferredFormat {
-                                                Text(format.displayName)
-                                                    .font(.system(size: 11, weight: .semibold))
-                                                    .foregroundColor(.white)
-                                                    .padding(.horizontal, 6)
-                                                    .padding(.vertical, 2)
-                                                    .background(format.accentColor)
-                                                    .cornerRadius(4)
-                                            }
-                                        }
-                                    }
-                                }
-                                .padding(.vertical, 4)
-                            }
-                        }
-                    }
-                }
-                .padding(16)
-                .background(Color.stackCardWhite)
-                .cornerRadius(16)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.stackBorder, lineWidth: 1)
-                )
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 16)
         }
     }
 
