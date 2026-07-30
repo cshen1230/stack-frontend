@@ -14,6 +14,11 @@ struct HomeView: View {
     @State private var createdSessionInfo: CreatedSessionInfo?
     @State private var showingAddFriends = false
 
+    /// Drives the "Now" vs "at 1:45 PM" labels, so a window that opens while the user is
+    /// looking at the screen starts reading as live without a reload.
+    @State private var now = Date()
+    private let clock = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
+
     private let distanceOptions: [Double] = [5, 10, 20, 50]
     private var currentUserId: UUID? { appState.currentUser?.id }
 
@@ -30,32 +35,10 @@ struct HomeView: View {
                         readyToPlayBanner
                             .padding(.horizontal, 16)
 
-                        // Stories-style ready friends row
+                        // Who's ready at what time today
                         if !viewModel.readyFriends.isEmpty {
-                            VStack(alignment: .leading, spacing: 10) {
-                                HStack(spacing: 6) {
-                                    Text("Ready Now")
-                                        .font(.system(size: 18, weight: .bold))
-                                    Text("\(viewModel.readyFriends.count)")
-                                        .font(.system(size: 14, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .frame(width: 24, height: 24)
-                                        .background(Color.stackGreen)
-                                        .clipShape(Circle())
-                                }
+                            readyTodaySection
                                 .padding(.horizontal, 16)
-
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 12) {
-                                        ForEach(viewModel.readyFriends) { friend in
-                                            ReadyFriendBubble(friend: friend) {
-                                                selectedReadyFriend = friend
-                                            }
-                                        }
-                                    }
-                                    .padding(.horizontal, 16)
-                                }
-                            }
                         }
 
                         // Smart match suggestion card
@@ -242,6 +225,7 @@ struct HomeView: View {
                     lng: locationManager.longitude
                 )
             }
+            .onReceive(clock) { now = $0 }
             .refreshable {
                 await viewModel.loadHome(
                     currentUserId: currentUserId,
@@ -332,17 +316,48 @@ struct HomeView: View {
         }
     }
 
+    // MARK: - Ready Today
+
+    private var readyTodaySection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Text("Ready Today")
+                    .font(.system(size: 18, weight: .bold))
+                Text("\(viewModel.readyFriends.count)")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 24, height: 24)
+                    .background(Color.stackGreen)
+                    .clipShape(Circle())
+            }
+            .padding(.bottom, 6)
+
+            ForEach(Array(viewModel.readyFriends.enumerated()), id: \.element.id) { index, friend in
+                if index > 0 {
+                    Divider().padding(.leading, 74)
+                }
+                ReadyTimeRow(friend: friend, now: now) {
+                    selectedReadyFriend = friend
+                }
+            }
+        }
+    }
+
     // MARK: - Smart Suggestion Card
 
     @ViewBuilder
     private var smartSuggestionCard: some View {
-        let count = viewModel.readyFriends.count
+        let readyNow = viewModel.friendsReadyNow(at: now)
         let message: String = {
-            if count >= 2 {
-                return "\(count) friends are ready now — start a game?"
-            } else if let friend = viewModel.readyFriends.first {
+            if readyNow.count >= 2 {
+                return "\(readyNow.count) friends are ready now — start a game?"
+            } else if let friend = readyNow.first {
                 let name = friend.firstName ?? friend.username ?? "A friend"
                 return "\(name) is ready to play — invite them to a game?"
+            } else if let next = viewModel.readyFriends.first {
+                // Nobody yet, but someone's window opens later today.
+                let name = next.firstName ?? next.username ?? "A friend"
+                return "\(name) is ready at \(next.startLabel(at: now)) — line up a game?"
             }
             return ""
         }()
@@ -380,25 +395,41 @@ struct HomeView: View {
 
     // MARK: - Ready to Play Banner
 
+    /// Your window, plus your note if you left one.
+    private func bannerSubtitle(for availability: AvailablePlayer, isNow: Bool, now: Date) -> String {
+        let window = isNow ? "Until \(availability.endLabel)" : availability.windowLabel(at: now)
+        if let note = availability.note, !note.isEmpty {
+            return "\(window) · \(note)"
+        }
+        return window
+    }
+
     @ViewBuilder
     private var readyToPlayBanner: some View {
-        if viewModel.isCurrentUserReady {
-            // Active status
+        if let availability = viewModel.currentAvailability {
+            // Broadcasting — but only say "ready" if the window has actually opened.
+            let isNow = viewModel.isCurrentUserReadyNow(at: now)
+
             HStack(spacing: 12) {
-                Circle()
-                    .fill(Color.green)
-                    .frame(width: 10, height: 10)
+                if isNow {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 10, height: 10)
+                } else {
+                    Image(systemName: "clock")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.white)
+                }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("You're Ready to Play")
+                    Text(isNow ? "You're Ready to Play" : "Ready at \(availability.startLabel(at: now))")
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(.white)
-                    if let note = viewModel.currentReadyNote, !note.isEmpty {
-                        Text(note)
-                            .font(.system(size: 13))
-                            .foregroundColor(.white.opacity(0.8))
-                            .lineLimit(1)
-                    }
+
+                    Text(bannerSubtitle(for: availability, isNow: isNow, now: now))
+                        .font(.system(size: 13))
+                        .foregroundColor(.white.opacity(0.8))
+                        .lineLimit(1)
                 }
 
                 Spacer()

@@ -56,6 +56,8 @@ enum PlayerService {
             .eq("user_id", value: userId)
             .eq("status", value: "available")
             .gt("available_until", value: ISO8601DateFormatter().string(from: Date()))
+            // Earliest window first, so a window that has already opened wins over a later one.
+            .order("available_from")
             .limit(1)
             .execute()
             .value

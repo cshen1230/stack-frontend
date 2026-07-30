@@ -6,8 +6,7 @@ class HomeViewModel {
     var nearbyGames: [Game] = []
     var participantAvatars: [UUID: [String]] = [:]
     var joinedGameIds: Set<UUID> = []
-    var isCurrentUserReady = false
-    var currentReadyNote: String?
+    var currentAvailability: AvailablePlayer?
     var isLoading = false
     var errorMessage: String?
     var joinedGame: Game?
@@ -17,6 +16,17 @@ class HomeViewModel {
     private var lastLat: Double?
     private var lastLng: Double?
     private var lastUserId: UUID?
+
+    /// Your window is open right now — as opposed to `currentAvailability` merely existing,
+    /// which only means you've broadcast a window that may not have started yet.
+    func isCurrentUserReadyNow(at now: Date = Date()) -> Bool {
+        currentAvailability?.isActive(at: now) ?? false
+    }
+
+    /// Friends whose window is open right now, as opposed to later today.
+    func friendsReadyNow(at now: Date = Date()) -> [ReadyFriend] {
+        readyFriends.filter { $0.isActive(at: now) }
+    }
 
     func loadHome(currentUserId: UUID?, lat: Double?, lng: Double?) async {
         isLoading = true
@@ -43,12 +53,15 @@ class HomeViewModel {
                 let joined = try await fetchedIds
                 joinedGameIds = joined
                 nearbyGames = allGames.filter { !joined.contains($0.id) && $0.creatorId != userId }
+
+                // The RPC returns every window that hasn't expired, including ones days out.
+                // Home is a picture of today, ordered by when each person becomes free.
                 readyFriends = try await fetchedReady
+                    .filter { $0.fallsOnToday() }
+                    .sorted { $0.windowStart < $1.windowStart }
 
                 // Check own availability
-                let ownStatus = try? await PlayerService.currentUserAvailability(userId: userId)
-                isCurrentUserReady = ownStatus != nil
-                currentReadyNote = ownStatus?.note
+                currentAvailability = try? await PlayerService.currentUserAvailability(userId: userId)
             } else {
                 nearbyGames = try await fetchedGames
             }
@@ -82,8 +95,8 @@ class HomeViewModel {
                 preferredFormat: format,
                 note: note
             )
-            isCurrentUserReady = true
-            currentReadyNote = note
+            // loadHome re-reads the window we just wrote, so the banner reflects whether it
+            // has actually started rather than assuming it has.
             await loadHome(currentUserId: lastUserId, lat: lastLat, lng: lastLng)
         } catch {
             errorMessage = error.userFacingMessage
@@ -93,8 +106,7 @@ class HomeViewModel {
     func stopReady() async {
         do {
             try await PlayerService.clearAvailability()
-            isCurrentUserReady = false
-            currentReadyNote = nil
+            currentAvailability = nil
             await loadHome(currentUserId: lastUserId, lat: lastLat, lng: lastLng)
         } catch {
             errorMessage = error.userFacingMessage

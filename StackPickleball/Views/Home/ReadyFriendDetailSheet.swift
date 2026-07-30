@@ -139,14 +139,7 @@ struct ReadyFriendDetailSheet: View {
     }
 
     private var timeWindowText: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        let untilStr = formatter.string(from: friend.availableUntil)
-        if let from = friend.availableFrom {
-            let fromStr = formatter.string(from: from)
-            return "\(fromStr) – \(untilStr)"
-        }
-        return "Available until \(untilStr)"
+        friend.windowLabel()
     }
 
     private var initialCircle: some View {
