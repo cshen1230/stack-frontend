@@ -451,7 +451,7 @@ struct CommunityInfoView: View {
         do {
             members = try await GroupChatService.members(groupChatId: groupChat.id)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoadingMembers = false
     }
@@ -463,7 +463,7 @@ struct CommunityInfoView: View {
             dismiss()
             onLeave()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isProcessing = false
     }
@@ -475,7 +475,7 @@ struct CommunityInfoView: View {
             dismiss()
             onDelete()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isProcessing = false
     }

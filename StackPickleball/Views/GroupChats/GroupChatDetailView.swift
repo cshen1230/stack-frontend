@@ -237,7 +237,7 @@ struct GroupChatDetailView: View {
             hasMoreMessages = fetched.count >= pageSize
         } catch where error.isCancellation {
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }
@@ -252,7 +252,7 @@ struct GroupChatDetailView: View {
             messages = older + messages
         } catch where error.isCancellation {
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
@@ -266,7 +266,7 @@ struct GroupChatDetailView: View {
                 messages.append(contentsOf: newMessages)
             }
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
@@ -278,7 +278,7 @@ struct GroupChatDetailView: View {
             try await GroupChatService.sendMessage(groupChatId: groupChat.id, content: text)
             await loadNewMessages()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 }

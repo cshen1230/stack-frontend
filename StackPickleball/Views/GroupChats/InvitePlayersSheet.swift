@@ -189,7 +189,7 @@ struct InvitePlayersSheet: View {
             hasSearched = true
         } catch where error.isCancellation {
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isSearching = false
     }

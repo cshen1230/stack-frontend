@@ -88,7 +88,7 @@ struct AddMembersSheet: View {
         do {
             friends = try await FriendService.getFriends(userId: userId)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
@@ -104,7 +104,7 @@ struct AddMembersSheet: View {
             searchResults = results.filter { $0.id != userId }
         } catch where error.isCancellation {
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
@@ -114,7 +114,7 @@ struct AddMembersSheet: View {
             try await GroupChatService.addMember(groupChatId: groupChatId, userId: userId)
             addedIds.insert(userId)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isAdding = nil
     }

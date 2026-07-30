@@ -105,7 +105,7 @@ struct ShareSessionSheet: View {
         do {
             sessions = try await MessageService.myActiveSessions(userId: userId)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }
@@ -122,7 +122,7 @@ struct ShareSessionSheet: View {
             await onShared?()
             dismiss()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         sharingId = nil
     }

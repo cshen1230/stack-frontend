@@ -27,7 +27,7 @@ class FriendsViewModel {
             pendingSentIds = Set(try await s.map(\.friendId))
         } catch where error.isCancellation {
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }
@@ -50,7 +50,7 @@ class FriendsViewModel {
             }
         } catch where error.isCancellation {
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
@@ -61,7 +61,7 @@ class FriendsViewModel {
             try await FriendService.sendFriendRequest(friendId: userId)
         } catch {
             pendingSentIds.remove(userId)
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
@@ -71,7 +71,7 @@ class FriendsViewModel {
             try await FriendService.respondToFriendRequest(friendshipId: request.friendshipId, accept: true)
             await load()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
             await load()
         }
     }
@@ -81,7 +81,7 @@ class FriendsViewModel {
         do {
             try await FriendService.respondToFriendRequest(friendshipId: request.friendshipId, accept: false)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
             await load()
         }
     }
@@ -91,7 +91,7 @@ class FriendsViewModel {
         do {
             try await FriendService.removeFriend(friendshipId: friend.friendshipId)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
             await load()
         }
     }

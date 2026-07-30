@@ -59,7 +59,7 @@ class HomeViewModel {
             return
         } catch {
             if !Task.isCancelled {
-                errorMessage = error.localizedDescription
+                errorMessage = error.userFacingMessage
             }
         }
         isLoading = false
@@ -86,7 +86,7 @@ class HomeViewModel {
             currentReadyNote = note
             await loadHome(currentUserId: lastUserId, lat: lastLat, lng: lastLng)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
@@ -97,7 +97,7 @@ class HomeViewModel {
             currentReadyNote = nil
             await loadHome(currentUserId: lastUserId, lat: lastLat, lng: lastLng)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
@@ -108,7 +108,7 @@ class HomeViewModel {
             joinedGame = game
             nearbyGames.removeAll { $0.id == game.id }
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
             await loadHome(currentUserId: lastUserId, lat: lastLat, lng: lastLng)
         }
     }

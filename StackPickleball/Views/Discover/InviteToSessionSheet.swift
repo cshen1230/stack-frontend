@@ -115,7 +115,7 @@ struct InviteToSessionSheet: View {
             sessions = all.filter { $0.spotsRemaining > 0 }
         } catch where error.isCancellation {
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }

@@ -15,7 +15,7 @@ class CreateGameViewModel {
     var locationName = ""
     var selectedLatitude: Double?
     var selectedLongitude: Double?
-    var selectedDate = Date()
+    var selectedDate = CreateGameViewModel.defaultStartDate()
     var skillLevelMin: Double = 0.0
     var gameFormat: GameFormat = .doubles
     var spotsAvailable: Int = 4
@@ -29,6 +29,24 @@ class CreateGameViewModel {
 
     var isRoundRobin: Bool { sessionType == .roundRobin }
 
+    /// The server requires `game_datetime` to be strictly in the future, so defaulting the
+    /// picker to `Date()` fails for everyone — filling in the form takes longer than zero
+    /// seconds. Start half an hour out, rounded up to the next quarter hour.
+    static func defaultStartDate(from now: Date = Date()) -> Date {
+        let earliest = now.addingTimeInterval(30 * 60)
+        let quarterHour: TimeInterval = 15 * 60
+        return Date(
+            timeIntervalSinceReferenceDate:
+                (earliest.timeIntervalSinceReferenceDate / quarterHour).rounded(.up) * quarterHour
+        )
+    }
+
+    /// Lower bound for the picker. Kept a minute ahead of `now` so a start time chosen right
+    /// before tapping Create still clears the server's "must be in the future" check.
+    static func earliestStartDate(from now: Date = Date()) -> Date {
+        now.addingTimeInterval(60)
+    }
+
     /// Formats available for the selected session type
     var availableFormats: [GameFormat] {
         if isRoundRobin {
@@ -38,8 +56,16 @@ class CreateGameViewModel {
     }
 
     func createGame(lat: Double?, lng: Double?) async -> CreatedSessionInfo? {
-        isLoading = true
         errorMessage = nil
+
+        // Catches a form that sat open long enough for its start time to go stale, rather
+        // than spending a round trip to be told the time is in the past.
+        guard selectedDate > Date() else {
+            errorMessage = "Start time is in the past. Pick a later time."
+            return nil
+        }
+
+        isLoading = true
         do {
             try await GameService.createGame(
                 gameDatetime: selectedDate,
@@ -68,7 +94,7 @@ class CreateGameViewModel {
             isLoading = false
             return info
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
         return nil
@@ -79,7 +105,7 @@ class CreateGameViewModel {
         locationName = ""
         selectedLatitude = nil
         selectedLongitude = nil
-        selectedDate = Date()
+        selectedDate = Self.defaultStartDate()
         skillLevelMin = 0.0
         gameFormat = .doubles
         spotsAvailable = 4

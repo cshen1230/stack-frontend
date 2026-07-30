@@ -369,7 +369,7 @@ struct GameDetailView: View {
         do {
             participants = try await GameService.gameParticipants(gameId: game.id)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }
@@ -381,7 +381,7 @@ struct GameDetailView: View {
             hasJoined = true
             await loadParticipants()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isJoining = false
     }
@@ -409,7 +409,7 @@ struct GameDetailView: View {
             try await FriendService.sendFriendRequest(friendId: userId)
         } catch {
             pendingSentIds.remove(userId)
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 

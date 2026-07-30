@@ -127,7 +127,7 @@ struct AllMembersView: View {
             removedIds.insert(member.id)
             await onMembersChanged?()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         showingRemoveConfirm = nil
     }

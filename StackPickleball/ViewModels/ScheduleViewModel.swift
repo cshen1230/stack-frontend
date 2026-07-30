@@ -74,7 +74,7 @@ class ScheduleViewModel {
             return
         } catch {
             if !Task.isCancelled {
-                errorMessage = error.localizedDescription
+                errorMessage = error.userFacingMessage
             }
         }
         isLoading = false
@@ -99,7 +99,7 @@ class ScheduleViewModel {
         do {
             try await ScheduleService.saveSchedule(windows: windows)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
@@ -114,7 +114,7 @@ class ScheduleViewModel {
             return
         } catch {
             if !Task.isCancelled {
-                errorMessage = error.localizedDescription
+                errorMessage = error.userFacingMessage
             }
         }
     }
@@ -128,7 +128,7 @@ class ScheduleViewModel {
             return
         } catch {
             if !Task.isCancelled {
-                errorMessage = error.localizedDescription
+                errorMessage = error.userFacingMessage
             }
         }
     }

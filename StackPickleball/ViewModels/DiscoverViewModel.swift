@@ -92,7 +92,7 @@ class DiscoverViewModel {
             return
         } catch {
             if !Task.isCancelled {
-                errorMessage = error.localizedDescription
+                errorMessage = error.userFacingMessage
             }
         }
         isLoading = false
@@ -109,7 +109,7 @@ class DiscoverViewModel {
             )
             await loadGames(lat: lastLat, lng: lastLng, currentUserId: lastUserId)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
@@ -120,7 +120,7 @@ class DiscoverViewModel {
             currentUserNote = nil
             await loadGames(lat: lastLat, lng: lastLng, currentUserId: lastUserId)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
@@ -132,7 +132,7 @@ class DiscoverViewModel {
             // Remove from discover feed — it now belongs in the Sessions tab
             games.removeAll { $0.id == game.id }
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
             // Refresh to get accurate state on error
             await loadGames(lat: lastLat, lng: lastLng, currentUserId: lastUserId)
         }
@@ -144,7 +144,7 @@ class DiscoverViewModel {
             try await FriendService.sendFriendRequest(friendId: userId)
         } catch {
             sentRequestIds.remove(userId)
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
@@ -152,7 +152,7 @@ class DiscoverViewModel {
         do {
             try await FriendService.inviteToGame(gameId: gameId, friendId: playerId)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 }

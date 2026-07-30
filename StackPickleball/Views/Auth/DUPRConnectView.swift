@@ -109,7 +109,7 @@ struct DUPRConnectView: View {
             } catch let error as ASWebAuthenticationSessionError where error.code == .canceledLogin {
                 // User cancelled the auth session
             } catch {
-                errorMessage = error.localizedDescription
+                errorMessage = error.userFacingMessage
             }
             isLoading = false
         }

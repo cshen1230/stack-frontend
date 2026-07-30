@@ -318,7 +318,7 @@ struct CreateGroupChatView: View {
         do {
             friends = try await FriendService.getFriends(userId: userId)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoadingFriends = false
     }
@@ -335,7 +335,7 @@ struct CreateGroupChatView: View {
             await onCreated?()
             dismiss()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isCreating = false
     }

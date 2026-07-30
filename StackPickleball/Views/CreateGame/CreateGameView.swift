@@ -38,7 +38,11 @@ struct CreateGameView: View {
                 if viewModel.selectedLatitude != nil {
                     TextField("Park / Venue Name", text: $viewModel.locationName)
                 }
-                DatePicker("Date & Time", selection: $viewModel.selectedDate, in: Date()...)
+                DatePicker(
+                    "Date & Time",
+                    selection: $viewModel.selectedDate,
+                    in: CreateGameViewModel.earliestStartDate()...
+                )
 
                 HStack {
                     Text("Minimum DUPR")

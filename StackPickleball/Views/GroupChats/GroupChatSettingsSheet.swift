@@ -297,7 +297,7 @@ struct GroupChatSettingsSheet: View {
         do {
             members = try await GroupChatService.members(groupChatId: groupChat.id)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoadingMembers = false
     }
@@ -309,7 +309,7 @@ struct GroupChatSettingsSheet: View {
             dismiss()
             onLeave()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isProcessing = false
     }
@@ -321,7 +321,7 @@ struct GroupChatSettingsSheet: View {
             dismiss()
             onDelete()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isProcessing = false
     }
@@ -332,7 +332,7 @@ struct GroupChatSettingsSheet: View {
             try await GroupChatService.removeMember(groupChatId: groupChat.id, userId: member.userId)
             members.removeAll { $0.id == member.id }
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         showingRemoveConfirm = nil
         isProcessing = false

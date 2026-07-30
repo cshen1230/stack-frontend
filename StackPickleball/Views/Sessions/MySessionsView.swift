@@ -158,7 +158,7 @@ struct MySessionsView: View {
             participantAvatars = (try? await fetchAvatars) ?? [:]
         } catch where error.isCancellation {
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }

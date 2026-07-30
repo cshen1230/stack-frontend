@@ -21,7 +21,7 @@ class ProfileViewModel {
             friendCount = (try? await friends.count) ?? 0
         } catch where error.isCancellation {
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }
@@ -47,7 +47,7 @@ class ProfileViewModel {
             )
             await loadProfile()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }
@@ -62,7 +62,7 @@ class ProfileViewModel {
         do {
             try await AuthService.signOut()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 }

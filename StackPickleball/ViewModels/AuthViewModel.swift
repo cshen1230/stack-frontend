@@ -18,7 +18,7 @@ class AuthViewModel {
         do {
             try await AuthService.signIn(email: email, password: password)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }
@@ -34,7 +34,7 @@ class AuthViewModel {
             // If email confirmation is enabled, the user won't be signed in yet
             signUpSucceeded = true
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }

@@ -18,7 +18,7 @@ class GroupChatsViewModel {
             groupChats = try await GroupChatService.myGroupChats(userId: userId)
         } catch where error.isCancellation {
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }
@@ -28,7 +28,7 @@ class GroupChatsViewModel {
         do {
             try await GroupChatService.leaveGroupChat(groupChatId: groupChat.id)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
             await load()
         }
     }
@@ -38,7 +38,7 @@ class GroupChatsViewModel {
         do {
             try await GroupChatService.deleteGroupChat(groupChatId: groupChat.id)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
             await load()
         }
     }
@@ -54,7 +54,7 @@ class GroupChatsViewModel {
             discoverableResults = try await GroupChatService.searchDiscoverableCommunities(query: trimmed)
         } catch where error.isCancellation {
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isSearching = false
     }
@@ -65,7 +65,7 @@ class GroupChatsViewModel {
             discoverableResults.removeAll { $0.id == groupChat.id }
             await load()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 }

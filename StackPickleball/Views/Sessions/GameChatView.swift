@@ -199,7 +199,7 @@ struct GameChatView: View {
             hasMoreMessages = fetched.count >= pageSize
         } catch where error.isCancellation {
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }
@@ -214,7 +214,7 @@ struct GameChatView: View {
             messages = older + messages
         } catch where error.isCancellation {
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
@@ -233,7 +233,7 @@ struct GameChatView: View {
                 messages.append(contentsOf: newMessages)
             }
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 }
@@ -511,7 +511,7 @@ private struct SessionSettingsSheet: View {
         do {
             participants = try await GameService.gameParticipants(gameId: game.id)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoadingParticipants = false
     }
@@ -523,7 +523,7 @@ private struct SessionSettingsSheet: View {
             dismiss()
             onLeave()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isProcessing = false
     }
@@ -535,7 +535,7 @@ private struct SessionSettingsSheet: View {
             dismiss()
             onDelete()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isProcessing = false
     }
@@ -546,7 +546,7 @@ private struct SessionSettingsSheet: View {
             try await GameService.kickPlayer(gameId: game.id, userId: participant.userId)
             participants.removeAll { $0.id == participant.id }
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         showingKickConfirm = nil
         isProcessing = false
@@ -558,7 +558,7 @@ private struct SessionSettingsSheet: View {
             try await GameService.transferOwnership(gameId: game.id, newOwnerId: participant.userId)
             currentHostId = participant.userId
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         showingTransferConfirm = nil
         isProcessing = false

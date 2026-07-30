@@ -99,7 +99,7 @@ struct InviteFriendSheet: View {
             guard let userId = await AuthService.currentUserId() else { return }
             friends = try await FriendService.getFriends(userId: userId)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }
@@ -110,7 +110,7 @@ struct InviteFriendSheet: View {
             try await FriendService.inviteToGame(gameId: game.id, friendId: friend.friendUserId)
         } catch {
             invitedIds.remove(friend.friendUserId)
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 

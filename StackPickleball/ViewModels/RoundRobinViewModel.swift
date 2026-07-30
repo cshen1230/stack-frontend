@@ -39,7 +39,7 @@ class RoundRobinViewModel {
             participants = try await fetchParticipants
             rounds = try await fetchRounds
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }
@@ -82,7 +82,7 @@ class RoundRobinViewModel {
             try await GameService.startRoundRobin(gameId: game.id, rounds: payloads)
             await loadData()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
@@ -91,7 +91,7 @@ class RoundRobinViewModel {
             try await GameService.submitRoundScore(roundId: roundId, team1Score: team1Score, team2Score: team2Score)
             await loadData()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 

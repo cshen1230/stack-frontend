@@ -326,7 +326,7 @@ struct SessionFlyerDetailView: View {
         do {
             participants = try await GameService.gameParticipants(gameId: game.id)
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
         isLoading = false
     }
@@ -362,7 +362,7 @@ struct SessionFlyerDetailView: View {
             try await FriendService.sendFriendRequest(friendId: userId)
         } catch {
             pendingSentIds.remove(userId)
-            errorMessage = error.localizedDescription
+            errorMessage = error.userFacingMessage
         }
     }
 
