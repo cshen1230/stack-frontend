@@ -137,8 +137,11 @@ struct ScheduleTab: View {
     @ViewBuilder
     private var sessionsSection: some View {
         if viewModel.isLoading && viewModel.upcomingSessions.isEmpty {
-            ProgressView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ScrollView {
+                SkeletonList(count: 3) { SkeletonCard() }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+            }
         } else if viewModel.upcomingSessions.isEmpty {
             VStack(spacing: 12) {
                 EmptyStateView(

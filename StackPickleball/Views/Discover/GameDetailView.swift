@@ -164,11 +164,7 @@ struct GameDetailView: View {
 
                 // Player list
                 if isLoading {
-                    HStack {
-                        Spacer()
-                        ProgressView()
-                        Spacer()
-                    }
+                    SkeletonList(count: 3) { SkeletonRow(avatarSize: 36) }
                     .padding(.top, 20)
                 } else if participants.isEmpty {
                     Text("No players yet")

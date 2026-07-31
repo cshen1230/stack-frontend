@@ -104,9 +104,8 @@ struct GroupChatSettingsSheet: View {
                         }
 
                         if isLoadingMembers {
-                            ProgressView()
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 20)
+                            SkeletonList(count: 3) { SkeletonRow(avatarSize: 36) }
+                                .padding(.vertical, 8)
                         } else {
                             ForEach(members) { member in
                                 HStack(spacing: 12) {

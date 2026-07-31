@@ -15,8 +15,10 @@ struct ShareSessionSheet: View {
         NavigationStack {
             Group {
                 if isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ScrollView {
+                        SkeletonList(count: 3) { SkeletonCard() }
+                            .padding(16)
+                    }
                 } else if sessions.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "calendar.badge.exclamationmark")

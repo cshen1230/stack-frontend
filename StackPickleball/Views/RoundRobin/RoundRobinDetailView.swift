@@ -18,8 +18,8 @@ struct RoundRobinDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             if viewModel.isLoading {
-                Spacer()
-                ProgressView()
+                SkeletonList(count: 3) { SkeletonCard() }
+                    .padding(16)
                 Spacer()
             } else if viewModel.rounds.isEmpty {
                 waitingView

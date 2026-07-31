@@ -153,12 +153,8 @@ struct CreateGroupChatView: View {
                         }
 
                         if isLoadingFriends {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .padding(.vertical, 20)
-                                Spacer()
-                            }
+                            SkeletonList(count: 4) { SkeletonRow() }
+                                .padding(.horizontal, 16)
                         } else if friends.isEmpty {
                             VStack(spacing: 8) {
                                 Image(systemName: "person.2.slash")

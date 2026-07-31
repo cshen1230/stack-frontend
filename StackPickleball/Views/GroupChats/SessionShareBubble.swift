@@ -30,10 +30,16 @@ struct SessionShareBubble: View {
                 }
 
                 if isLoading {
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color(.systemGray6))
-                        .frame(width: 220, height: 100)
-                        .overlay(ProgressView())
+                    VStack(alignment: .leading, spacing: 8) {
+                        SkeletonBlock(width: 130, height: 13)
+                        SkeletonBlock(width: 170, height: 11)
+                        SkeletonBlock(width: 90, height: 11)
+                    }
+                    .padding(14)
+                    .frame(width: 220, height: 100, alignment: .topLeading)
+                    .background(Color.stackCardWhite)
+                    .cornerRadius(16)
+                    .skeleton()
                 } else if let game {
                     NavigationLink {
                         SessionFlyerDetailView(

@@ -23,8 +23,11 @@ struct GroupChatsListView: View {
         NavigationStack(path: $navigationPath) {
             Group {
                 if viewModel.isLoading && viewModel.groupChats.isEmpty {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ScrollView {
+                        SkeletonList(count: 5) { SkeletonRow(avatarSize: 48) }
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+                    }
                 } else if viewModel.groupChats.isEmpty && viewModel.discoverableResults.isEmpty {
                     EmptyStateView(
                         icon: "bubble.left.and.text.bubble.right",
@@ -94,12 +97,8 @@ struct GroupChatsListView: View {
                         }
 
                         if viewModel.isSearching {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .padding(.vertical, 12)
-                                Spacer()
-                            }
+                            SkeletonList(count: 3) { SkeletonRow(avatarSize: 48) }
+                                .padding(.horizontal, 16)
                             .listRowBackground(Color(.systemBackground))
                         }
                     }

@@ -18,9 +18,12 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 if viewModel.isLoading && viewModel.nearbyGames.isEmpty && viewModel.schedulesByWeekday.isEmpty {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 100)
+                    VStack(spacing: 20) {
+                        SkeletonPlanner()
+                        SkeletonList(count: 2) { SkeletonCard() }
+                            .padding(.horizontal, 16)
+                    }
+                    .padding(.top, 10)
                 } else {
                     VStack(spacing: 20) {
                         // Who's free, and where you plan a session — same calendar.

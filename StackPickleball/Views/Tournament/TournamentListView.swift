@@ -8,8 +8,10 @@ struct TournamentListView: View {
         NavigationStack {
             ZStack {
                 if viewModel.isLoading && viewModel.tournaments.isEmpty {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ScrollView {
+                        SkeletonList(count: 3) { SkeletonCard() }
+                            .padding(16)
+                    }
                 } else if viewModel.tournaments.isEmpty {
                     EmptyStateView(
                         icon: "trophy",

@@ -21,11 +21,8 @@ struct LocationPickerView: View {
         NavigationStack {
             List {
                 if isResolving {
-                    HStack {
-                        Spacer()
-                        ProgressView()
-                        Spacer()
-                    }
+                    SkeletonList(count: 4) { SkeletonRow(avatarSize: 32) }
+                        .padding(.horizontal, 16)
                 } else if isSearching {
                     // Autocomplete results while typing
                     if completer.results.isEmpty {
@@ -44,11 +41,8 @@ struct LocationPickerView: View {
                     // Nearby pickleball courts
                     Section {
                         if isLoadingNearby {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                Spacer()
-                            }
+                            SkeletonList(count: 3) { SkeletonRow(avatarSize: 32) }
+                                .padding(.horizontal, 16)
                         } else if nearbyCourts.isEmpty {
                             Text("No courts found nearby")
                                 .foregroundColor(.secondary)

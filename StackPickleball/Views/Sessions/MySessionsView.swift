@@ -19,7 +19,10 @@ struct MySessionsView: View {
         NavigationStack(path: $navigationPath) {
             Group {
                 if isLoading {
-                    ProgressView()
+                    ScrollView {
+                        SkeletonList(count: 3) { SkeletonCard() }
+                            .padding(16)
+                    }
                 } else if sessions.isEmpty {
                     EmptyStateView(
                         icon: "calendar.badge.clock",

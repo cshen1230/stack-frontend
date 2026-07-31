@@ -267,9 +267,8 @@ struct CommunityInfoView: View {
                 .padding(.bottom, 8)
 
                 if isLoadingMembers {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 20)
+                    SkeletonList(count: 3) { SkeletonRow(avatarSize: 36) }
+                        .padding(.vertical, 8)
                 } else {
                     // Preview members (capped)
                     let previewMembers = Array(members.prefix(previewMemberCount))

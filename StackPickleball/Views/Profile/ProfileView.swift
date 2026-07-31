@@ -15,8 +15,14 @@ struct ProfileView: View {
         NavigationStack {
             ZStack {
                 if viewModel.isLoading && viewModel.user == nil {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            SkeletonBlock(height: 150, cornerRadius: 18)
+                            SkeletonList(count: 3) { SkeletonRow() }
+                        }
+                        .padding(16)
+                        .skeleton()
+                    }
                 } else if let user = viewModel.user {
                     ScrollViewReader { proxy in
                         ScrollView {

@@ -68,10 +68,9 @@ struct InvitePlayersSheet: View {
                     }
                     .frame(maxWidth: .infinity)
                 } else if isSearching {
-                    VStack {
-                        Spacer()
-                        ProgressView()
-                        Spacer()
+                    ScrollView {
+                        SkeletonList(count: 5) { SkeletonRow(showsTrailing: true) }
+                            .padding(16)
                     }
                     .frame(maxWidth: .infinity)
                 } else if searchResults.isEmpty && hasSearched {

@@ -62,9 +62,9 @@ struct GameChatView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     if isLoading {
-                        ProgressView()
-                            .tint(.stackGreen)
-                            .padding(.top, 80)
+                        SkeletonMessages()
+                            .padding(.horizontal, 16)
+                            .padding(.top, 16)
                     } else if messages.isEmpty {
                         VStack(spacing: 16) {
                             Spacer().frame(height: 80)
@@ -290,9 +290,8 @@ private struct SessionSettingsSheet: View {
                             .padding(.horizontal, 4)
 
                         if isLoadingParticipants {
-                            ProgressView()
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 20)
+                            SkeletonList(count: 3) { SkeletonRow(avatarSize: 36) }
+                                .padding(.vertical, 8)
                         } else {
                             ForEach(participants) { participant in
                                 HStack(spacing: 12) {

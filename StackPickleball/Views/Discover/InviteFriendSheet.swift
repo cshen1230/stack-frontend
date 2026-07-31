@@ -12,8 +12,10 @@ struct InviteFriendSheet: View {
         NavigationStack {
             Group {
                 if isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ScrollView {
+                        SkeletonList(count: 5) { SkeletonRow(showsTrailing: true) }
+                            .padding(16)
+                    }
                 } else if friends.isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "person.2.slash")

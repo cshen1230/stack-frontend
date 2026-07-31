@@ -54,9 +54,14 @@ extension Error {
     var userFacingMessage: String {
         guard let functionsError = self as? FunctionsError,
               case let .httpError(code, data) = functionsError else {
-            return localizedDescription
+            return EdgeFunctionFailure.humanized(localizedDescription)
         }
-        if let text = EdgeFunctionFailure.message(fromBody: data) {
+        // A 404's body describes our plumbing ("Requested function was not found") and never
+        // anything the reader did or can fix, so it never reaches them.
+        guard code != 404 else { return EdgeFunctionFailure.message(forStatus: 404) }
+
+        if let text = EdgeFunctionFailure.message(fromBody: data),
+           !EdgeFunctionFailure.isPlumbing(text) {
             return text
         }
         return EdgeFunctionFailure.message(forStatus: code)
@@ -89,14 +94,35 @@ private enum EdgeFunctionFailure {
         case 401, 403:
             return "You're not authorized to do that. Try signing out and back in."
         case 404:
-            return "That action isn't available right now. Please try again later."
+            return "That's not available right now. Please try again in a moment."
         case 429:
             return "Too many requests. Wait a moment and try again."
         case 500...599:
-            return "The server ran into a problem. Please try again."
+            return "Something went wrong on our end. Please try again."
         default:
-            return "Request failed (status \(code))."
+            return "Something went wrong. Please try again."
         }
+    }
+
+    /// Server text that describes infrastructure rather than anything the reader did. Showing
+    /// it is worse than saying nothing useful — it reads as a bug report aimed at the user.
+    private static let plumbingMarkers = [
+        "404", "not found", "requested function", "status code",
+        "pgrst", "jwt", "econnrefused", "gateway", "upstream",
+    ]
+
+    static func isPlumbing(_ text: String) -> Bool {
+        let lowered = text.lowercased()
+        return plumbingMarkers.contains { lowered.contains($0) }
+    }
+
+    /// Last line of defence for errors that never went through an edge function — URLSession,
+    /// PostgREST and friends all have their own ways of leaking status codes into `description`.
+    static func humanized(_ description: String) -> String {
+        guard !isPlumbing(description) else {
+            return "Something went wrong. Please try again."
+        }
+        return description
     }
 }
 

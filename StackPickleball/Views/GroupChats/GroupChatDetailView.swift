@@ -67,9 +67,9 @@ struct GroupChatDetailView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     if isLoading {
-                        ProgressView()
-                            .tint(.stackGreen)
-                            .padding(.top, 80)
+                        SkeletonMessages()
+                            .padding(.horizontal, 16)
+                            .padding(.top, 16)
                     } else if messages.isEmpty {
                         VStack(spacing: 16) {
                             Spacer().frame(height: 80)

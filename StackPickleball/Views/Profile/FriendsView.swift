@@ -47,11 +47,9 @@ struct FriendsView: View {
             // Friends list
             Section(viewModel.friends.isEmpty ? "" : "Friends") {
                 if viewModel.isLoading && viewModel.friends.isEmpty {
-                    HStack {
-                        Spacer()
-                        ProgressView()
-                        Spacer()
-                    }
+                    SkeletonList(count: 5) { SkeletonRow() }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
                 } else if viewModel.friends.isEmpty && viewModel.searchResults.isEmpty {
                     Text("No friends yet. Search for players above to add friends.")
                         .font(.system(size: 14))
