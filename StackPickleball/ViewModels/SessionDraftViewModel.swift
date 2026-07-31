@@ -48,9 +48,14 @@ class SessionDraftViewModel: Identifiable {
         isRoundRobin ? [.singles, .doubles, .mixedDoubles] : GameFormat.allCases
     }
 
-    /// Court size, unless you've invited more people than that — then make room for them.
+    /// Rounded up to a whole court above the guest list, so the session isn't sealed shut at
+    /// exactly the people you happened to invite — someone asking to join a full-looking game
+    /// is the normal case, not an error.
     var spotsAvailable: Int {
-        max(gameFormat.defaultPlayerCount, invitedIds.count + 1)
+        let committed = invitedIds.count + 1
+        let perCourt = gameFormat.playersPerCourt
+        // The next whole court strictly above the guest list.
+        return (committed / perCourt + 1) * perCourt
     }
 
     var rangeLabel: String {

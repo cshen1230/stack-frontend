@@ -16,14 +16,17 @@ enum GameFormat: String, Codable, Sendable, CaseIterable {
         }
     }
 
-    /// How many players the format takes, so nobody has to set a spot count by hand.
-    var defaultPlayerCount: Int {
+    /// Players a single court holds. Sessions are clean at multiples of this and odd at
+    /// anything that leaves someone without a partner.
+    var playersPerCourt: Int {
         switch self {
         case .singles: return 2
-        case .doubles, .mixedDoubles: return 4
-        case .drill: return 4
+        case .doubles, .mixedDoubles, .drill: return 4
         }
     }
+
+    /// How many players the format takes, so nobody has to set a spot count by hand.
+    var defaultPlayerCount: Int { playersPerCourt }
 
     var accentColor: Color {
         switch self {

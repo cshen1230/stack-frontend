@@ -225,7 +225,7 @@ struct SessionMapView: View {
                         .lineLimit(1)
 
                     HStack(spacing: 12) {
-                        Text("\(game.spotsFilled)/\(game.spotsAvailable) spots")
+                        Text(game.balance.shortSummary)
                             .font(.system(size: 13))
                             .foregroundColor(.secondary)
 

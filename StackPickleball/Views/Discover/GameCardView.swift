@@ -37,9 +37,11 @@ struct GameCardView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(game.spotsFilled)/\(game.spotsAvailable) spots")
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
+                    // Seats filled says nothing about whether the number works; the balance
+                    // leads with what the session is actually short of.
+                    Text(game.balance.summary)
+                        .font(.system(size: 13, weight: game.balance.wanted > 0 ? .semibold : .regular))
+                        .foregroundColor(game.balance.wanted > 0 ? .stackGreen : .secondary)
 
                     HStack(spacing: 4) {
                         Text(game.gameFormat.displayName)
