@@ -7,7 +7,6 @@ struct MyScheduleEditorSheet: View {
     @Bindable var viewModel: ScheduleViewModel
 
     @State private var isSaving = false
-    @State private var isPainting = false
     /// What was on screen when we opened, so Save can tell you whether it has anything to do.
     @State private var original: [Int: Set<DayPart>]?
 
@@ -20,15 +19,12 @@ struct MyScheduleEditorSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    Text("Tap a slot, or drag across several. Tap a day or a time to fill the whole line.")
+                    Text("Tap the times you usually play. Tap a day letter or a time name to set that whole row or column at once.")
                         .font(.subheadline)
                         .foregroundColor(.stackSecondaryText)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    DayPartGrid(
-                        selection: $viewModel.dayPartSelection,
-                        isPainting: $isPainting
-                    )
+                    DayPartGrid(selection: $viewModel.dayPartSelection)
 
                     summary
                 }
@@ -36,8 +32,6 @@ struct MyScheduleEditorSheet: View {
                 .padding(.top, 4)
                 .padding(.bottom, 24)
             }
-            // A paint stroke and a scroll are the same gesture; the grid wins while painting.
-            .scrollDisabled(isPainting)
             .background(Color.stackBackground)
             .navigationTitle("When You Play")
             #if os(iOS)

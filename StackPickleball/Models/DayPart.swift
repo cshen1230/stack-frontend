@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 
 /// The chunks of a day people actually think in. Availability is captured as taps on these
 /// rather than exact times — "I usually play Tuesday evenings" is inherently fuzzy, and asking
@@ -25,6 +25,18 @@ enum DayPart: String, CaseIterable, Codable, Sendable, Hashable {
         case .earlyAfternoon: return "Early PM"
         case .lateAfternoon: return "Late PM"
         case .night: return "Night"
+        }
+    }
+
+    /// Each part gets its own hue, running the arc of a real day: sunrise gold, midday sky,
+    /// golden hour, night. It means an empty cell still says which row it belongs to, which a
+    /// grid of identical white boxes does not.
+    var color: Color {
+        switch self {
+        case .morning: return Color(hex: "#E0A32E")        // sunrise gold
+        case .earlyAfternoon: return Color(hex: "#3E8FC4")  // midday sky
+        case .lateAfternoon: return Color(hex: "#CE6B38")   // golden hour
+        case .night: return Color(hex: "#3B4A87")           // dusk indigo
         }
     }
 

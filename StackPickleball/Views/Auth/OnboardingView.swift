@@ -111,14 +111,12 @@ struct OnboardingView: View {
             Text("When do you usually play?")
                 .font(.headline)
 
-            Text("Tap the times that usually work. Tap a day or a time to fill the whole line \u{2014} you can change these any time.")
+            Text("Tap the times that usually work \u{2014} you can change these any time.")
                 .font(.subheadline)
                 .foregroundColor(.stackSecondaryText)
                 .fixedSize(horizontal: false, vertical: true)
 
-            // No paint drag here: this sits inside the onboarding scroll view, and the two
-            // gestures would fight. Taps and the row/column shortcuts still cover it.
-            DayPartGrid(selection: $dayParts, allowsDrag: false)
+            DayPartGrid(selection: $dayParts)
         }
         .padding(16)
         .background(Color.white)
