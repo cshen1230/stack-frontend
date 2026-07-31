@@ -87,12 +87,27 @@ enum Haptics {
 extension View {
     /// Marks this view as where a screen or sheet grows from, so the destination expands out
     /// of it and collapses back into it. Pair with `.grownFrom(_:in:)` on the destination.
+    ///
+    /// Zoom transitions landed in iOS 18, and this target also builds for macOS and visionOS,
+    /// which set no deployment floor of their own. Gating here rather than at each call site
+    /// keeps the availability dance in one place; older systems get the standard push, which
+    /// is the correct fallback rather than a degraded one.
+    @ViewBuilder
     func growsInto(_ id: some Hashable, in namespace: Namespace.ID) -> some View {
-        matchedTransitionSource(id: id, in: namespace)
+        if #available(iOS 18.0, macOS 15.0, tvOS 18.0, watchOS 11.0, visionOS 2.0, *) {
+            matchedTransitionSource(id: id, in: namespace)
+        } else {
+            self
+        }
     }
 
     /// The destination half of `growsInto`.
+    @ViewBuilder
     func grownFrom(_ id: some Hashable, in namespace: Namespace.ID) -> some View {
-        navigationTransition(.zoom(sourceID: id, in: namespace))
+        if #available(iOS 18.0, macOS 15.0, tvOS 18.0, watchOS 11.0, visionOS 2.0, *) {
+            navigationTransition(.zoom(sourceID: id, in: namespace))
+        } else {
+            self
+        }
     }
 }

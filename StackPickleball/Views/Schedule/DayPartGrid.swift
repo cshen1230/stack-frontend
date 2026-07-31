@@ -108,7 +108,15 @@ struct DayPartGrid: View {
                     dayColumn(weekday)
                 }
             }
-            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { gridWidth = $0 }
+            // Width feeds the drag's cell math. A background reader rather than
+            // onGeometryChange, which is iOS 18-only and this target isn't iOS-only.
+            .background {
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear { gridWidth = proxy.size.width }
+                        .onChange(of: proxy.size.width) { _, width in gridWidth = width }
+                }
+            }
             .coordinateSpace(name: "dayGrid")
             .gesture(allowsDrag ? paintGesture : nil)
         }
