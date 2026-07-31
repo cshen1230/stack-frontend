@@ -11,6 +11,10 @@ struct HomeView: View {
     @State private var createdSessionInfo: CreatedSessionInfo?
     @State private var showingAddFriends = false
 
+    /// Ties each card to the screen it becomes, so the detail grows out of the card the user
+    /// touched rather than sliding in from the edge with no stated origin.
+    @Namespace private var cardTransition
+
     private let distanceOptions: [Double] = [5, 10, 20, 50]
     private var currentUserId: UUID? { appState.currentUser?.id }
 
@@ -60,12 +64,12 @@ struct HomeView: View {
                                             avatarURLs: viewModel.participantAvatars[game.id] ?? [],
                                             isExpanded: expandedGameId == game.id,
                                             onTap: {
-                                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                                withAnimation(Motion.state) {
                                                     expandedGameId = expandedGameId == game.id ? nil : game.id
                                                 }
                                             },
                                             onJoin: {
-                                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                                withAnimation(Motion.state) {
                                                     expandedGameId = nil
                                                 }
                                                 Task { await viewModel.rsvpToGame(game) }
@@ -74,6 +78,7 @@ struct HomeView: View {
                                                 selectedGame = game
                                             }
                                         )
+                                        .growsInto(game.id, in: cardTransition)
                                     }
                                 }
                                 .padding(.horizontal, 16)
@@ -207,11 +212,14 @@ struct HomeView: View {
                 )
             }
             .navigationDestination(item: $selectedGame) { game in
-                if game.sessionType == .roundRobin {
-                    RoundRobinDetailView(game: game, isHost: game.creatorId == currentUserId)
-                } else {
-                    GameDetailView(game: game, isHost: game.creatorId == currentUserId)
+                Group {
+                    if game.sessionType == .roundRobin {
+                        RoundRobinDetailView(game: game, isHost: game.creatorId == currentUserId)
+                    } else {
+                        GameDetailView(game: game, isHost: game.creatorId == currentUserId)
+                    }
                 }
+                .grownFrom(game.id, in: cardTransition)
             }
             .sheet(isPresented: $showingAddFriends) {
                 NavigationStack {

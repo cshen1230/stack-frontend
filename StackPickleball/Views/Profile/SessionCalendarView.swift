@@ -166,7 +166,7 @@ struct SessionCalendarView: View {
         return Group {
             if hasSessions {
                 Button {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    withAnimation(Motion.state) {
                         selectedDate = selectedDate == key ? nil : key
                     }
                 } label: {
@@ -303,7 +303,7 @@ struct SessionCalendarView: View {
     // MARK: - Helpers
 
     private func shiftMonth(by value: Int) {
-        withAnimation(.easeInOut(duration: 0.2)) {
+        withAnimation(Motion.state) {
             if let newMonth = calendar.date(byAdding: .month, value: value, to: displayedMonth) {
                 displayedMonth = newMonth
                 selectedDate = nil

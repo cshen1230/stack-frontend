@@ -95,7 +95,7 @@ struct ProfileView: View {
                     .transition(.opacity)
                 }
             }
-            .animation(.easeOut(duration: 0.25), value: viewModel.user != nil)
+            .animation(Motion.content, value: viewModel.user != nil)
             .background(Color.stackBackground)
             .navigationTitle("Profile")
             #if os(iOS)
@@ -361,7 +361,7 @@ struct ProfileView: View {
     private func friendsQuickActionsCard(proxy: ScrollViewProxy) -> some View {
         VStack(spacing: 0) {
             Button {
-                withAnimation(.easeOut(duration: 0.25)) {
+                withAnimation(Motion.content) {
                     proxy.scrollTo(friendRequestsScrollId, anchor: .top)
                 }
             } label: {

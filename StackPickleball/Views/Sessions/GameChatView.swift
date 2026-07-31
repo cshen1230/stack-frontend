@@ -111,7 +111,7 @@ struct GameChatView: View {
                 }
                 .onChange(of: messages.count) {
                     if let last = messages.last {
-                        withAnimation(.easeOut(duration: 0.25)) {
+                        withAnimation(Motion.content) {
                             proxy.scrollTo(last.id, anchor: .bottom)
                         }
                     }

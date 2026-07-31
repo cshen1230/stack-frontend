@@ -22,6 +22,8 @@ struct ScheduleTab: View {
 
     private var currentUserId: UUID? { appState.currentUser?.id }
 
+    @Namespace private var cardTransition
+
     private let dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
     var body: some View {
@@ -46,6 +48,10 @@ struct ScheduleTab: View {
                         friendsSection
                     }
                 }
+                // The segment is a filter over one place, not a journey between two, so the
+                // content swaps in place rather than sliding.
+                .transition(.opacity)
+                .animation(Motion.content, value: selectedSection)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.stackBackground)
@@ -54,11 +60,14 @@ struct ScheduleTab: View {
             .navigationBarTitleDisplayMode(.large)
             #endif
             .navigationDestination(for: Game.self) { game in
-                if game.sessionType == .roundRobin {
-                    RoundRobinDetailView(game: game, isHost: game.creatorId == currentUserId)
-                } else {
-                    SessionFlyerDetailView(game: game, isHost: game.creatorId == currentUserId)
+                Group {
+                    if game.sessionType == .roundRobin {
+                        RoundRobinDetailView(game: game, isHost: game.creatorId == currentUserId)
+                    } else {
+                        SessionFlyerDetailView(game: game, isHost: game.creatorId == currentUserId)
+                    }
                 }
+                .grownFrom(game.id, in: cardTransition)
             }
             .task(id: currentUserId) {
                 guard let userId = currentUserId else { return }
@@ -183,7 +192,8 @@ struct ScheduleTab: View {
                                 }
                             )
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.pressableSubtle)
+                        .growsInto(game.id, in: cardTransition)
                         .contextMenu {
                             if game.creatorId == currentUserId {
                                 Button(role: .destructive) {

@@ -85,10 +85,10 @@ struct JoinedSessionToast: View {
                 .onTapGesture { dismiss() }
         )
         .onAppear {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) {
+            withAnimation(Motion.transition) {
                 isVisible = true
             }
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.5).delay(0.2)) {
+            withAnimation(Motion.transition.delay(0.12)) {
                 checkScale = 1
             }
             // Auto-dismiss
@@ -99,7 +99,7 @@ struct JoinedSessionToast: View {
     }
 
     private func dismiss() {
-        withAnimation(.easeIn(duration: 0.25)) {
+        withAnimation(Motion.content) {
             isVisible = false
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {

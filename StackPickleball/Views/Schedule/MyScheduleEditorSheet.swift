@@ -89,7 +89,7 @@ struct MyScheduleEditorSheet: View {
 
             Spacer(minLength: 0)
         }
-        .animation(.snappy(duration: 0.2), value: days)
+        .animation(Motion.state, value: days)
     }
 
     /// Empty sets and absent keys mean the same thing; compare them that way.

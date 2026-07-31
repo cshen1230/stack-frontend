@@ -293,21 +293,6 @@ struct DayPartGrid: View {
     }
 }
 
-/// Selection is a physical act here — every change gets a matching tick.
-enum Haptics {
-    static func tap() {
-        #if os(iOS)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        #endif
-    }
-
-    static func bump() {
-        #if os(iOS)
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        #endif
-    }
-}
-
 extension Dictionary where Key == Int, Value == Set<DayPart> {
     /// Flattens the grid into the windows `set-schedule` stores, merging touching parts so a
     /// morning-plus-early-afternoon tap becomes one 6am-3pm window rather than two.

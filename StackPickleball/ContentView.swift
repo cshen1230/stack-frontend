@@ -22,6 +22,9 @@ struct ContentView: View {
                 TabBarView()
             }
         }
+        // Set once here so every button in the app gives under a finger; call sites that
+        // pick .plain (cards, rows) opt out and handle their own feedback.
+        .buttonStyle(.pressable)
     }
 }
 

@@ -22,6 +22,8 @@ struct DayPlannerBoard: View {
     @State private var draft: SessionDraftViewModel?
     @State private var selectedFriend: FriendAvailability?
     @State private var now = Date()
+    /// The block you drew is where the draft sheet comes from and goes back to.
+    @Namespace private var draftTransition
 
     private let clock = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
     private let calendar = Calendar.current
@@ -107,6 +109,7 @@ struct DayPlannerBoard: View {
                 }
             )
             .padding(.horizontal, 16)
+            .growsInto("draft", in: draftTransition)
             // Attached to the timeline rather than the root so it doesn't contend with the
             // draft sheet below — stacking two presentations on one view is unreliable.
             .sheet(item: $selectedFriend) { slot in
@@ -118,7 +121,7 @@ struct DayPlannerBoard: View {
             await scheduleViewModel.loadMySchedule(userId: userId)
         }
         .onReceive(clock) { now = $0 }
-        .onChange(of: selectedDay) { selection = nil }
+        .onChange(of: selectedDay) { withAnimation(Motion.state) { selection = nil } }
         // Driven by isPresented rather than item: the draft is a reference type built at the
         // moment of the drag, and presentation here follows "is there a draft", not identity.
         .sheet(isPresented: isDrafting, onDismiss: { selection = nil }) {
@@ -126,6 +129,7 @@ struct DayPlannerBoard: View {
                 SessionDraftSheet(viewModel: draft, slots: friendSlots) { info in
                     onCreated(info)
                 }
+                .grownFrom("draft", in: draftTransition)
             }
         }
     }

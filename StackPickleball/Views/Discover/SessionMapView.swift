@@ -58,7 +58,7 @@ struct SessionMapView: View {
                     Annotation("", coordinate: game.coordinate!) {
                         mapPin(for: game)
                             .onTapGesture {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                withAnimation(Motion.state) {
                                     selectedGame = selectedGame?.id == game.id ? nil : game
                                 }
                             }
