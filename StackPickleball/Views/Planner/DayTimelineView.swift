@@ -205,7 +205,7 @@ private struct AvailabilityBandView: View {
     var body: some View {
         HStack(spacing: 5) {
             Circle()
-                .fill(isLive ? Color.stackGreen : Color.stackSecondaryText)
+                .fill(band.slot.isSelf ? Color.stackGreen : (isLive ? Color.stackGreen : Color.stackSecondaryText))
                 .frame(width: 20, height: 20)
                 .overlay(
                     Text(initial)
@@ -227,11 +227,15 @@ private struct AvailabilityBandView: View {
         .padding(.top, 4)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(Color.stackGreen.opacity(isLive ? 0.18 : 0.1))
+                .fill(Color.stackGreen.opacity(band.slot.isSelf ? 0.22 : (isLive ? 0.18 : 0.1)))
         )
+        // Your own window gets a solid edge; friends' stay light, so the two read apart at a glance.
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.stackGreen.opacity(isLive ? 0.5 : 0.25), lineWidth: 1)
+                .strokeBorder(
+                    Color.stackGreen.opacity(band.slot.isSelf ? 0.9 : (isLive ? 0.5 : 0.25)),
+                    lineWidth: band.slot.isSelf ? 2 : 1
+                )
         )
     }
 

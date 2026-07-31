@@ -12,6 +12,8 @@ struct FriendAvailability: Identifiable, Hashable {
     let preferredFormat: GameFormat?
     let start: Date
     let end: Date
+    /// Your own window, drawn differently so the calendar shows where you sit among friends.
+    var isSelf: Bool = false
 
     /// One friend can have several windows on the same day, so identity includes the start.
     var id: String { "\(userId)-\(start.timeIntervalSince1970)" }
@@ -49,6 +51,32 @@ struct FriendAvailability: Identifiable, Hashable {
                 preferredFormat: row.preferredFormat,
                 start: start,
                 end: end
+            )
+        }
+        .sorted { $0.start < $1.start }
+    }
+
+    /// Your own saved windows, resolved onto `day` the same way friends' are.
+    static func resolveOwn(_ schedule: [UserSchedule], on day: Date, calendar: Calendar = .current) -> [FriendAvailability] {
+        let midnight = calendar.startOfDay(for: day)
+        // Stored day_of_week is 0-based from Sunday; Calendar's weekday is 1-based.
+        let weekday = calendar.component(.weekday, from: day) - 1
+        return schedule.compactMap { window in
+            guard window.dayOfWeek == weekday,
+                  let start = date(from: window.startTime, on: midnight, calendar: calendar),
+                  let end = date(from: window.endTime, on: midnight, calendar: calendar),
+                  end > start else { return nil }
+            return FriendAvailability(
+                userId: window.userId,
+                displayName: "You",
+                firstName: "You",
+                avatarUrl: nil,
+                duprRating: nil,
+                duprVerified: nil,
+                preferredFormat: window.preferredFormat,
+                start: start,
+                end: end,
+                isSelf: true
             )
         }
         .sorted { $0.start < $1.start }

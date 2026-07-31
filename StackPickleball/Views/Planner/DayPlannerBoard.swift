@@ -10,6 +10,12 @@ struct DayPlannerBoard: View {
     var onCreated: (CreatedSessionInfo) -> Void
 
     @EnvironmentObject private var locationManager: LocationManager
+    @Environment(AppState.self) private var appState
+
+    /// Owns my own availability so the board can both draw it and edit it in place — you
+    /// shouldn't have to leave the calendar to say when you play.
+    @State private var scheduleViewModel = ScheduleViewModel()
+    @State private var showingAvailabilityEditor = false
 
     @State private var selectedDay = Date()
     @State private var selection: ClosedRange<Date>?
@@ -22,10 +28,16 @@ struct DayPlannerBoard: View {
     /// How far ahead you can plan; shared by the strip and the availability-dot walk.
     private let dayCount = 14
 
-    /// The selected day's windows, pinned to real times on that date.
-    private var slotsOnSelectedDay: [FriendAvailability] {
+    /// Friends' windows for the selected day, pinned to real times on that date.
+    private var friendSlots: [FriendAvailability] {
         let weekday = calendar.component(.weekday, from: selectedDay)
         return FriendAvailability.resolve(schedulesByWeekday[weekday] ?? [], on: selectedDay)
+    }
+
+    /// Mine plus theirs — the calendar shows where I sit among them.
+    private var slotsOnSelectedDay: [FriendAvailability] {
+        (FriendAvailability.resolveOwn(scheduleViewModel.mySchedule, on: selectedDay) + friendSlots)
+            .sorted { $0.start < $1.start }
     }
 
     /// Which chips get a dot — any upcoming date whose weekday somebody plays on.
@@ -47,10 +59,30 @@ struct DayPlannerBoard: View {
                 daysWithAvailability: daysWithAvailability
             )
 
-            Text(hint)
-                .font(.system(size: 13))
-                .foregroundColor(.stackSecondaryText)
-                .padding(.horizontal, 16)
+            HStack(alignment: .firstTextBaseline) {
+                Text(hint)
+                    .font(.system(size: 13))
+                    .foregroundColor(.stackSecondaryText)
+
+                Spacer(minLength: 8)
+
+                Button {
+                    showingAvailabilityEditor = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text(myTimesLabel)
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundColor(.stackGreen)
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showingAvailabilityEditor) {
+                    MyScheduleEditorSheet(viewModel: scheduleViewModel)
+                }
+            }
+            .padding(.horizontal, 16)
 
             DayTimelineView(
                 day: selectedDay,
@@ -65,7 +97,14 @@ struct DayPlannerBoard: View {
                         longitude: locationManager.longitude
                     )
                 },
-                onFriendTapped: { selectedFriend = $0 }
+                onFriendTapped: { slot in
+                    // Your own band is a shortcut to changing it, not a profile to read.
+                    if slot.isSelf {
+                        showingAvailabilityEditor = true
+                    } else {
+                        selectedFriend = slot
+                    }
+                }
             )
             .padding(.horizontal, 16)
             // Attached to the timeline rather than the root so it doesn't contend with the
@@ -74,13 +113,17 @@ struct DayPlannerBoard: View {
                 FriendAvailabilitySheet(slot: slot)
             }
         }
+        .task(id: appState.currentUser?.id) {
+            guard let userId = appState.currentUser?.id else { return }
+            await scheduleViewModel.loadMySchedule(userId: userId)
+        }
         .onReceive(clock) { now = $0 }
         .onChange(of: selectedDay) { selection = nil }
         // Driven by isPresented rather than item: the draft is a reference type built at the
         // moment of the drag, and presentation here follows "is there a draft", not identity.
         .sheet(isPresented: isDrafting, onDismiss: { selection = nil }) {
             if let draft {
-                SessionDraftSheet(viewModel: draft, slots: slotsOnSelectedDay) { info in
+                SessionDraftSheet(viewModel: draft, slots: friendSlots) { info in
                     onCreated(info)
                 }
             }
@@ -94,8 +137,13 @@ struct DayPlannerBoard: View {
         )
     }
 
+    /// Nudges toward setting times when there are none, since an empty calendar looks broken.
+    private var myTimesLabel: String {
+        scheduleViewModel.mySchedule.isEmpty ? "Set your times" : "Your times"
+    }
+
     private var hint: String {
-        let count = Set(slotsOnSelectedDay.map(\.userId)).count
+        let count = Set(friendSlots.map(\.userId)).count
         let who = count == 0
             ? "No friends free"
             : "\(count) friend\(count == 1 ? "" : "s") free"

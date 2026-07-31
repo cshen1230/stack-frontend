@@ -26,6 +26,19 @@ class ScheduleViewModel {
 
     private var lastUserId: UUID?
 
+    /// Just my own windows — what the planner needs to draw and edit my availability.
+    func loadMySchedule(userId: UUID) async {
+        lastUserId = userId
+        do {
+            mySchedule = try await ScheduleService.getMySchedule(userId: userId)
+            dayPartSelection = Self.dayParts(from: mySchedule)
+        } catch where error.isCancellation {
+            return
+        } catch {
+            if !Task.isCancelled { errorMessage = error.userFacingMessage }
+        }
+    }
+
     func loadSchedule(userId: UUID) async {
         isLoading = true
         lastUserId = userId
