@@ -109,13 +109,16 @@ struct OnboardingView: View {
     private var availabilitySection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("When do you usually play?")
-                .font(.system(size: 16, weight: .bold))
+                .font(.headline)
 
-            Text("Tap the times that usually work. Friends see these on the calendar so they know when to invite you \u{2014} you can change them any time.")
-                .font(.system(size: 13))
+            Text("Tap the times that usually work. Tap a day or a time to fill the whole line \u{2014} you can change these any time.")
+                .font(.subheadline)
                 .foregroundColor(.stackSecondaryText)
+                .fixedSize(horizontal: false, vertical: true)
 
-            DayPartGrid(selection: $dayParts)
+            // No paint drag here: this sits inside the onboarding scroll view, and the two
+            // gestures would fight. Taps and the row/column shortcuts still cover it.
+            DayPartGrid(selection: $dayParts, allowsDrag: false)
         }
         .padding(16)
         .background(Color.white)
