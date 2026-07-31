@@ -15,7 +15,6 @@ struct HomeView: View {
     /// touched rather than sliding in from the edge with no stated origin.
     @Namespace private var cardTransition
 
-    private let distanceOptions: [Double] = [5, 10, 20, 50]
     private var currentUserId: UUID? { appState.currentUser?.id }
 
     var body: some View {
@@ -152,48 +151,13 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Menu {
-                        ForEach(distanceOptions, id: \.self) { dist in
-                            Button {
-                                viewModel.selectedDistance = dist
-                                Task {
-                                    await viewModel.loadHome(
-                                        currentUserId: currentUserId,
-                                        lat: locationManager.latitude,
-                                        lng: locationManager.longitude
-                                    )
-                                }
-                            } label: {
-                                HStack {
-                                    Text("\(Int(dist)) mi")
-                                    if viewModel.selectedDistance == dist {
-                                        Image(systemName: "checkmark")
-                                    }
-                                }
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "location.circle")
-                                .font(.system(size: 17))
-                            Text("\(Int(viewModel.selectedDistance)) mi")
-                                .font(.system(size: 14, weight: .medium))
-                        }
-                        .foregroundColor(.primary)
-                    }
-                }
-
                 ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 16) {
-                        Button {
-                            showingAddFriends = true
-                        } label: {
-                            Image(systemName: "person.badge.plus")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundColor(.primary)
-                        }
-
+                    Button {
+                        showingAddFriends = true
+                    } label: {
+                        Image(systemName: "person.badge.plus")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.primary)
                     }
                 }
             }

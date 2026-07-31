@@ -11,8 +11,6 @@ class HomeViewModel {
     var errorMessage: String?
     var joinedGame: Game?
 
-    var selectedDistance: Double = 20.0
-
     private var lastLat: Double?
     private var lastLng: Double?
     private var lastUserId: UUID?
@@ -28,11 +26,9 @@ class HomeViewModel {
         let longitude = lng ?? -97.7431
 
         do {
-            async let fetchedGames = GameService.nearbyGames(
-                lat: latitude,
-                lng: longitude,
-                radiusMiles: selectedDistance
-            )
+            // Nearby is a fixed radius now — a picker for it was a setting nobody wanted to
+            // manage, and the answer people actually want is "near me".
+            async let fetchedGames = GameService.nearbyGames(lat: latitude, lng: longitude)
 
             if let userId = currentUserId {
                 async let fetchedSchedules = ScheduleService.friendsSchedulesByWeekday(userId: userId)
