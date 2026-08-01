@@ -1,6 +1,5 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createUserClient } from "../_shared/supabase-client.ts";
-import { requireDuprVerified, DuprGateError } from "../_shared/dupr-gate.ts";
 
 const VALID_FORMATS = ["singles", "doubles", "mixed_doubles", "drill"];
 
@@ -23,9 +22,6 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // DUPR verification gate
-    await requireDuprVerified(supabase, user.id);
 
     const body = await req.json();
     const {
@@ -232,11 +228,10 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
-    const status = err instanceof DuprGateError ? 403 : 500;
     return new Response(
       JSON.stringify({ error: err.message }),
       {
-        status,
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
