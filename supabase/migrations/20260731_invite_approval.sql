@@ -55,12 +55,19 @@ create index if not exists idx_game_participants_pending
 -- Can p_approver approve p_participant's pending request?
 --
 -- Mirrors SessionApproval in the client so both halves answer the same question the same way.
+--
+-- SECURITY DEFINER because this has to see the whole roster to answer. Run as the caller, an
+-- RLS policy hiding one game_participants row would come back as "you can't approve that" —
+-- a permission bug that looks exactly like the rule working. It leaks nothing: both ids are
+-- arguments and the answer is one boolean about them.
 create or replace function can_approve_participant(
     p_approver UUID,
     p_participant_id UUID
 )
 RETURNS BOOLEAN
 LANGUAGE plpgsql STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
     v_game          public.games%ROWTYPE;
@@ -116,7 +123,11 @@ $$;
 
 
 -- Pending requests an approver can currently act on, for the session's approvals queue.
-create or replace function pending_approvals_for_user(p_user_id UUID)
+--
+-- p_user_id is ignored for signed-in callers — it always answers for whoever is asking. The
+-- argument survives only so the service role can ask on someone's behalf (notifications).
+-- Without that, SECURITY DEFINER here would let any user read anyone else's queue.
+create or replace function pending_approvals_for_user(p_user_id UUID DEFAULT NULL)
 RETURNS TABLE (
     participant_id  UUID,
     game_id         UUID,
@@ -129,6 +140,8 @@ RETURNS TABLE (
     game_datetime   TIMESTAMPTZ
 )
 LANGUAGE sql STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
     SELECT
         gp.id           AS participant_id,
@@ -145,22 +158,31 @@ AS $$
     JOIN public.games g ON g.id = gp.game_id
     WHERE gp.rsvp_status = 'pending_approval'
       AND NOT g.is_cancelled
-      AND can_approve_participant(p_user_id, gp.id)
+      AND can_approve_participant(coalesce(auth.uid(), p_user_id), gp.id)
     ORDER BY g.game_datetime;
 $$;
 
+revoke execute on function pending_approvals_for_user(UUID) from public;
+grant  execute on function pending_approvals_for_user(UUID) to authenticated, service_role;
 
--- NOTE for whoever wires the edge functions after ./supabase/functions/sync.sh pull:
+revoke execute on function can_approve_participant(UUID, UUID) from public;
+grant  execute on function can_approve_participant(UUID, UUID) to authenticated, service_role;
+
+
+-- The edge functions for this are written and live in the repo:
 --
---   invite-to-game  when games.invite_policy <> 'open' and the caller is not the creator,
---                   insert the participant as 'pending_approval' with invited_by = caller and
---                   do NOT increment spots_filled.
+--   invite-to-game       adds as 'pending_approval' with invited_by = caller, and skips the
+--                        seat increment, when invite_policy <> 'open' and the caller isn't the
+--                        creator.
+--   approve-participant  new; guards on can_approve_participant(), claims the row with an
+--                        `.eq('rsvp_status','pending_approval')` filter so two approvers racing
+--                        can't both take the seat, then increments via increment_spots_filled
+--                        and rolls the row back to pending if the game filled meanwhile.
 --
---   approve-participant (new)
---                   guard with can_approve_participant(caller, participant_id); on success set
---                   rsvp_status = 'confirmed', approved_by = caller, and increment spots_filled
---                   with the existing atomic `.lt('spots_filled', spots_available)` guard so two
---                   approvals cannot race into the last seat.
+-- Both are committed but NOT deployed by committing. Run:
+--     ./supabase/functions/sync.sh deploy invite-to-game approve-participant
+-- and apply THIS migration first — invite-to-game writes invited_by, and the column has to
+-- exist before it does.
 --
--- Do not hand-edit the deployed functions from the copies in this repo without pulling first —
--- eleven of them have no source here and the checked-in copies are known to be behind.
+-- Note that increment_spots_filled() has no source in this repo either; it exists only on the
+-- server. Same class of gap as the missing functions, on the database side.

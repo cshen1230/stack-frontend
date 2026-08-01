@@ -127,24 +127,61 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (
+      existingParticipant &&
+      existingParticipant.rsvp_status === "pending_approval"
+    ) {
+      return new Response(
+        JSON.stringify({ error: "That add is already waiting for approval" }),
+        {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // Under a non-open policy an add by anyone other than the host is a request, not a fact.
+    // It lands as pending_approval and does NOT take a seat — a request nobody gets around to
+    // answering must not quietly hold a spot the session needs. The seat is claimed in
+    // approve-participant, at the moment someone actually agrees.
+    const needsApproval = (game.invite_policy ?? "open") !== "open" && !isCreator;
+
     // Use admin client to insert participant (bypasses RLS)
     const admin = createAdminClient();
+
+    const row = {
+      rsvp_status: needsApproval ? "pending_approval" : "confirmed",
+      invited_by: user.id,
+    };
 
     if (existingParticipant) {
       const { error: updateError } = await admin
         .from("game_participants")
-        .update({ rsvp_status: "confirmed" })
+        .update(row)
         .eq("id", existingParticipant.id);
       if (updateError) throw updateError;
     } else {
       const { error: insertError } = await admin
         .from("game_participants")
-        .insert({
-          game_id,
-          user_id: friend_id,
-          rsvp_status: "confirmed",
-        });
+        .insert({ game_id, user_id: friend_id, ...row });
       if (insertError) throw insertError;
+    }
+
+    if (needsApproval) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          pending: true,
+          message:
+            game.invite_policy === "owner_only"
+              ? "Sent to the host to approve"
+              : "Sent for approval",
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Increment spots_filled
@@ -154,7 +191,11 @@ Deno.serve(async (req) => {
     if (rpcError) throw rpcError;
 
     return new Response(
-      JSON.stringify({ success: true, message: "Friend invited to game" }),
+      JSON.stringify({
+        success: true,
+        pending: false,
+        message: "Friend invited to game",
+      }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
