@@ -1,5 +1,15 @@
 import { corsHeaders } from "../_shared/cors.ts";
-import { createUserClient } from "../_shared/supabase-client.ts";
+import { createAdminClient, createUserClient } from "../_shared/supabase-client.ts";
+import { isMissingColumnErrorMessage, pickChatCreatorId, serializeError } from "../_shared/group-chat.ts";
+
+function isUuid(v: unknown): v is string {
+  return (
+    typeof v === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      v,
+    )
+  );
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -8,68 +18,163 @@ Deno.serve(async (req) => {
 
   try {
     const supabase = createUserClient(req);
+    const admin = createAdminClient();
 
     const {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser();
+
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
+      return new Response(
+        JSON.stringify({
+          error: "Unauthorized",
+          detail: authError?.message ?? "No user found",
+        }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const chat_id = body?.chat_id;
+    const user_id = body?.user_id;
+
+    if (!isUuid(chat_id) || !isUuid(user_id)) {
+      return new Response(JSON.stringify({ error: "chat_id and user_id are required UUIDs" }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const body = await req.json();
-    const { group_chat_id, user_id } = body;
-
-    if (!group_chat_id || !user_id) {
-      return new Response(
-        JSON.stringify({ error: "group_chat_id and user_id are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    // Authorize: creator or admin member.
+    const { data: chat, error: chatError } = await admin
+      .from("group_chats")
+      .select("*")
+      .eq("id", chat_id)
+      .maybeSingle();
+    if (chatError) throw chatError;
+    if (!chat) {
+      return new Response(JSON.stringify({ error: "Chat not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Verify the requester is an admin
-    const { data: membership, error: memberError } = await supabase
-      .from("group_chat_members")
-      .select("role")
-      .eq("group_chat_id", group_chat_id)
-      .eq("user_id", user.id)
-      .single();
+    const creatorId = pickChatCreatorId(chat as unknown as Record<string, unknown>);
+    let isAdminOrCreator = creatorId === user.id;
+    if (!isAdminOrCreator) {
+      const memberLookups = [
+        admin
+          .from("group_chat_members")
+          .select("role")
+          .eq("chat_id", chat_id)
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        admin
+          .from("group_chat_members")
+          .select("role")
+          .eq("group_chat_id", chat_id)
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ];
 
-    if (memberError || !membership || membership.role !== "admin") {
-      return new Response(
-        JSON.stringify({ error: "Only admins can remove members" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      let me: { role?: string } | null = null;
+      for (const p of memberLookups) {
+        const { data, error } = await p;
+        if (error) {
+          const msg = (error as { message?: string } | null)?.message;
+          if (typeof msg === "string" && (isMissingColumnErrorMessage(msg, "chat_id") || isMissingColumnErrorMessage(msg, "group_chat_id"))) {
+            continue;
+          }
+          throw error;
+        }
+        me = data as unknown as { role?: string } | null;
+        break;
+      }
+      isAdminOrCreator = me?.role === "admin";
     }
 
-    // Cannot remove yourself via this endpoint (use leave instead)
-    if (user_id === user.id) {
-      return new Response(
-        JSON.stringify({ error: "Use leave-group-chat to leave" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    if (!isAdminOrCreator) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Remove the member
-    const { error: deleteError } = await supabase
-      .from("group_chat_members")
-      .delete()
-      .eq("group_chat_id", group_chat_id)
-      .eq("user_id", user_id);
+    // Prevent removing the creator via this endpoint (use delete chat or transfer ownership flow).
+    if (creatorId && user_id === creatorId) {
+      return new Response(JSON.stringify({ error: "Cannot remove chat creator" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    if (deleteError) throw deleteError;
+    let existing: unknown = null;
+    {
+      const existingLookups = [
+        admin
+          .from("group_chat_members")
+          .select("user_id")
+          .eq("chat_id", chat_id)
+          .eq("user_id", user_id)
+          .maybeSingle(),
+        admin
+          .from("group_chat_members")
+          .select("user_id")
+          .eq("group_chat_id", chat_id)
+          .eq("user_id", user_id)
+          .maybeSingle(),
+      ];
+      for (const p of existingLookups) {
+        const { data, error } = await p;
+        if (error) {
+          const msg = (error as { message?: string } | null)?.message;
+          if (typeof msg === "string" && (isMissingColumnErrorMessage(msg, "chat_id") || isMissingColumnErrorMessage(msg, "group_chat_id"))) {
+            continue;
+          }
+          throw error;
+        }
+        existing = data;
+        break;
+      }
+    }
+    if (!existing) {
+      return new Response(JSON.stringify({ error: "Member not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    const deleteCandidates = [
+      admin.from("group_chat_members").delete().eq("chat_id", chat_id).eq("user_id", user_id),
+      admin.from("group_chat_members").delete().eq("group_chat_id", chat_id).eq("user_id", user_id),
+    ];
+    let deleted = false;
+    let lastDeleteError: unknown = null;
+    for (const p of deleteCandidates) {
+      const { error } = await p;
+      if (!error) {
+        deleted = true;
+        lastDeleteError = null;
+        break;
+      }
+      lastDeleteError = error;
+      const msg = (error as { message?: string } | null)?.message;
+      if (typeof msg === "string" && (isMissingColumnErrorMessage(msg, "chat_id") || isMissingColumnErrorMessage(msg, "group_chat_id"))) {
+        continue;
+      }
+    }
+    if (!deleted) throw lastDeleteError ?? new Error("Failed to remove member");
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "Internal Server Error", detail: serializeError(err) }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
+

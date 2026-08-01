@@ -1,5 +1,15 @@
 import { corsHeaders } from "../_shared/cors.ts";
-import { createAdminClient } from "../_shared/supabase-client.ts";
+import { createAdminClient, createUserClient } from "../_shared/supabase-client.ts";
+import { isMissingColumnErrorMessage, pickChatCreatorId, serializeError } from "../_shared/group-chat.ts";
+
+function isUuid(v: unknown): v is string {
+  return (
+    typeof v === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      v,
+    )
+  );
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -7,88 +17,129 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const supabase = createUserClient(req);
     const admin = createAdminClient();
 
-    // Verify user from the JWT in the Authorization header
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing Authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const token = authHeader.replace("Bearer ", "");
     const {
       data: { user },
       error: authError,
-    } = await admin.auth.getUser(token);
+    } = await supabase.auth.getUser();
+
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const body = await req.json();
-    const { name, member_ids, visibility } = body;
-
-    if (!name || typeof name !== "string" || name.trim().length === 0) {
       return new Response(
-        JSON.stringify({ error: "name is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({
+          error: "Unauthorized",
+          detail: authError?.message ?? "No user found",
+        }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    if (!member_ids || !Array.isArray(member_ids) || member_ids.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "At least one member_id is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    const body = await req.json().catch(() => ({}));
+    const name = typeof body?.name === "string" ? body.name.trim() : null;
+
+    const memberIdsFromArray = Array.isArray(body?.member_ids) ? body.member_ids : null;
+    const memberIdSingle = body?.member_id;
+
+    const memberIds: string[] = [];
+    if (memberIdsFromArray) {
+      for (const id of memberIdsFromArray) {
+        if (isUuid(id)) memberIds.push(id);
+      }
+    } else if (isUuid(memberIdSingle)) {
+      memberIds.push(memberIdSingle);
     }
 
-    // Validate visibility if provided
-    const validVisibilities = ["public", "invite_only", "private"];
-    const chatVisibility = visibility && validVisibilities.includes(visibility) ? visibility : "private";
+    // Remove creator if caller included it, de-dupe remaining IDs.
+    const otherMemberIds = Array.from(new Set(memberIds)).filter((id) => id !== user.id);
 
-    // Create the group chat (admin client bypasses RLS)
-    const { data: groupChat, error: chatError } = await admin
-      .from("group_chats")
-      .insert({ name: name.trim(), created_by: user.id, visibility: chatVisibility })
-      .select()
-      .single();
+    // Allow creating a chat even if only 1 other member is provided (creator + 1 friend).
+    // If no other members are provided, we still create the chat with just the creator.
 
-    if (chatError) throw chatError;
-
-    // Add creator as admin
-    const members = [
-      { group_chat_id: groupChat.id, user_id: user.id, role: "admin" },
+    const chatName = name && name.length > 0 ? name : null;
+    const chatInsertCandidates: Array<Record<string, unknown>> = [
+      { created_by: user.id, name: chatName },
+      { creator_id: user.id, name: chatName },
     ];
 
-    // Add other members
-    for (const memberId of member_ids) {
-      if (memberId !== user.id) {
-        members.push({
-          group_chat_id: groupChat.id,
-          user_id: memberId,
-          role: "member",
-        });
+    let chat: Record<string, unknown> | null = null;
+    let lastChatError: unknown = null;
+    for (const row of chatInsertCandidates) {
+      const { data, error } = await admin.from("group_chats").insert(row).select("*").single();
+      if (!error && data) {
+        chat = data as unknown as Record<string, unknown>;
+        lastChatError = null;
+        break;
+      }
+      lastChatError = error ?? lastChatError;
+      const msg = (error as { message?: string } | null)?.message;
+      if (typeof msg === "string") {
+        // If the failure is because a specific creator column doesn't exist, try the next candidate.
+        if (
+          isMissingColumnErrorMessage(msg, "created_by") ||
+          isMissingColumnErrorMessage(msg, "creator_id")
+        ) {
+          continue;
+        }
       }
     }
 
-    const { error: membersError } = await admin
-      .from("group_chat_members")
-      .insert(members);
+    if (!chat) {
+      throw lastChatError ?? new Error("Failed to create chat");
+    }
 
-    if (membersError) throw membersError;
+    const chatId = chat["id"];
+    if (typeof chatId !== "string" || chatId.length === 0) {
+      throw new Error("Chat created but missing id");
+    }
+
+    const membersToInsert = [
+      { user_id: user.id, role: "admin" },
+      ...otherMemberIds.map((id) => ({ user_id: id, role: "member" })),
+    ];
+
+    // Membership schema can vary; try common chat id column names.
+    const memberInsertCandidates = [
+      membersToInsert.map((m) => ({ ...m, chat_id: chatId })),
+      membersToInsert.map((m) => ({ ...m, group_chat_id: chatId })),
+    ];
+    let memberInserted = false;
+    let lastMemberError: unknown = null;
+    for (const rows of memberInsertCandidates) {
+      const { error } = await admin.from("group_chat_members").insert(rows);
+      if (!error) {
+        memberInserted = true;
+        lastMemberError = null;
+        break;
+      }
+      lastMemberError = error;
+      const msg = (error as { message?: string } | null)?.message;
+      if (typeof msg === "string") {
+        if (isMissingColumnErrorMessage(msg, "chat_id") || isMissingColumnErrorMessage(msg, "group_chat_id")) {
+          continue;
+        }
+      }
+    }
+    if (!memberInserted) throw lastMemberError ?? new Error("Failed to add chat members");
 
     return new Response(
-      JSON.stringify({ success: true, group_chat_id: groupChat.id }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      JSON.stringify({
+        success: true,
+        chat: {
+          ...chat,
+          created_by: pickChatCreatorId(chat),
+        },
+      }),
+      {
+      status: 201,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: "Internal Server Error", detail: serializeError(err) }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
+

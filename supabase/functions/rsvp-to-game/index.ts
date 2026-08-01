@@ -1,27 +1,21 @@
 import { corsHeaders } from "../_shared/cors.ts";
-import { createAdminClient } from "../_shared/supabase-client.ts";
+import { createUserClient } from "../_shared/supabase-client.ts";
+import { requireDuprVerified, DuprGateError } from "../_shared/dupr-gate.ts";
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const admin = createAdminClient();
+    const supabase = createUserClient(req);
 
-    // Verify user from JWT
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Missing Authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const token = authHeader.replace("Bearer ", "");
+    // Verify the user is authenticated
     const {
       data: { user },
       error: authError,
-    } = await admin.auth.getUser(token);
+    } = await supabase.auth.getUser();
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -29,149 +23,203 @@ Deno.serve(async (req) => {
       });
     }
 
-    const body = await req.json();
-    const { game_id } = body;
+    // DUPR verification gate
+    await requireDuprVerified(supabase, user.id);
 
+    const { game_id } = await req.json();
     if (!game_id) {
-      return new Response(JSON.stringify({ error: "game_id is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "game_id is required" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Fetch the game
-    const { data: game, error: gameError } = await admin
+    const { data: game, error: gameError } = await supabase
       .from("games")
-      .select("id, spots_available, spots_filled, is_cancelled, friends_only, creator_id")
+      .select("*")
       .eq("id", game_id)
       .single();
 
     if (gameError || !game) {
-      return new Response(JSON.stringify({ error: "Session not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Game not found" }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
+    // Validate: game not cancelled
     if (game.is_cancelled) {
-      return new Response(JSON.stringify({ error: "This session has been cancelled" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Game has been cancelled" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
-    // Check if session is full
+    // Validate: game not in the past
+    if (new Date(game.game_datetime) < new Date()) {
+      return new Response(
+        JSON.stringify({ error: "Game has already started" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // Validate: game not full
     if (game.spots_filled >= game.spots_available) {
-      return new Response(JSON.stringify({ error: "This session is full" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Game is full" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
-    // Check if user is already a participant
-    const { data: existing } = await admin
-      .from("game_participants")
-      .select("id")
-      .eq("game_id", game_id)
-      .eq("user_id", user.id)
-      .eq("rsvp_status", "confirmed")
-      .maybeSingle();
-
-    if (existing) {
-      return new Response(JSON.stringify({ error: "You are already in this session" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Check friends_only: if set, verify the user is friends with the creator
-    if (game.friends_only && game.creator_id !== user.id) {
-      const { data: friendship } = await admin
+    // Validate: friends only
+    if (game.friends_only) {
+      const { data: friendship } = await supabase
         .from("friendships")
         .select("id")
         .or(
-          `and(user_id.eq.${user.id},friend_id.eq.${game.creator_id}),and(user_id.eq.${game.creator_id},friend_id.eq.${user.id})`
+          `and(user_id.eq.${game.creator_id},friend_id.eq.${user.id}),and(user_id.eq.${user.id},friend_id.eq.${game.creator_id})`,
         )
         .eq("status", "accepted")
         .maybeSingle();
 
       if (!friendship) {
         return new Response(
-          JSON.stringify({ error: "This session is for friends only" }),
-          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          JSON.stringify({ error: "This session is friends only" }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
         );
       }
     }
 
-    // Atomically increment spots_filled (only if still under limit)
-    const { data: updated, error: updateError } = await admin
-      .from("games")
-      .update({ spots_filled: game.spots_filled + 1 })
-      .eq("id", game_id)
-      .lt("spots_filled", game.spots_available)
-      .select("id")
-      .maybeSingle();
+    // Validate: user's DUPR rating is within the game's skill range
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .select("dupr_rating")
+      .eq("id", user.id)
+      .single();
 
-    if (updateError) throw updateError;
-
-    if (!updated) {
-      return new Response(JSON.stringify({ error: "This session is full" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (profileError || !profile) {
+      return new Response(
+        JSON.stringify({ error: "User profile not found" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
-    // Insert participant
-    const { error: participantError } = await admin
-      .from("game_participants")
-      .insert({
-        game_id: game_id,
-        user_id: user.id,
-        rsvp_status: "confirmed",
-      });
-
-    if (participantError) {
-      // Rollback spots_filled on failure
-      await admin
-        .from("games")
-        .update({ spots_filled: game.spots_filled })
-        .eq("id", game_id);
-      throw participantError;
-    }
-
-    // Auto-add user to the session's linked group chat (if one exists)
-    const { data: linkedChat } = await admin
-      .from("group_chats")
-      .select("id")
-      .eq("game_id", game_id)
-      .maybeSingle();
-
-    if (linkedChat) {
-      // Check if already a member (shouldn't be, but safe)
-      const { data: existingMember } = await admin
-        .from("group_chat_members")
-        .select("id")
-        .eq("group_chat_id", linkedChat.id)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (!existingMember) {
-        await admin.from("group_chat_members").insert({
-          group_chat_id: linkedChat.id,
-          user_id: user.id,
-          role: "member",
-        });
+    if (profile.dupr_rating !== null) {
+      if (
+        game.skill_level_min !== null &&
+        profile.dupr_rating < game.skill_level_min
+      ) {
+        return new Response(
+          JSON.stringify({
+            error: `Your DUPR rating (${profile.dupr_rating}) is below the minimum (${game.skill_level_min})`,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+      if (
+        game.skill_level_max !== null &&
+        profile.dupr_rating > game.skill_level_max
+      ) {
+        return new Response(
+          JSON.stringify({
+            error: `Your DUPR rating (${profile.dupr_rating}) is above the maximum (${game.skill_level_max})`,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
       }
     }
 
+    // Check for existing RSVP
+    const { data: existing } = await supabase
+      .from("game_participants")
+      .select("id, rsvp_status")
+      .eq("game_id", game_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existing && existing.rsvp_status === "confirmed") {
+      return new Response(
+        JSON.stringify({ error: "Already RSVPed to this game" }),
+        {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // Insert or re-confirm the RSVP
+    if (existing) {
+      // Re-confirm a previously cancelled RSVP
+      const { error: updateError } = await supabase
+        .from("game_participants")
+        .update({ rsvp_status: "confirmed" })
+        .eq("id", existing.id);
+
+      if (updateError) throw updateError;
+    } else {
+      const { error: insertError } = await supabase
+        .from("game_participants")
+        .insert({ game_id, user_id: user.id, rsvp_status: "confirmed" });
+
+      if (insertError) throw insertError;
+    }
+
+    // Atomically increment spots_filled using SECURITY DEFINER RPC
+    // (bypasses RLS so non-creators can update the count)
+    const { error: updateError } = await supabase.rpc(
+      "increment_spots_filled",
+      { p_game_id: game_id },
+    );
+
+    if (updateError) {
+      throw new Error(
+        "Failed to update spots — game may have filled. Please try again.",
+      );
+    }
+
     return new Response(
-      JSON.stringify({ success: true }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      JSON.stringify({ success: true, message: "RSVP confirmed" }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   } catch (err) {
+    const status = err instanceof DuprGateError ? 403 : 500;
     return new Response(
       JSON.stringify({ error: err.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      {
+        status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
     );
   }
 });
