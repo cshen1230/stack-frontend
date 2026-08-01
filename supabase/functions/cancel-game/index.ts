@@ -1,5 +1,10 @@
 import { corsHeaders } from "../_shared/cors.ts";
-import { createUserClient } from "../_shared/supabase-client.ts";
+import { createUserClient, createAdminClient } from "../_shared/supabase-client.ts";
+import {
+  TwilioSMSChannel,
+  formatGameCancelledSMS,
+  type GameSummary,
+} from "../_shared/sms-channel.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -86,6 +91,65 @@ Deno.serve(async (req) => {
       .neq("rsvp_status", "cancelled");
 
     if (rsvpError) throw rsvpError;
+
+    // ── Notify SMS invitees (best-effort) ───────────────
+    try {
+      const admin = createAdminClient();
+      const { data: smsRows } = await admin
+        .from("sms_invitations")
+        .select("id, phone_number, rsvp_status")
+        .eq("game_id", game_id)
+        .in("rsvp_status", ["pending", "accepted"]);
+
+      if (smsRows && smsRows.length > 0) {
+        // Bulk-cancel all SMS invitations
+        await admin
+          .from("sms_invitations")
+          .update({ rsvp_status: "cancelled" })
+          .eq("game_id", game_id)
+          .in("rsvp_status", ["pending", "accepted"]);
+
+        // Send cancellation SMS to accepted invitees
+        const dt = new Date(game.game_datetime);
+        const gameSummary: GameSummary = {
+          sessionName: game.session_name,
+          creatorName: "",
+          gameDatetime: dt.toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          }),
+          locationName: game.location_name,
+          gameFormat: game.game_format,
+          roster: [],
+        };
+
+        // Get creator name for the SMS
+        const { data: creator } = await admin
+          .from("users")
+          .select("first_name, last_name")
+          .eq("id", game.creator_id)
+          .single();
+        if (creator) {
+          gameSummary.creatorName = `${creator.first_name} ${creator.last_name}`;
+        }
+
+        const twilio = new TwilioSMSChannel();
+        const smsBody = formatGameCancelledSMS(gameSummary);
+        const accepted = smsRows.filter((r) => r.rsvp_status === "accepted");
+        for (const row of accepted) {
+          try {
+            await twilio.sendNotification(row.phone_number, smsBody);
+          } catch {
+            // Don't fail the cancel because of an SMS error
+          }
+        }
+      }
+    } catch {
+      // SMS notification is best-effort — never block the cancel
+    }
 
     return new Response(
       JSON.stringify({ success: true, message: "Game cancelled" }),

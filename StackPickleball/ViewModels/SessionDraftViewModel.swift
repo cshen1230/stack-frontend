@@ -31,6 +31,9 @@ class SessionDraftViewModel: Identifiable {
     var invitedIds: Set<UUID> = []
     var invitedNames: [UUID: String] = [:]
 
+    var smsInvites: [SMSInviteEntry] = []
+    var currentSMSEntry = SMSInviteEntry()
+
     var isSearching = false
     var isCreating = false
     var errorMessage: String?
@@ -52,7 +55,7 @@ class SessionDraftViewModel: Identifiable {
     /// exactly the people you happened to invite — someone asking to join a full-looking game
     /// is the normal case, not an error.
     var spotsAvailable: Int {
-        let committed = invitedIds.count + 1
+        let committed = invitedIds.count + smsInvites.count + 1
         let perCourt = gameFormat.playersPerCourt
         // The next whole court strictly above the guest list.
         return (committed / perCourt + 1) * perCourt
@@ -77,6 +80,16 @@ class SessionDraftViewModel: Identifiable {
             invitedIds.insert(id)
             invitedNames[id] = name
         }
+    }
+
+    func addSMSInvite() {
+        guard currentSMSEntry.isValid else { return }
+        smsInvites.append(currentSMSEntry)
+        currentSMSEntry = SMSInviteEntry()
+    }
+
+    func removeSMSInvite(at offsets: IndexSet) {
+        smsInvites.remove(atOffsets: offsets)
     }
 
     // MARK: - Loading
@@ -155,6 +168,17 @@ class SessionDraftViewModel: Identifiable {
             for id in invitedIds {
                 do {
                     try await FriendService.inviteToGame(gameId: gameId, friendId: id)
+                } catch {
+                    failed += 1
+                }
+            }
+            for entry in smsInvites {
+                do {
+                    try await SMSInviteService.sendSMSInvite(
+                        gameId: gameId,
+                        inviteeName: entry.name.trimmingCharacters(in: .whitespaces),
+                        phoneNumber: entry.phoneNumber
+                    )
                 } catch {
                     failed += 1
                 }

@@ -17,6 +17,7 @@ struct SessionFlyerDetailView: View {
     @State private var groupChatId: UUID?
     @State private var friendIds: Set<UUID> = []
     @State private var pendingSentIds: Set<UUID> = []
+    @State private var smsInvitations: [SMSInvitation] = []
 
     private var isParticipant: Bool {
         guard let userId = appState.currentUser?.id else { return false }
@@ -243,7 +244,8 @@ struct SessionFlyerDetailView: View {
 
                 // Players header
                 HStack {
-                    Text("Players (\(participants.count))")
+                    let acceptedSMS = smsInvitations.filter { $0.rsvpStatus == .accepted }.count
+                    Text("Players (\(participants.count + acceptedSMS))")
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.primary)
                     Spacer()
@@ -274,6 +276,16 @@ struct SessionFlyerDetailView: View {
                                     Task { await sendFriendRequest(to: participant.userId) }
                                 }
                             )
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                }
+
+                // SMS invitees
+                if !smsInvitations.isEmpty {
+                    LazyVStack(spacing: 8) {
+                        ForEach(smsInvitations) { inv in
+                            SMSInviteeRow(invitation: inv)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -310,7 +322,8 @@ struct SessionFlyerDetailView: View {
             async let loadParts: Void = loadParticipants()
             async let loadChat: Void = loadGroupChat()
             async let loadFriends: Void = loadFriendshipState()
-            _ = await (loadParts, loadChat, loadFriends)
+            async let loadSMS: Void = loadSMSInvitations()
+            _ = await (loadParts, loadChat, loadFriends, loadSMS)
         }
         .sheet(isPresented: $showingInviteFriend) {
             InviteFriendSheet(game: game)
@@ -347,6 +360,14 @@ struct SessionFlyerDetailView: View {
             let incoming = try await incomingRequests
             friendIds = Set(f.map(\.friendUserId))
             pendingSentIds = Set(sent.map(\.friendId)).union(Set(incoming.map(\.friendUserId)))
+        } catch {
+            // non-critical
+        }
+    }
+
+    private func loadSMSInvitations() async {
+        do {
+            smsInvitations = try await SMSInviteService.smsInvitations(gameId: game.id)
         } catch {
             // non-critical
         }
@@ -478,5 +499,51 @@ private struct FlyerPlayerRow: View {
                     .font(.system(size: 20))
                     .foregroundColor(.white)
             )
+    }
+}
+
+// MARK: - SMS Invitee Row
+
+private struct SMSInviteeRow: View {
+    let invitation: SMSInvitation
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "phone.fill")
+                .font(.system(size: 18))
+                .foregroundColor(.stackGreen)
+                .frame(width: 48, height: 48)
+                .background(Color.stackGreen.opacity(0.15))
+                .clipShape(Circle())
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(invitation.inviteeName)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.primary)
+
+                Text(invitation.rsvpStatus == .accepted ? "Joined via SMS" : "Invited via SMS")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(invitation.rsvpStatus == .accepted ? .stackGreen : .stackSecondaryText)
+            }
+
+            Spacer()
+
+            if invitation.rsvpStatus == .pending {
+                Text("Pending")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.orange)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.orange.opacity(0.12))
+                    .cornerRadius(6)
+            }
+        }
+        .padding(12)
+        .background(Color.stackCardWhite)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.black.opacity(0.08), lineWidth: 1)
+        )
     }
 }

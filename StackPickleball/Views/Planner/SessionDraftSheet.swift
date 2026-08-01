@@ -209,6 +209,80 @@ struct SessionDraftSheet: View {
                 .background(Color.stackCardWhite)
                 .cornerRadius(12)
             }
+
+            // ── Invite via text ────────────────────────
+            sectionLabel("Invite via text", accent: false)
+
+            VStack(spacing: 8) {
+                HStack(spacing: 8) {
+                    TextField("Name", text: $viewModel.currentSMSEntry.name)
+                        .font(.system(size: 15))
+                        .textContentType(.name)
+                        .autocorrectionDisabled()
+                        .padding(10)
+                        .background(Color.stackCardWhite)
+                        .cornerRadius(10)
+
+                    TextField("Phone", text: $viewModel.currentSMSEntry.phoneNumber)
+                        .font(.system(size: 15))
+                        .textContentType(.telephoneNumber)
+                        .keyboardType(.phonePad)
+                        .padding(10)
+                        .background(Color.stackCardWhite)
+                        .cornerRadius(10)
+
+                    Button {
+                        viewModel.addSMSInvite()
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(viewModel.currentSMSEntry.isValid ? .stackGreen : .gray.opacity(0.4))
+                    }
+                    .disabled(!viewModel.currentSMSEntry.isValid)
+                }
+
+                if !viewModel.smsInvites.isEmpty {
+                    VStack(spacing: 0) {
+                        ForEach(viewModel.smsInvites) { entry in
+                            HStack(spacing: 12) {
+                                Image(systemName: "phone.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.stackGreen)
+                                    .frame(width: 36, height: 36)
+                                    .background(Color.stackGreen.opacity(0.15))
+                                    .clipShape(Circle())
+
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(entry.name)
+                                        .font(.system(size: 15, weight: .semibold))
+                                        .foregroundColor(.primary)
+                                        .lineLimit(1)
+                                    Text(entry.phoneNumber)
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.stackSecondaryText)
+                                        .lineLimit(1)
+                                }
+
+                                Spacer()
+
+                                Button {
+                                    if let idx = viewModel.smsInvites.firstIndex(where: { $0.id == entry.id }) {
+                                        viewModel.removeSMSInvite(at: IndexSet(integer: idx))
+                                    }
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(.gray)
+                                }
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 10)
+                        }
+                    }
+                    .background(Color.stackCardWhite)
+                    .cornerRadius(12)
+                }
+            }
         }
     }
 
@@ -303,7 +377,7 @@ struct SessionDraftSheet: View {
     }
 
     private var createTitle: String {
-        let count = viewModel.invitedIds.count
+        let count = viewModel.invitedIds.count + viewModel.smsInvites.count
         return count == 0 ? "Create Session" : "Create & Invite \(count)"
     }
 }

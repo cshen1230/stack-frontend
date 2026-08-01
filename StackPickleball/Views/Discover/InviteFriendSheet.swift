@@ -8,76 +8,130 @@ struct InviteFriendSheet: View {
     @State private var invitedIds: Set<UUID> = []
     @State private var errorMessage: String?
 
+    // SMS invite state
+    @State private var smsInvitations: [SMSInvitation] = []
+    @State private var smsName = ""
+    @State private var smsPhone = ""
+    @State private var isSendingSMS = false
+
     var body: some View {
         NavigationStack {
-            Group {
+            List {
+                // ── Friends section ────────────────────────
                 if isLoading {
-                    ScrollView {
-                        SkeletonList(count: 5) { SkeletonRow(showsTrailing: true) }
-                            .padding(16)
+                    Section {
+                        SkeletonList(count: 3) { SkeletonRow(showsTrailing: true) }
                     }
-                } else if friends.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "person.2.slash")
-                            .font(.system(size: 40))
-                            .foregroundColor(.stackSecondaryText)
-                        Text("No friends to invite")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.stackSecondaryText)
-                        Text("Add friends from your profile to invite them to games.")
-                            .font(.system(size: 14))
-                            .foregroundColor(.stackSecondaryText)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    List(friends) { friend in
-                        HStack(spacing: 12) {
-                            avatarImage(url: friend.avatarUrl, size: 40)
+                } else if !friends.isEmpty {
+                    Section("Friends") {
+                        ForEach(friends) { friend in
+                            HStack(spacing: 12) {
+                                avatarImage(url: friend.avatarUrl, size: 40)
 
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(friend.displayName)
-                                    .font(.system(size: 15, weight: .semibold))
-                                if let dupr = friend.duprRating {
-                                    HStack(spacing: 3) {
-                                        if friend.isDuprConnected {
-                                            Image(systemName: "checkmark.seal.fill")
-                                                .font(.system(size: 11))
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(friend.displayName)
+                                        .font(.system(size: 15, weight: .semibold))
+                                    if let dupr = friend.duprRating {
+                                        HStack(spacing: 3) {
+                                            if friend.isDuprConnected {
+                                                Image(systemName: "checkmark.seal.fill")
+                                                    .font(.system(size: 11))
+                                                    .foregroundColor(.stackGreen)
+                                            }
+                                            Text("DUPR \(String(format: "%.1f", dupr))")
+                                                .font(.system(size: 13))
                                                 .foregroundColor(.stackGreen)
                                         }
-                                        Text("DUPR \(String(format: "%.1f", dupr))")
-                                            .font(.system(size: 13))
-                                            .foregroundColor(.stackGreen)
+                                    }
+                                }
+
+                                Spacer()
+
+                                if invitedIds.contains(friend.friendUserId) {
+                                    Text("Invited")
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundColor(.stackSecondaryText)
+                                } else {
+                                    Button {
+                                        Task { await invite(friend) }
+                                    } label: {
+                                        Text("Invite")
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 6)
+                                            .background(Color.stackGreen)
+                                            .cornerRadius(8)
                                     }
                                 }
                             }
-
-                            Spacer()
-
-                            if invitedIds.contains(friend.friendUserId) {
-                                Text("Invited")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundColor(.stackSecondaryText)
-                            } else {
-                                Button {
-                                    Task { await invite(friend) }
-                                } label: {
-                                    Text("Invite")
-                                        .font(.system(size: 13, weight: .semibold))
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 14)
-                                        .padding(.vertical, 6)
-                                        .background(Color.stackGreen)
-                                        .cornerRadius(8)
-                                }
-                            }
+                            .padding(.vertical, 2)
                         }
-                        .padding(.vertical, 2)
                     }
-                    .listStyle(.insetGrouped)
+                }
+
+                // ── Invite via Text section ────────────────
+                Section("Invite via Text") {
+                    TextField("Name", text: $smsName)
+                        .font(.system(size: 15))
+                        .textContentType(.name)
+                        .autocorrectionDisabled()
+
+                    TextField("Phone number", text: $smsPhone)
+                        .font(.system(size: 15))
+                        .textContentType(.telephoneNumber)
+                        .keyboardType(.phonePad)
+
+                    Button {
+                        Task { await sendSMSInvite() }
+                    } label: {
+                        HStack(spacing: 8) {
+                            if isSendingSMS {
+                                ProgressView().controlSize(.small)
+                            }
+                            Text("Send Text Invite")
+                                .font(.system(size: 15, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(smsFieldsValid ? Color.stackGreen : Color.gray.opacity(0.4))
+                        .cornerRadius(8)
+                    }
+                    .disabled(!smsFieldsValid || isSendingSMS)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                }
+
+                // ── Sent SMS invites ───────────────────────
+                if !smsInvitations.isEmpty {
+                    Section("Text Invites") {
+                        ForEach(smsInvitations) { inv in
+                            HStack(spacing: 12) {
+                                Image(systemName: "phone.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.stackGreen)
+                                    .frame(width: 40, height: 40)
+                                    .background(Color.stackGreen.opacity(0.15))
+                                    .clipShape(Circle())
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(inv.inviteeName)
+                                        .font(.system(size: 15, weight: .semibold))
+                                    Text(inv.phoneNumber)
+                                        .font(.system(size: 12))
+                                        .foregroundColor(.stackSecondaryText)
+                                }
+
+                                Spacer()
+
+                                smsStatusBadge(inv.rsvpStatus)
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
                 }
             }
+            .listStyle(.insetGrouped)
             .background(Color.stackBackground)
             .navigationTitle("Invite Friends")
             #if os(iOS)
@@ -89,7 +143,9 @@ struct InviteFriendSheet: View {
                 }
             }
             .task {
-                await loadFriends()
+                async let loadF: Void = loadFriends()
+                async let loadS: Void = loadSMSInvitations()
+                _ = await (loadF, loadS)
             }
             .errorAlert($errorMessage)
         }
@@ -114,6 +170,56 @@ struct InviteFriendSheet: View {
             invitedIds.remove(friend.friendUserId)
             errorMessage = error.userFacingMessage
         }
+    }
+
+    // MARK: - SMS
+
+    private var smsFieldsValid: Bool {
+        !smsName.trimmingCharacters(in: .whitespaces).isEmpty
+            && smsPhone.filter(\.isNumber).count >= 10
+    }
+
+    private func loadSMSInvitations() async {
+        do {
+            smsInvitations = try await SMSInviteService.smsInvitations(gameId: game.id)
+        } catch {
+            // non-critical
+        }
+    }
+
+    private func sendSMSInvite() async {
+        isSendingSMS = true
+        defer { isSendingSMS = false }
+        do {
+            try await SMSInviteService.sendSMSInvite(
+                gameId: game.id,
+                inviteeName: smsName.trimmingCharacters(in: .whitespaces),
+                phoneNumber: smsPhone
+            )
+            smsName = ""
+            smsPhone = ""
+            await loadSMSInvitations()
+        } catch {
+            errorMessage = error.userFacingMessage
+        }
+    }
+
+    private func smsStatusBadge(_ status: SMSRSVPStatus) -> some View {
+        let (label, color): (String, Color) = {
+            switch status {
+            case .pending: return ("Pending", .orange)
+            case .accepted: return ("Accepted", .stackGreen)
+            case .declined: return ("Declined", .red)
+            case .cancelled: return ("Cancelled", .gray)
+            }
+        }()
+        return Text(label)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(color)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(color.opacity(0.12))
+            .cornerRadius(6)
     }
 
     private func avatarImage(url: String?, size: CGFloat) -> some View {
