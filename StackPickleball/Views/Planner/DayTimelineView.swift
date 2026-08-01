@@ -9,6 +9,8 @@ struct DayTimelineView: View {
     /// Live while dragging, so the parent can show the range it's about to create.
     @Binding var selection: ClosedRange<Date>?
     var onSelectionCommitted: (ClosedRange<Date>) -> Void
+    /// Post-creation info — when set, the selection overlay morphs into a confirmed indicator.
+    var confirmedInfo: CreatedSessionInfo? = nil
     /// Tapping someone's band opens their details. A tap is distinct from the hold-and-drag
     /// that plans a session, so the two gestures don't collide.
     var onFriendTapped: (FriendAvailability) -> Void = { _ in }
@@ -174,19 +176,66 @@ struct DayTimelineView: View {
             let top = DayPlan.minutesFromTop(for: selection.lowerBound, on: day)
             let height = selection.upperBound.timeIntervalSince(selection.lowerBound) / 60
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(rangeLabel(selection))
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.white)
-                Spacer(minLength: 0)
+            Group {
+                if let info = confirmedInfo {
+                    // ── Confirmed state ──
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                            Text("Session Created")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+
+                        Text(rangeLabel(selection))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white.opacity(0.85))
+
+                        HStack(spacing: 6) {
+                            Text(info.gameFormat.displayName)
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("·")
+                            Text("\(info.spotsAvailable) spots")
+                                .font(.system(size: 11, weight: .semibold))
+                        }
+                        .foregroundColor(.white.opacity(0.8))
+
+                        Spacer(minLength: 0)
+                    }
+                    .padding(8)
+                    .frame(width: laneWidth,
+                           height: max(CGFloat(height) / 60 * hourHeight, 26),
+                           alignment: .topLeading)
+                    .background(Color.stackGreen)
+                    .cornerRadius(10)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .strokeBorder(Color.white.opacity(0.4), lineWidth: 1.5)
+                    )
+                    .shadow(color: Color.stackGreen.opacity(0.5), radius: 10, y: 3)
+                    .transition(.identity)
+                } else {
+                    // ── Draft state ──
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(rangeLabel(selection))
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(8)
+                    .frame(width: laneWidth,
+                           height: max(CGFloat(height) / 60 * hourHeight, 26),
+                           alignment: .topLeading)
+                    .background(Color.stackGreen.opacity(0.92))
+                    .cornerRadius(10)
+                    .shadow(color: Color.stackGreen.opacity(0.4), radius: 8, y: 3)
+                }
             }
-            .padding(8)
-            .frame(width: laneWidth, height: max(CGFloat(height) / 60 * hourHeight, 26), alignment: .topLeading)
-            .background(Color.stackGreen.opacity(0.92))
-            .cornerRadius(10)
-            .shadow(color: Color.stackGreen.opacity(0.4), radius: 8, y: 3)
             .offset(y: CGFloat(top) / 60 * hourHeight)
             .allowsHitTesting(false)
+            .animation(Motion.transition, value: confirmedInfo != nil)
         }
     }
 

@@ -20,6 +20,7 @@ struct DayPlannerBoard: View {
     @State private var selectedDay = Date()
     @State private var selection: ClosedRange<Date>?
     @State private var draft: SessionDraftViewModel?
+    @State private var confirmedInfo: CreatedSessionInfo?
     @State private var selectedFriend: FriendAvailability?
     @State private var now = Date()
     /// The block you drew is where the draft sheet comes from and goes back to.
@@ -91,6 +92,7 @@ struct DayPlannerBoard: View {
                 slots: slotsOnSelectedDay,
                 now: now,
                 selection: $selection,
+                confirmedInfo: confirmedInfo,
                 onSelectionCommitted: { range in
                     draft = SessionDraftViewModel(
                         range: range,
@@ -121,12 +123,24 @@ struct DayPlannerBoard: View {
             await scheduleViewModel.loadMySchedule(userId: userId)
         }
         .onReceive(clock) { now = $0 }
-        .onChange(of: selectedDay) { withAnimation(Motion.state) { selection = nil } }
+        .onChange(of: selectedDay) { withAnimation(Motion.state) { selection = nil; confirmedInfo = nil } }
         // Driven by isPresented rather than item: the draft is a reference type built at the
         // moment of the drag, and presentation here follows "is there a draft", not identity.
-        .sheet(isPresented: isDrafting, onDismiss: { selection = nil }) {
+        .sheet(isPresented: isDrafting, onDismiss: {
+            if confirmedInfo == nil {
+                selection = nil
+            } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    withAnimation(Motion.transition) {
+                        selection = nil
+                        confirmedInfo = nil
+                    }
+                }
+            }
+        }) {
             if let draft {
                 SessionDraftSheet(viewModel: draft, slots: friendSlots) { info in
+                    confirmedInfo = info
                     onCreated(info)
                 }
                 .grownFrom("draft", in: draftTransition)
