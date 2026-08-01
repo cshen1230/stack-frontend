@@ -3,7 +3,6 @@ import {
   createUserClient,
   createAdminClient,
 } from "../_shared/supabase-client.ts";
-import { requireDuprVerified, DuprGateError } from "../_shared/dupr-gate.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -23,9 +22,6 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // DUPR verification gate
-    await requireDuprVerified(supabase, user.id);
 
     const { game_id, friend_id } = await req.json();
     if (!game_id || !friend_id) {
@@ -165,9 +161,8 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
-    const status = err instanceof DuprGateError ? 403 : 500;
     return new Response(JSON.stringify({ error: err.message }), {
-      status,
+      status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
