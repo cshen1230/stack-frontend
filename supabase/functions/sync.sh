@@ -140,7 +140,16 @@ deploy)
     failed=""
     for fn in $targets; do
         printf 'deploying %s… ' "$fn"
-        if supabase functions deploy "$fn" --project-ref "$PROJECT_REF" >/dev/null 2>&1; then
+
+        # Functions called by an outside service, not the app. They authenticate the caller
+        # themselves — twilio-webhook checks X-Twilio-Signature — and deploying them with JWT
+        # verification on means the provider gets a 401 and the feature is silently dead.
+        flags="--project-ref $PROJECT_REF"
+        case "$fn" in
+            twilio-webhook|dupr-webhook) flags="$flags --no-verify-jwt" ;;
+        esac
+
+        if supabase functions deploy "$fn" $flags >/dev/null 2>&1; then
             echo "ok"
         else
             echo "FAILED"
