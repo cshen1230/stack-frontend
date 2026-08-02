@@ -1,10 +1,14 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createUserClient, createAdminClient } from "../_shared/supabase-client.ts";
+import { requireJsonContentType, sanitizeErrorForClient } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const ctError = requireJsonContentType(req);
+  if (ctError) return ctError;
 
   try {
     const userClient = createUserClient(req);
@@ -33,13 +37,13 @@ Deno.serve(async (req) => {
     // Fetch the game using admin client to bypass RLS
     const { data: game, error: gameError } = await adminClient
       .from("games")
-      .select("id, creator_id, session_type, round_robin_status")
+      .select("id, creator_id, session_type, round_robin_status, num_rounds")
       .eq("id", game_id)
       .single();
 
     if (gameError || !game) {
       return new Response(
-        JSON.stringify({ error: gameError?.message || "Game not found" }),
+        JSON.stringify({ error: "Game not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -60,9 +64,22 @@ Deno.serve(async (req) => {
 
     if (game.round_robin_status !== "waiting") {
       return new Response(
-        JSON.stringify({ error: `Round robin status is '${game.round_robin_status}', expected 'waiting'` }),
+        JSON.stringify({ error: "Round robin has already been started" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
+    }
+
+    // Validate that the number of distinct rounds matches what the game expects.
+    if (game.num_rounds != null) {
+      const distinctRounds = new Set(rounds.map((r: { round_number: number }) => r.round_number));
+      if (distinctRounds.size !== game.num_rounds) {
+        return new Response(
+          JSON.stringify({
+            error: `Expected ${game.num_rounds} rounds but received ${distinctRounds.size}`,
+          }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
     }
 
     // Insert all round robin rounds using admin client
@@ -105,7 +122,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: sanitizeErrorForClient(err, "start-round-robin") }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

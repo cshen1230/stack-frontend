@@ -1,6 +1,7 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createAdminClient, createUserClient } from "../_shared/supabase-client.ts";
 import { pickChatCreatorId, serializeError } from "../_shared/group-chat.ts";
+import { requireJsonContentType } from "../_shared/validation.ts";
 
 function isUuid(v: unknown): v is string {
   return (
@@ -15,6 +16,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const ctError = requireJsonContentType(req);
+  if (ctError) return ctError;
 
   try {
     const supabase = createUserClient(req);

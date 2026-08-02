@@ -1,11 +1,15 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createUserClient } from "../_shared/supabase-client.ts";
+import { requireJsonContentType, sanitizeErrorForClient } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const ctError = requireJsonContentType(req);
+  if (ctError) return ctError;
 
   try {
     const supabase = createUserClient(req);
@@ -190,14 +194,28 @@ Deno.serve(async (req) => {
 
     // Atomically increment spots_filled using SECURITY DEFINER RPC
     // (bypasses RLS so non-creators can update the count)
-    const { error: updateError } = await supabase.rpc(
+    const { error: incrementError } = await supabase.rpc(
       "increment_spots_filled",
       { p_game_id: game_id },
     );
 
-    if (updateError) {
-      throw new Error(
-        "Failed to update spots — game may have filled. Please try again.",
+    if (incrementError) {
+      // The seat went while we were writing. Roll back the participant row so
+      // the user isn't left confirmed in a game that has no room for them.
+      console.error("increment_spots_filled failed, rolling back RSVP:", incrementError);
+      await supabase
+        .from("game_participants")
+        .update({ rsvp_status: "cancelled" })
+        .eq("game_id", game_id)
+        .eq("user_id", user.id)
+        .eq("rsvp_status", "confirmed");
+
+      return new Response(
+        JSON.stringify({ error: "Game is full. Please try again." }),
+        {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
       );
     }
 
@@ -210,7 +228,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: sanitizeErrorForClient(err, "rsvp-to-game") }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -1,6 +1,7 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createUserClient, createAdminClient } from "../_shared/supabase-client.ts";
 import { refreshUserToken } from "../_shared/dupr-client.ts";
+import { sanitizeErrorForClient } from "../_shared/validation.ts";
 
 /**
  * Refreshes an expired DUPR user access token.
@@ -76,7 +77,7 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: sanitizeErrorForClient(err, "dupr-refresh-token") }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

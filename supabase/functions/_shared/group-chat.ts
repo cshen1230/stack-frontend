@@ -8,14 +8,24 @@ export function pickChatCreatorId(chat: Record<string, unknown> | null | undefin
   return null;
 }
 
+/** Escape characters that would be interpreted as HTML/XML markup. */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function serializeError(err: unknown) {
   const e = err as Record<string, unknown> | null;
-  if (!e) return { message: String(err) };
+  if (!e) return { message: escapeHtml(String(err)) };
   return {
-    message: typeof e.message === "string" ? e.message : String(err),
-    code: typeof e.code === "string" ? e.code : undefined,
-    details: typeof e.details === "string" ? e.details : undefined,
-    hint: typeof e.hint === "string" ? e.hint : undefined,
+    message: typeof e.message === "string" ? escapeHtml(e.message) : escapeHtml(String(err)),
+    code: typeof e.code === "string" ? escapeHtml(e.code) : undefined,
+    details: typeof e.details === "string" ? escapeHtml(e.details) : undefined,
+    hint: typeof e.hint === "string" ? escapeHtml(e.hint) : undefined,
     status: typeof e.status === "number" ? e.status : undefined,
   };
 }

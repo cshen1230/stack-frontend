@@ -1,6 +1,7 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createUserClient } from "../_shared/supabase-client.ts";
 import { requireDuprVerified, DuprGateError } from "../_shared/dupr-gate.ts";
+import { validateCoordinates, requireJsonContentType, sanitizeErrorForClient } from "../_shared/validation.ts";
 
 const VALID_FORMATS = ["singles", "doubles", "mixed_doubles", "drill"];
 
@@ -48,6 +49,9 @@ Deno.serve(async (req) => {
     }
 
     // --- POST: set availability ---
+
+    const ctError = requireJsonContentType(req);
+    if (ctError) return ctError;
 
     const body = await req.json();
     const { available_until, latitude, longitude, preferred_format } = body;
@@ -122,7 +126,10 @@ Deno.serve(async (req) => {
     if (preferred_format) row.preferred_format = preferred_format;
 
     if (latitude != null && longitude != null) {
-      row.location = `SRID=4326;POINT(${longitude} ${latitude})`;
+      const coords = validateCoordinates(latitude, longitude);
+      if (coords) {
+        row.location = `SRID=4326;POINT(${coords.longitude} ${coords.latitude})`;
+      }
     }
 
     // Insert new availability
@@ -142,11 +149,19 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
-    const status = err instanceof DuprGateError ? 403 : 500;
+    if (err instanceof DuprGateError) {
+      return new Response(
+        JSON.stringify({ error: err.message }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: sanitizeErrorForClient(err, "set-availability") }),
       {
-        status,
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );

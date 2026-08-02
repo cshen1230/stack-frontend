@@ -132,6 +132,16 @@ Deno.serve(async (req) => {
   // an RSVP decision, and the only correct response is to stop.
 
   if (intent === "stop") {
+    // Check if already opted out to avoid re-processing STOP and double-cancelling RSVPs.
+    const { data: alreadyOptedOut } = await quietly(
+      admin.from("sms_opt_outs").select("phone_number").eq("phone_number", phone).maybeSingle(),
+    );
+
+    if (alreadyOptedOut) {
+      await reply(formatOptOutSMS());
+      return twimlResponse();
+    }
+
     await quietly(
       admin.from("sms_opt_outs").upsert(
         { phone_number: phone, source: "sms_reply", opted_out_at: new Date().toISOString() },

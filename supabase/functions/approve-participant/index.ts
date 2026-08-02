@@ -3,6 +3,7 @@ import {
   createUserClient,
   createAdminClient,
 } from "../_shared/supabase-client.ts";
+import { requireJsonContentType, sanitizeErrorForClient } from "../_shared/validation.ts";
 
 /**
  * Approve — or decline — a pending add to a session.
@@ -27,6 +28,9 @@ Deno.serve(async (req) => {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
+  const ctError = requireJsonContentType(req);
+  if (ctError) return ctError;
 
   try {
     const supabase = createUserClient(req);
@@ -125,6 +129,6 @@ Deno.serve(async (req) => {
       200,
     );
   } catch (err) {
-    return json({ error: err.message }, 500);
+    return json({ error: sanitizeErrorForClient(err, "approve-participant") }, 500);
   }
 });

@@ -50,6 +50,17 @@ enum GameService {
         numRounds: Int? = nil,
         friendsOnly: Bool = false
     ) async throws -> UUID {
+        // Client-side guards — the edge function validates too, but catching
+        // obvious mistakes here saves a round trip and gives immediate feedback.
+        guard gameDatetime > Date() else {
+            throw NSError(domain: "GameService", code: 400,
+                          userInfo: [NSLocalizedDescriptionKey: "Game date must be in the future"])
+        }
+        guard (1...100).contains(spotsAvailable) else {
+            throw NSError(domain: "GameService", code: 400,
+                          userInfo: [NSLocalizedDescriptionKey: "Spots must be between 1 and 100"])
+        }
+
         let session = try await supabase.auth.session
         let headers = ["Authorization": "Bearer \(session.accessToken)"]
         let request = CreateGameRequest(

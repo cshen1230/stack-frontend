@@ -1,10 +1,14 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createUserClient, createAdminClient } from "../_shared/supabase-client.ts";
+import { requireJsonContentType, sanitizeErrorForClient } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const ctError = requireJsonContentType(req);
+  if (ctError) return ctError;
 
   try {
     const supabase = createUserClient(req);
@@ -117,9 +121,8 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
-    console.error("kick-player error:", err);
     return new Response(
-      JSON.stringify({ error: err.message, detail: String(err) }),
+      JSON.stringify({ error: sanitizeErrorForClient(err, "kick-player") }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -62,6 +62,37 @@ export function normalizePhoneNumber(raw: string): string | null {
   return null;
 }
 
+// ── Reserved number detection ────────────────────────────────
+
+/**
+ * Returns `true` for numbers that should never receive an invitation SMS:
+ *
+ * - **555 area codes** — reserved for fictional use (e.g. 555-0100..0199 are
+ *   explicitly set aside; the whole exchange is treated as suspect).
+ * - **N11 service codes** (211, 311, 411, 511, 611, 711, 811, 911) — these are
+ *   three-digit service numbers, not subscriber lines.
+ *
+ * Call this after `normalizePhoneNumber` with the E.164 result.
+ */
+export function isReservedNumber(e164: string): boolean {
+  // Strip the country code to get the 10-digit national number.
+  const national = e164.startsWith("+1") ? e164.slice(2) : null;
+  if (!national || national.length !== 10) return false;
+
+  // 555 area code
+  if (national.startsWith("555")) return true;
+
+  // 555 exchange within any area code (NPA-555-xxxx)
+  if (national.slice(3, 6) === "555") return true;
+
+  // N11 codes — these are three-digit service numbers, but if someone enters
+  // them as 10-digit (e.g. 911-xxx-xxxx) they should still be blocked.
+  const areaCode = national.slice(0, 3);
+  if (/^[2-9]11$/.test(areaCode)) return true;
+
+  return false;
+}
+
 // ── Time ────────────────────────────────────────────────────
 
 /** Used when a game predates games.timezone and so has no zone of its own. */

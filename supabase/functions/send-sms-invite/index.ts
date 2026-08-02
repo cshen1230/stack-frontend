@@ -6,10 +6,12 @@ import {
 import {
   TwilioSMSChannel,
   normalizePhoneNumber,
+  isReservedNumber,
   formatGameTime,
   formatInviteSMS,
   type GameSummary,
 } from "../_shared/sms-channel.ts";
+import { requireJsonContentType, sanitizeErrorForClient } from "../_shared/validation.ts";
 
 /**
  * Sending caps.
@@ -23,13 +25,17 @@ import {
  * These are deliberately far above what organising real pickleball looks like: a big session is
  * a dozen invitations, not fifty.
  */
-const MAX_INVITES_PER_SENDER_PER_DAY = 50;
+const MAX_INVITES_PER_SENDER_PER_DAY = 20;
+const MAX_INVITES_PER_SENDER_PER_HOUR = 5;
 const MAX_INVITES_PER_RECIPIENT_PER_DAY = 3;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const ctError = requireJsonContentType(req);
+  if (ctError) return ctError;
 
   try {
     const supabase = createUserClient(req);
@@ -64,6 +70,16 @@ Deno.serve(async (req) => {
         JSON.stringify({
           error: "That doesn't look like a valid phone number.",
         }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    if (isReservedNumber(normalized)) {
+      return new Response(
+        JSON.stringify({ error: "That number cannot receive SMS invitations." }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -179,6 +195,25 @@ Deno.serve(async (req) => {
       );
     }
 
+    const sinceHour = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count: sentThisHour } = await admin
+      .from("sms_invitations")
+      .select("id", { count: "exact", head: true })
+      .eq("invited_by", user.id)
+      .gte("created_at", sinceHour);
+
+    if ((sentThisHour ?? 0) >= MAX_INVITES_PER_SENDER_PER_HOUR) {
+      return new Response(
+        JSON.stringify({
+          error: "You've sent several invites recently. Please wait a bit.",
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     // Counted from the send log rather than the invitations table, and across every sender.
     // An invitation row is reused when someone declines and is invited again, so counting rows
     // would miss exactly the loop worth catching; the log has one entry per message that
@@ -245,20 +280,22 @@ Deno.serve(async (req) => {
       if (insertErr) throw insertErr;
     }
 
-    // Build roster for the SMS body
+    // Build roster for the SMS body (capped to avoid an unbounded query)
     const { data: participants } = await admin
       .from("game_participants")
       // Named relationship: game_participants also points at users through invited_by and
       // approved_by, so a bare `users(…)` is ambiguous and PostgREST refuses the whole query.
       .select("users!game_participants_user_id_fkey(first_name, last_name)")
       .eq("game_id", game_id)
-      .eq("rsvp_status", "confirmed");
+      .eq("rsvp_status", "confirmed")
+      .limit(50);
 
     const { data: smsAccepted } = await admin
       .from("sms_invitations")
       .select("invitee_name")
       .eq("game_id", game_id)
-      .eq("rsvp_status", "accepted");
+      .eq("rsvp_status", "accepted")
+      .limit(50);
 
     const roster: string[] = [];
     for (const p of participants ?? []) {
@@ -280,10 +317,12 @@ Deno.serve(async (req) => {
       ? `${inviterProfile.first_name} ${inviterProfile.last_name}`
       : "Someone";
 
-    const creatorUser = game.users as { first_name: string; last_name: string };
+    const creatorUser = game.users as { first_name: string; last_name: string } | null;
     const gameSummary: GameSummary = {
       sessionName: game.session_name,
-      creatorName: `${creatorUser.first_name} ${creatorUser.last_name}`,
+      creatorName: creatorUser
+        ? `${creatorUser.first_name} ${creatorUser.last_name}`
+        : "The organizer",
       // In the session's own zone, not the edge runtime's. The runtime is UTC, which is how a
       // 6pm Pacific game used to go out as "01:00 AM" the following day.
       gameDatetime: formatGameTime(game.game_datetime, game.timezone),
@@ -335,9 +374,12 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: sanitizeErrorForClient(err, "send-sms-invite") }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

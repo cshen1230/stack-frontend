@@ -50,6 +50,7 @@ struct SMSInviteEntry: Identifiable {
     var isValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty
             && SMSInviteEntry.looksLikeAPhoneNumber(phoneNumber)
+            && !SMSInviteEntry.isReservedNumber(phoneNumber)
     }
 
     /// Mirrors `normalizePhoneNumber` in the edge function, so a number that will be refused is
@@ -72,5 +73,32 @@ struct SMSInviteEntry: Identifiable {
 
         let chars = Array(national)
         return ("2"..."9").contains(String(chars[0])) && ("2"..."9").contains(String(chars[3]))
+    }
+
+    /// Mirrors `isReservedNumber` in the edge function. Blocks 555 area codes,
+    /// 555 exchanges, and N11 service codes (211, 311, 411, …, 911).
+    static func isReservedNumber(_ raw: String) -> Bool {
+        let digits = raw.filter(\.isNumber)
+        let national: String
+        if digits.count == 11, digits.hasPrefix("1") {
+            national = String(digits.dropFirst())
+        } else if digits.count == 10 {
+            national = digits
+        } else {
+            return false
+        }
+        guard national.count == 10 else { return false }
+
+        let areaCode = String(national.prefix(3))
+        let exchange = String(national.dropFirst(3).prefix(3))
+
+        // 555 area code or exchange
+        if areaCode == "555" || exchange == "555" { return true }
+
+        // N11 service codes
+        let n11Pattern = /^[2-9]11$/
+        if areaCode.wholeMatch(of: n11Pattern) != nil { return true }
+
+        return false
     }
 }

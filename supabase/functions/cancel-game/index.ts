@@ -6,11 +6,15 @@ import {
   formatGameTime,
   type GameSummary,
 } from "../_shared/sms-channel.ts";
+import { requireJsonContentType, sanitizeErrorForClient } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const ctError = requireJsonContentType(req);
+  if (ctError) return ctError;
 
   try {
     const supabase = createUserClient(req);
@@ -155,7 +159,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: sanitizeErrorForClient(err, "cancel-game") }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

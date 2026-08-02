@@ -14,12 +14,16 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Validate shared secret from proxy
+  // Validate shared secret from proxy — fail closed if the env var is unset.
   const webhookSecret = Deno.env.get("WEBHOOK_SECRET");
-  const incomingSecret = req.headers.get("x-webhook-secret");
+  if (!webhookSecret) {
+    console.error("WEBHOOK_SECRET is not configured — rejecting all webhook calls");
+    return new Response("Forbidden", { status: 403 });
+  }
 
-  if (!webhookSecret || incomingSecret !== webhookSecret) {
-    console.error("Webhook secret mismatch or missing");
+  const incomingSecret = req.headers.get("x-webhook-secret");
+  if (incomingSecret !== webhookSecret) {
+    console.error("Webhook secret mismatch");
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -29,7 +33,12 @@ Deno.serve(async (req) => {
     // Secondary validation: clientId matches our DUPR_CLIENT_ID
     const expectedClientId = Deno.env.get("DUPR_CLIENT_ID");
     if (body.clientId !== expectedClientId) {
-      console.error("Webhook clientId mismatch:", body.clientId);
+      // Truncate the incoming clientId in logs to avoid leaking a full key
+      // from a misconfigured caller.
+      const truncated = typeof body.clientId === "string"
+        ? body.clientId.slice(0, 8) + "…"
+        : "(non-string)";
+      console.error("Webhook clientId mismatch:", truncated);
       return new Response("Forbidden", { status: 403 });
     }
 

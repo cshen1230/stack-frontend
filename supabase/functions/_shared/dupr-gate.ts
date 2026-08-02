@@ -85,8 +85,28 @@ async function refreshEntitlements(userId: string): Promise<void> {
           })
           .eq("user_id", userId);
       } catch (refreshErr) {
+        // A 401 from DUPR means the refresh token itself has been revoked or
+        // the account is gone. Silently returning here would leave a verified
+        // flag on an account DUPR no longer recognises, so revoke it.
+        const is401 =
+          refreshErr instanceof Error &&
+          refreshErr.message.includes("(401)");
+        if (is401) {
+          console.warn(
+            "Entitlement refresh: DUPR rejected refresh token (401), revoking verification for user",
+            userId,
+          );
+          await admin
+            .from("users")
+            .update({ dupr_verified: false })
+            .eq("id", userId);
+          throw new DuprGateError(
+            "DUPR verification revoked — session expired",
+          );
+        }
+
         console.warn("Entitlement refresh: token refresh failed for user", userId, refreshErr);
-        // Token is expired and can't be refreshed — don't block the user,
+        // Non-401 failure (network, 5xx) — don't block the user,
         // the webhook will eventually catch entitlement changes
         return;
       }

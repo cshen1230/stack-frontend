@@ -1,6 +1,8 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createUserClient } from "../_shared/supabase-client.ts";
 import { getPartnerApiBase } from "../_shared/dupr-client.ts";
+import { requireJsonContentType, sanitizeErrorForClient } from "../_shared/validation.ts";
+import { rateLimit, clientIp } from "../_shared/rate-limit.ts";
 
 /**
  * Exchanges a DUPR OAuth authorization code for user tokens.
@@ -14,6 +16,19 @@ import { getPartnerApiBase } from "../_shared/dupr-client.ts";
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
+  }
+
+  const ctError = requireJsonContentType(req);
+  if (ctError) return ctError;
+
+  if (!rateLimit(clientIp(req))) {
+    return new Response(
+      JSON.stringify({ error: "Too many attempts. Please wait a moment." }),
+      {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 
   try {
@@ -47,7 +62,7 @@ Deno.serve(async (req) => {
     // 2. Exchange authorization code for DUPR tokens
     const clientId = Deno.env.get("DUPR_CLIENT_ID")!;
     const clientSecret = Deno.env.get("DUPR_CLIENT_SECRET")!;
-    const redirectUri = "stackpickleball://dupr/callback";
+    const redirectUri = Deno.env.get("DUPR_REDIRECT_URI") ?? "stackpickleball://dupr/callback";
 
     const tokenRes = await fetch(`${getPartnerApiBase()}/auth/v1.0/token`, {
       method: "POST",
@@ -63,8 +78,9 @@ Deno.serve(async (req) => {
 
     if (!tokenRes.ok) {
       const text = await tokenRes.text();
+      console.error("DUPR token exchange failed:", tokenRes.status, text);
       return new Response(
-        JSON.stringify({ error: `DUPR token exchange failed: ${text}` }),
+        JSON.stringify({ error: "DUPR token exchange failed" }),
         {
           status: 502,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -101,9 +117,12 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: sanitizeErrorForClient(err, "dupr-exchange-code") }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

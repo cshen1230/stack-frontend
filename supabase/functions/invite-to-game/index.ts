@@ -3,11 +3,15 @@ import {
   createUserClient,
   createAdminClient,
 } from "../_shared/supabase-client.ts";
+import { requireJsonContentType, sanitizeErrorForClient } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const ctError = requireJsonContentType(req);
+  if (ctError) return ctError;
 
   try {
     const supabase = createUserClient(req);
@@ -144,7 +148,9 @@ Deno.serve(async (req) => {
     // It lands as pending_approval and does NOT take a seat — a request nobody gets around to
     // answering must not quietly hold a spot the session needs. The seat is claimed in
     // approve-participant, at the moment someone actually agrees.
-    const needsApproval = (game.invite_policy ?? "open") !== "open" && !isCreator;
+    const VALID_POLICIES = ["open", "approval_required", "owner_only"];
+    const policy = game.invite_policy ?? "open";
+    const needsApproval = VALID_POLICIES.includes(policy) && policy !== "open" && !isCreator;
 
     // Use admin client to insert participant (bypasses RLS)
     const admin = createAdminClient();
@@ -202,9 +208,12 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: sanitizeErrorForClient(err, "invite-to-game") }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

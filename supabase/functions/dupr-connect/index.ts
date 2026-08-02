@@ -6,11 +6,15 @@ import {
   getPartnerToken,
   subscribeUserToWebhook,
 } from "../_shared/dupr-client.ts";
+import { requireJsonContentType, sanitizeErrorForClient } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const ctError = requireJsonContentType(req);
+  if (ctError) return ctError;
 
   try {
     const supabase = createUserClient(req);
@@ -127,7 +131,7 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: sanitizeErrorForClient(err, "dupr-connect") }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

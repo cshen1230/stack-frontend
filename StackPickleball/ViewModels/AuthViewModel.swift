@@ -7,10 +7,22 @@ class AuthViewModel {
     var isLoading = false
     var errorMessage: String?
 
+    /// Basic email format check — catches typos before they hit the server.
+    private static let emailRegex = /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/
+
+    private var isValidEmail: Bool {
+        email.trimmingCharacters(in: .whitespaces)
+            .wholeMatch(of: Self.emailRegex) != nil
+    }
+
     func signIn() async {
         guard !email.trimmingCharacters(in: .whitespaces).isEmpty,
               !password.isEmpty else {
             errorMessage = "Please enter your email and password."
+            return
+        }
+        guard isValidEmail else {
+            errorMessage = "Please enter a valid email address."
             return
         }
         isLoading = true
@@ -26,6 +38,10 @@ class AuthViewModel {
     var signUpSucceeded = false
 
     func signUp() async {
+        guard isValidEmail else {
+            errorMessage = "Please enter a valid email address."
+            return
+        }
         isLoading = true
         errorMessage = nil
         signUpSucceeded = false

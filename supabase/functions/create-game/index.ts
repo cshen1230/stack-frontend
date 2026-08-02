@@ -1,5 +1,6 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createUserClient } from "../_shared/supabase-client.ts";
+import { validateCoordinates, requireJsonContentType, sanitizeErrorForClient } from "../_shared/validation.ts";
 
 const VALID_FORMATS = ["singles", "doubles", "mixed_doubles", "drill"];
 
@@ -7,6 +8,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const ctError = requireJsonContentType(req);
+  if (ctError) return ctError;
 
   try {
     const supabase = createUserClient(req);
@@ -184,12 +188,20 @@ Deno.serve(async (req) => {
     // notably) has no other way to know that 01:00Z means a 6pm game. Validated because an
     // unusable zone here would surface much later as a wrong time in someone's invitation.
     if (typeof timezone === "string" && timezone.length > 0) {
+      if (timezone.length > 100) {
+        return new Response(
+          JSON.stringify({ error: "timezone value is too long" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
       try {
         new Intl.DateTimeFormat("en-US", { timeZone: timezone });
         row.timezone = timezone;
       } catch {
-        // Leave it null; readers fall back to the default rather than reject the session.
-        console.warn("create-game: ignoring unrecognised timezone", timezone);
+        return new Response(
+          JSON.stringify({ error: "Unrecognised timezone" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
       }
     }
     if (description) row.description = description;
@@ -198,7 +210,14 @@ Deno.serve(async (req) => {
 
     // Build PostGIS point if coordinates provided
     if (latitude != null && longitude != null) {
-      row.location = `SRID=4326;POINT(${longitude} ${latitude})`;
+      const coords = validateCoordinates(latitude, longitude);
+      if (!coords) {
+        return new Response(
+          JSON.stringify({ error: "Invalid coordinates" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      row.location = `SRID=4326;POINT(${coords.longitude} ${coords.latitude})`;
     }
 
     // Session type
@@ -245,7 +264,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: sanitizeErrorForClient(err, "create-game") }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

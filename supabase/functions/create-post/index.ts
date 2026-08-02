@@ -1,6 +1,7 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createUserClient } from "../_shared/supabase-client.ts";
 import { requireDuprVerified, DuprGateError } from "../_shared/dupr-gate.ts";
+import { validateCoordinates, requireJsonContentType, sanitizeErrorForClient } from "../_shared/validation.ts";
 
 const VALID_POST_TYPES = ["session_photo", "session_clip"];
 
@@ -8,6 +9,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const ctError = requireJsonContentType(req);
+  if (ctError) return ctError;
 
   try {
     const supabase = createUserClient(req);
@@ -95,7 +99,10 @@ Deno.serve(async (req) => {
     if (location_name) row.location_name = location_name;
 
     if (latitude != null && longitude != null) {
-      row.location = `SRID=4326;POINT(${longitude} ${latitude})`;
+      const coords = validateCoordinates(latitude, longitude);
+      if (coords) {
+        row.location = `SRID=4326;POINT(${coords.longitude} ${coords.latitude})`;
+      }
     }
 
     // --- Insert the post ---
@@ -116,11 +123,19 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
-    const status = err instanceof DuprGateError ? 403 : 500;
+    if (err instanceof DuprGateError) {
+      return new Response(
+        JSON.stringify({ error: err.message }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: sanitizeErrorForClient(err, "create-post") }),
       {
-        status,
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );

@@ -145,19 +145,47 @@ struct OnboardingView: View {
         )
     }
 
+    /// Strips control characters (tabs, newlines, zero-width joiners, etc.)
+    /// from user input that is meant to be a single-line name or username.
+    private func sanitized(_ input: String) -> String {
+        input.unicodeScalars.filter { !$0.properties.isDefaultIgnorableCodePoint && CharacterSet.controlCharacters.inverted.contains($0) }
+            .reduce(into: "") { $0.unicodeScalars.append($1) }
+    }
+
     private func submit() {
         errorMessage = nil
 
-        guard !firstName.trimmingCharacters(in: .whitespaces).isEmpty else {
+        let cleanFirst = sanitized(firstName).trimmingCharacters(in: .whitespaces)
+        let cleanLast  = sanitized(lastName).trimmingCharacters(in: .whitespaces)
+        let cleanMiddle = sanitized(middleName).trimmingCharacters(in: .whitespaces)
+        let cleanUsername = sanitized(username).trimmingCharacters(in: .whitespaces)
+
+        guard !cleanFirst.isEmpty else {
             errorMessage = "First name is required"
             return
         }
-        guard !lastName.trimmingCharacters(in: .whitespaces).isEmpty else {
+        guard cleanFirst.count <= 100 else {
+            errorMessage = "First name is too long"
+            return
+        }
+        guard !cleanLast.isEmpty else {
             errorMessage = "Last name is required"
             return
         }
-        guard username.count >= 3 else {
+        guard cleanLast.count <= 100 else {
+            errorMessage = "Last name is too long"
+            return
+        }
+        guard cleanMiddle.count <= 100 else {
+            errorMessage = "Middle name is too long"
+            return
+        }
+        guard cleanUsername.count >= 3 else {
             errorMessage = "Username must be at least 3 characters"
+            return
+        }
+        guard cleanUsername.count <= 100 else {
+            errorMessage = "Username is too long"
             return
         }
 
@@ -166,10 +194,10 @@ struct OnboardingView: View {
             do {
                 let rating = duprProfile?.dupr_rating ?? 2.5
                 try await ProfileService.createProfile(
-                    firstName: firstName.trimmingCharacters(in: .whitespaces),
-                    lastName: lastName.trimmingCharacters(in: .whitespaces),
-                    middleName: middleName.trimmingCharacters(in: .whitespaces).isEmpty ? nil : middleName.trimmingCharacters(in: .whitespaces),
-                    username: username,
+                    firstName: cleanFirst,
+                    lastName: cleanLast,
+                    middleName: cleanMiddle.isEmpty ? nil : cleanMiddle,
+                    username: cleanUsername,
                     duprRating: rating,
                     latitude: locationManager.latitude,
                     longitude: locationManager.longitude

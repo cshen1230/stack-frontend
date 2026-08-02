@@ -1,10 +1,14 @@
 import { corsHeaders } from "../_shared/cors.ts";
 import { createUserClient } from "../_shared/supabase-client.ts";
+import { validateCoordinates, requireJsonContentType, sanitizeErrorForClient } from "../_shared/validation.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  const ctError = requireJsonContentType(req);
+  if (ctError) return ctError;
 
   try {
     const supabase = createUserClient(req);
@@ -193,7 +197,10 @@ Deno.serve(async (req) => {
     }
 
     if (latitude != null && longitude != null) {
-      row.location = `SRID=4326;POINT(${longitude} ${latitude})`;
+      const coords = validateCoordinates(latitude, longitude);
+      if (coords) {
+        row.location = `SRID=4326;POINT(${coords.longitude} ${coords.latitude})`;
+      }
     }
 
     // --- Insert profile ---
@@ -227,7 +234,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: sanitizeErrorForClient(err, "create-profile") }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

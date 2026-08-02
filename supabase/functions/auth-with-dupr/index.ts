@@ -7,6 +7,8 @@ import {
   getPartnerToken,
   subscribeUserToWebhook,
 } from "../_shared/dupr-client.ts";
+import { requireJsonContentType, sanitizeErrorForClient } from "../_shared/validation.ts";
+import { rateLimit, clientIp } from "../_shared/rate-limit.ts";
 
 /**
  * "Login with DUPR" — the primary auth endpoint.
@@ -29,6 +31,20 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const ctError = requireJsonContentType(req);
+  if (ctError) return ctError;
+
+  // Rate-limit auth attempts by IP to slow credential-stuffing.
+  if (!rateLimit(clientIp(req))) {
+    return new Response(
+      JSON.stringify({ error: "Too many attempts. Please wait a moment." }),
+      {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
+
   try {
     const body = await req.json();
     const { authorization_code } = body;
@@ -48,7 +64,7 @@ Deno.serve(async (req) => {
     // ---------------------------------------------------------------
     const clientId = Deno.env.get("DUPR_CLIENT_ID")!;
     const clientSecret = Deno.env.get("DUPR_CLIENT_SECRET")!;
-    const redirectUri = "stackpickleball://dupr/callback";
+    const redirectUri = Deno.env.get("DUPR_REDIRECT_URI") ?? "stackpickleball://dupr/callback";
 
     const tokenRes = await fetch(`${getPartnerApiBase()}/auth/v1.0/token`, {
       method: "POST",
@@ -64,8 +80,9 @@ Deno.serve(async (req) => {
 
     if (!tokenRes.ok) {
       const text = await tokenRes.text();
+      console.error("DUPR token exchange failed:", tokenRes.status, text);
       return new Response(
-        JSON.stringify({ error: `DUPR token exchange failed: ${text}` }),
+        JSON.stringify({ error: "DUPR token exchange failed" }),
         {
           status: 502,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -87,6 +104,16 @@ Deno.serve(async (req) => {
     if (!userToken || !refreshToken) {
       return new Response(
         JSON.stringify({ error: "DUPR token exchange returned incomplete data" }),
+        {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    if (!duprId) {
+      return new Response(
+        JSON.stringify({ error: "DUPR token exchange did not return a user ID" }),
         {
           status: 502,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -293,10 +320,13 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ error: sanitizeErrorForClient(err, "auth-with-dupr") }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
 
