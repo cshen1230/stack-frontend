@@ -92,7 +92,6 @@ struct DayPlannerBoard: View {
                 slots: slotsOnSelectedDay,
                 now: now,
                 selection: $selection,
-                confirmedInfo: confirmedInfo,
                 onSelectionCommitted: { range in
                     draft = SessionDraftViewModel(
                         range: range,
@@ -101,6 +100,7 @@ struct DayPlannerBoard: View {
                         longitude: locationManager.longitude
                     )
                 },
+                confirmedInfo: confirmedInfo,
                 onFriendTapped: { slot in
                     // Your own band is a shortcut to changing it, not a profile to read.
                     if slot.isSelf {
