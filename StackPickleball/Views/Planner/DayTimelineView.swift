@@ -151,13 +151,21 @@ struct DayTimelineView: View {
     @ViewBuilder
     private func sessionBlocks(laneWidth: CGFloat) -> some View {
         ForEach(DayPlan.sessionBlocks(for: sessions, on: day)) { block in
-            SessionBlockView(block: block, isPast: block.game.gameDatetime < now)
-                .frame(
-                    width: laneWidth,
-                    height: max(CGFloat(block.durationMinutes) / 60 * hourHeight - 3, 26)
-                )
-                .offset(y: CGFloat(block.startMinutes) / 60 * hourHeight)
-                .onTapGesture { onSessionTapped(block.game) }
+            let width = laneWidth / CGFloat(block.columnCount)
+            SessionBlockView(
+                block: block,
+                isPast: block.game.gameDatetime < now,
+                isNarrow: block.columnCount > 1
+            )
+            .frame(
+                width: max(width - 3, 44),
+                height: max(CGFloat(block.durationMinutes) / 60 * hourHeight - 3, 26)
+            )
+            .offset(
+                x: width * CGFloat(block.column) + 1.5,
+                y: CGFloat(block.startMinutes) / 60 * hourHeight
+            )
+            .onTapGesture { onSessionTapped(block.game) }
         }
     }
 
@@ -274,44 +282,65 @@ struct DayTimelineView: View {
 private struct SessionBlockView: View {
     let block: DayPlan.SessionBlock
     let isPast: Bool
+    /// True when this block is sharing its row with something it overlaps.
+    var isNarrow: Bool = false
 
-    private var isCompact: Bool { block.durationMinutes < 50 }
+    /// Too short to fit a second line of text.
+    private var isShort: Bool { block.durationMinutes < 50 }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 5) {
+            HStack(spacing: 4) {
                 Image(systemName: "figure.pickleball")
-                    .font(.system(size: 11, weight: .bold))
-                Text(title)
-                    .font(.system(size: 12, weight: .bold))
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-                Text(block.game.gameDatetime.formatted(date: .omitted, time: .shortened))
-                    .font(.system(size: 10, weight: .semibold))
-                    .opacity(0.9)
+                    .font(.system(size: isNarrow ? 9 : 11, weight: .bold))
+
+                // The time leads once the block is narrow: at half width the title truncates to
+                // a couple of words, and "9:30" tells you which session this is far better than
+                // "Albert Wan'…" does when the one beside it says the same.
+                if isNarrow {
+                    Text(timeLabel)
+                        .font(.system(size: 10, weight: .bold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                    Spacer(minLength: 0)
+                } else {
+                    Text(title)
+                        .font(.system(size: 12, weight: .bold))
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                    Text(timeLabel)
+                        .font(.system(size: 10, weight: .semibold))
+                        .opacity(0.9)
+                }
             }
 
-            if !isCompact {
-                Text(subtitle)
+            if !isShort {
+                Text(isNarrow ? title : subtitle)
                     .font(.system(size: 10, weight: .medium))
                     .opacity(0.85)
-                    .lineLimit(1)
+                    .lineLimit(isNarrow ? 2 : 1)
             }
 
             Spacer(minLength: 0)
         }
         .foregroundColor(.white)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(.horizontal, isNarrow ? 6 : 8)
+        .padding(.vertical, 5)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 9)
                 .fill(Color.stackGreen.opacity(isPast ? 0.45 : 0.95))
         )
+        // A visible edge on every block, so two side by side read as two rather than as one
+        // wide one — they're the same colour and they touch.
         .overlay(
             RoundedRectangle(cornerRadius: 9)
-                .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
+                .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
         )
+    }
+
+    private var timeLabel: String {
+        block.game.gameDatetime.formatted(date: .omitted, time: .shortened)
     }
 
     private var title: String {

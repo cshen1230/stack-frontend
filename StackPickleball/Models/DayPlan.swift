@@ -1,5 +1,15 @@
 import Foundation
 
+/// Anything drawn on the timeline that has to share horizontal space with whatever it overlaps.
+/// Both availability bands and booked sessions need the same treatment, and doing it twice is
+/// how they end up disagreeing about what "overlapping" means.
+protocol TimelinePlaceable {
+    var startMinutes: Double { get }
+    var endMinutes: Double { get }
+    var column: Int { get set }
+    var columnCount: Int { get set }
+}
+
 /// Time math for the day planner: mapping between a point on the timeline and a time of day,
 /// and laying overlapping availability bands out side by side.
 enum DayPlan {
@@ -58,8 +68,35 @@ enum DayPlan {
 
     // MARK: - Overlap layout
 
+    /// Greedy lane assignment: reuse the first lane whose last item has already ended, then
+    /// give each item a share of the width based only on what it actually overlaps — so one
+    /// clash at 9am doesn't squeeze the 3pm session that has the row to itself.
+    static func assignLanes<T: TimelinePlaceable>(_ items: [T]) -> [T] {
+        var placed = items.sorted { $0.startMinutes < $1.startMinutes }
+
+        var laneEnds: [Double] = []
+        for index in placed.indices {
+            if let lane = laneEnds.firstIndex(where: { $0 <= placed[index].startMinutes }) {
+                laneEnds[lane] = placed[index].endMinutes
+                placed[index].column = lane
+            } else {
+                laneEnds.append(placed[index].endMinutes)
+                placed[index].column = laneEnds.count - 1
+            }
+        }
+
+        for index in placed.indices {
+            let overlapping = placed.filter {
+                $0.startMinutes < placed[index].endMinutes && $0.endMinutes > placed[index].startMinutes
+            }
+            placed[index].columnCount = max(1, (overlapping.map(\.column).max() ?? 0) + 1)
+        }
+
+        return placed
+    }
+
     /// One friend's availability, placed on the timeline.
-    struct Band: Identifiable {
+    struct Band: Identifiable, TimelinePlaceable {
         let slot: FriendAvailability
         /// Minutes from the top of the timeline.
         let startMinutes: Double
@@ -82,7 +119,7 @@ enum DayPlan {
         let start = dayStart(of: day, calendar: calendar)
         let end = dayEnd(of: day, calendar: calendar)
 
-        var placed: [Band] = slots.compactMap { slot in
+        let placed: [Band] = slots.compactMap { slot in
             let from = max(slot.start, start)
             let to = min(slot.end, end)
             guard to > from else { return nil }
@@ -92,47 +129,30 @@ enum DayPlan {
                 endMinutes: to.timeIntervalSince(start) / 60
             )
         }
-        .sorted { $0.startMinutes < $1.startMinutes }
 
-        // Greedy lane assignment: reuse the first lane whose last band has already ended.
-        var laneEnds: [Double] = []
-        for index in placed.indices {
-            let lane = laneEnds.firstIndex { $0 <= placed[index].startMinutes }
-            if let lane {
-                laneEnds[lane] = placed[index].endMinutes
-                placed[index].column = lane
-            } else {
-                laneEnds.append(placed[index].endMinutes)
-                placed[index].column = laneEnds.count - 1
-            }
-        }
-
-        // Bands only need to share width with the ones they actually overlap.
-        for index in placed.indices {
-            let overlapping = placed.filter {
-                $0.startMinutes < placed[index].endMinutes && $0.endMinutes > placed[index].startMinutes
-            }
-            placed[index].columnCount = max(1, (overlapping.map(\.column).max() ?? 0) + 1)
-        }
-
-        return placed
+        return assignLanes(placed)
     }
 
     /// A session already on the books, placed on the timeline.
-    struct SessionBlock: Identifiable {
+    struct SessionBlock: Identifiable, TimelinePlaceable {
         let game: Game
         let startMinutes: Double
         let endMinutes: Double
+        var column: Int = 0
+        var columnCount: Int = 1
 
         var id: UUID { game.id }
         var durationMinutes: Double { endMinutes - startMinutes }
     }
 
-    /// The sessions falling on `day`, clipped to the visible window.
+    /// The sessions falling on `day`, clipped to the visible window and laid out side by side
+    /// where they overlap.
     ///
-    /// Unlike availability bands these don't get laid out in lanes: two sessions at the same
-    /// time is a conflict, and drawing them side by side would make it look tidy. They stack,
-    /// so the overlap is visible as an overlap.
+    /// They used to stack, on the theory that a clash should look like a clash. In practice
+    /// three back-to-back sessions drew on top of each other and buried each other's titles,
+    /// which doesn't communicate a conflict so much as a broken calendar. Sitting side by side
+    /// still shows the overlap — the blocks visibly share an hour — and you can read all of
+    /// them, which is the part that matters when you're deciding what to do about it.
     static func sessionBlocks(
         for games: [Game],
         on day: Date,
@@ -141,7 +161,7 @@ enum DayPlan {
         let start = dayStart(of: day, calendar: calendar)
         let end = dayEnd(of: day, calendar: calendar)
 
-        return games
+        let placed: [SessionBlock] = games
             .filter { !$0.isCancelled && calendar.isDate($0.gameDatetime, inSameDayAs: day) }
             .compactMap { game in
                 let from = max(game.gameDatetime, start)
@@ -156,7 +176,8 @@ enum DayPlan {
                     endMinutes: to.timeIntervalSince(start) / 60
                 )
             }
-            .sorted { $0.startMinutes < $1.startMinutes }
+
+        return assignLanes(placed)
     }
 
     /// Everyone free for the whole of `range` — the people worth inviting to it.
