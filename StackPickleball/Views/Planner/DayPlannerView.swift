@@ -11,10 +11,15 @@ struct DayPlannerView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                DayPlannerBoard(schedulesByWeekday: schedulesByWeekday) { info in
-                    onCreated(info)
-                    dismiss()
-                }
+                // Named rather than trailing: onCreated is no longer the last parameter, so a
+                // trailing closure would silently bind to onSessionTapped.
+                DayPlannerBoard(
+                    schedulesByWeekday: schedulesByWeekday,
+                    onCreated: { info in
+                        onCreated(info)
+                        dismiss()
+                    }
+                )
                 .padding(.top, 8)
                 .padding(.bottom, 24)
             }

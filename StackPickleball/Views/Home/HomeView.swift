@@ -35,16 +35,23 @@ struct HomeView: View {
                                 .font(.system(size: 18, weight: .bold))
                                 .padding(.horizontal, 16)
 
-                            DayPlannerBoard(schedulesByWeekday: viewModel.schedulesByWeekday) { info in
-                                createdSessionInfo = info
-                                Task {
-                                    await viewModel.loadHome(
-                                        currentUserId: currentUserId,
-                                        lat: locationManager.latitude,
-                                        lng: locationManager.longitude
-                                    )
+                            DayPlannerBoard(
+                                schedulesByWeekday: viewModel.schedulesByWeekday,
+                                mySessions: viewModel.mySessions,
+                                onCreated: { info in
+                                    createdSessionInfo = info
+                                    Task {
+                                        await viewModel.loadHome(
+                                            currentUserId: currentUserId,
+                                            lat: locationManager.latitude,
+                                            lng: locationManager.longitude
+                                        )
+                                    }
+                                },
+                                onSessionTapped: { game in
+                                    selectedGame = game
                                 }
-                            }
+                            )
                         }
 
                         // Open Games Near You

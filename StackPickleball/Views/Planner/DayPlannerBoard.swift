@@ -7,7 +7,12 @@ struct DayPlannerBoard: View {
     /// Friends' usual availability keyed by weekday (1 = Sunday, matching Calendar). The
     /// board resolves the selected day's rows onto real times itself.
     let schedulesByWeekday: [Int: [FriendScheduleRow]]
+    /// Sessions you're already committed to, drawn as blocks on the day they fall on.
+    var mySessions: [Game] = []
     var onCreated: (CreatedSessionInfo) -> Void
+    /// Tapping a booked block opens it. Handed up rather than presented here: the board already
+    /// owns two sheets, and stacking a third on one view is unreliable.
+    var onSessionTapped: (Game) -> Void = { _ in }
 
     @EnvironmentObject private var locationManager: LocationManager
     @Environment(AppState.self) private var appState
@@ -28,8 +33,6 @@ struct DayPlannerBoard: View {
 
     private let clock = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
     private let calendar = Calendar.current
-    /// How far ahead you can plan; shared by the strip and the availability-dot walk.
-    private let dayCount = 14
 
     /// Friends' windows for the selected day, pinned to real times on that date.
     private var friendSlots: [FriendAvailability] {
@@ -43,29 +46,32 @@ struct DayPlannerBoard: View {
             .sorted { $0.start < $1.start }
     }
 
-    /// Which chips get a dot — any upcoming date whose weekday somebody plays on.
-    private var daysWithAvailability: Set<Date> {
-        let today = calendar.startOfDay(for: Date())
-        let playedWeekdays = Set(schedulesByWeekday.filter { !$0.value.isEmpty }.keys)
-        return Set((0..<dayCount).compactMap { offset -> Date? in
-            guard let day = calendar.date(byAdding: .day, value: offset, to: today),
-                  playedWeekdays.contains(calendar.component(.weekday, from: day)) else { return nil }
-            return day
-        })
+    /// Which chips get a dot. Availability recurs weekly, so this stays in weekdays and the
+    /// strip matches it against whatever week it happens to be showing.
+    private var playedWeekdays: Set<Int> {
+        Set(schedulesByWeekday.filter { !$0.value.isEmpty }.keys)
+    }
+
+    /// My sessions on the day being looked at.
+    private var sessionsOnSelectedDay: [Game] {
+        mySessions.filter { calendar.isDate($0.gameDatetime, inSameDayAs: selectedDay) }
     }
 
     var body: some View {
+        // One card holds the week, the hint and the grid. Before, the timeline ran the full
+        // width of the screen against the page background, which gave a dense grid of lines no
+        // edge to stop at and made it read as the whole screen rather than as one control on it.
         VStack(alignment: .leading, spacing: 12) {
             DayStrip(
                 selectedDay: $selectedDay,
-                dayCount: dayCount,
-                daysWithAvailability: daysWithAvailability
+                playedWeekdays: playedWeekdays
             )
 
             HStack(alignment: .firstTextBaseline) {
                 Text(hint)
-                    .font(.system(size: 13))
+                    .font(.system(size: 12))
                     .foregroundColor(.stackSecondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Spacer(minLength: 8)
 
@@ -76,7 +82,7 @@ struct DayPlannerBoard: View {
                         Image(systemName: "calendar.badge.clock")
                             .font(.system(size: 11, weight: .semibold))
                         Text(myTimesLabel)
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(.system(size: 12, weight: .semibold))
                     }
                     .foregroundColor(.stackGreen)
                 }
@@ -85,7 +91,9 @@ struct DayPlannerBoard: View {
                     MyScheduleEditorSheet(viewModel: scheduleViewModel)
                 }
             }
-            .padding(.horizontal, 16)
+
+            Divider()
+                .overlay(Color.stackBorder)
 
             DayTimelineView(
                 day: selectedDay,
@@ -100,6 +108,7 @@ struct DayPlannerBoard: View {
                         longitude: locationManager.longitude
                     )
                 },
+                sessions: sessionsOnSelectedDay,
                 confirmedInfo: confirmedInfo,
                 onFriendTapped: { slot in
                     // Your own band is a shortcut to changing it, not a profile to read.
@@ -108,9 +117,9 @@ struct DayPlannerBoard: View {
                     } else {
                         selectedFriend = slot
                     }
-                }
+                },
+                onSessionTapped: onSessionTapped
             )
-            .padding(.horizontal, 16)
             .growsInto("draft", in: draftTransition)
             // Attached to the timeline rather than the root so it doesn't contend with the
             // draft sheet below — stacking two presentations on one view is unreliable.
@@ -118,6 +127,17 @@ struct DayPlannerBoard: View {
                 FriendAvailabilitySheet(slot: slot)
             }
         }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.stackCardWhite)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(Color.stackBorder, lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.04), radius: 10, y: 3)
+        .padding(.horizontal, 16)
         .task(id: appState.currentUser?.id) {
             guard let userId = appState.currentUser?.id else { return }
             await scheduleViewModel.loadMySchedule(userId: userId)
@@ -161,6 +181,12 @@ struct DayPlannerBoard: View {
     }
 
     private var hint: String {
+        // What you already agreed to outranks who might be free — if the day is booked, that's
+        // the thing worth saying first.
+        let booked = sessionsOnSelectedDay.count
+        if booked > 0 {
+            return "\(booked) session\(booked == 1 ? "" : "s") booked · hold and drag to plan another"
+        }
         let count = Set(friendSlots.map(\.userId)).count
         let who = count == 0
             ? "No friends free"

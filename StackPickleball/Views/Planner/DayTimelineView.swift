@@ -9,14 +9,17 @@ struct DayTimelineView: View {
     /// Live while dragging, so the parent can show the range it's about to create.
     @Binding var selection: ClosedRange<Date>?
     var onSelectionCommitted: (ClosedRange<Date>) -> Void
+    /// Sessions already booked on this day, drawn as solid blocks over the free time.
+    var sessions: [Game] = []
     /// Post-creation info — when set, the selection overlay morphs into a confirmed indicator.
     var confirmedInfo: CreatedSessionInfo? = nil
     /// Tapping someone's band opens their details. A tap is distinct from the hold-and-drag
     /// that plans a session, so the two gestures don't collide.
     var onFriendTapped: (FriendAvailability) -> Void = { _ in }
+    var onSessionTapped: (Game) -> Void = { _ in }
 
-    private let hourHeight: CGFloat = 56
-    private let gutterWidth: CGFloat = 52
+    private let hourHeight: CGFloat = 52
+    private let gutterWidth: CGFloat = 44
 
     /// Where the drag started, in minutes from the top. Kept so we can build the range in
     /// either direction — dragging upward is just as valid as downward.
@@ -33,6 +36,9 @@ struct DayTimelineView: View {
                     gridLines
                     pastShading
                     availabilityBands(laneWidth: geo.size.width)
+                    // Above availability: a booked hour is not a free one, and the block has to
+                    // win that argument visually or the calendar lies about what's open.
+                    sessionBlocks(laneWidth: geo.size.width)
                     nowIndicator
                     selectionOverlay(laneWidth: geo.size.width)
                 }
@@ -141,6 +147,20 @@ struct DayTimelineView: View {
         }
     }
 
+    /// Sessions already on the books for this day.
+    @ViewBuilder
+    private func sessionBlocks(laneWidth: CGFloat) -> some View {
+        ForEach(DayPlan.sessionBlocks(for: sessions, on: day)) { block in
+            SessionBlockView(block: block, isPast: block.game.gameDatetime < now)
+                .frame(
+                    width: laneWidth,
+                    height: max(CGFloat(block.durationMinutes) / 60 * hourHeight - 3, 26)
+                )
+                .offset(y: CGFloat(block.startMinutes) / 60 * hourHeight)
+                .onTapGesture { onSessionTapped(block.game) }
+        }
+    }
+
     /// Hours already gone, greyed so it's obvious there's nothing to plan there.
     @ViewBuilder
     private var pastShading: some View {
@@ -243,6 +263,66 @@ struct DayTimelineView: View {
         let start = range.lowerBound.formatted(date: .omitted, time: .shortened)
         let end = range.upperBound.formatted(date: .omitted, time: .shortened)
         return "\(start) – \(end)"
+    }
+}
+
+/// A booked session drawn on the grid.
+///
+/// Deliberately the heaviest thing on the timeline — solid fill against the availability bands'
+/// washes. Availability is a maybe and a session is a commitment, and the two should not read
+/// as the same weight of thing.
+private struct SessionBlockView: View {
+    let block: DayPlan.SessionBlock
+    let isPast: Bool
+
+    private var isCompact: Bool { block.durationMinutes < 50 }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 5) {
+                Image(systemName: "figure.pickleball")
+                    .font(.system(size: 11, weight: .bold))
+                Text(title)
+                    .font(.system(size: 12, weight: .bold))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                Text(block.game.gameDatetime.formatted(date: .omitted, time: .shortened))
+                    .font(.system(size: 10, weight: .semibold))
+                    .opacity(0.9)
+            }
+
+            if !isCompact {
+                Text(subtitle)
+                    .font(.system(size: 10, weight: .medium))
+                    .opacity(0.85)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .foregroundColor(.white)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 9)
+                .fill(Color.stackGreen.opacity(isPast ? 0.45 : 0.95))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 9)
+                .strokeBorder(Color.white.opacity(0.25), lineWidth: 1)
+        )
+    }
+
+    private var title: String {
+        block.game.sessionName ?? "\(block.game.creatorDisplayName)'s Session"
+    }
+
+    private var subtitle: String {
+        var parts = [block.game.gameFormat.displayName]
+        if let location = block.game.locationName, !location.isEmpty { parts.append(location) }
+        parts.append("\(block.game.spotsFilled)/\(block.game.spotsAvailable)")
+        return parts.joined(separator: " · ")
     }
 }
 

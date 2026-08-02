@@ -159,29 +159,38 @@ struct SkeletonMessages: View {
 
 /// The planner: day chips over an hour grid with a couple of bands.
 struct SkeletonPlanner: View {
-    private let hourHeight: CGFloat = 56
+    private let hourHeight: CGFloat = 52
     private let visibleHours = 6
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                ForEach(0..<5, id: \.self) { _ in
-                    SkeletonBlock(width: 48, height: 58, cornerRadius: 12)
+            // Week header: arrows either side of the range label.
+            HStack {
+                SkeletonCircle(size: 32)
+                Spacer()
+                SkeletonBlock(width: 96, height: 13)
+                Spacer()
+                SkeletonCircle(size: 32)
+            }
+
+            // Seven chips sharing the width, as the real strip does — a different count here
+            // would make the row jump the moment it loads.
+            HStack(spacing: 6) {
+                ForEach(0..<7, id: \.self) { _ in
+                    SkeletonBlock(height: 58, cornerRadius: 12)
                 }
             }
-            .padding(.horizontal, 16)
 
-            SkeletonBlock(width: 220, height: 12)
-                .padding(.horizontal, 16)
+            SkeletonBlock(width: 200, height: 11)
 
             HStack(alignment: .top, spacing: 6) {
                 VStack(spacing: 0) {
                     ForEach(0..<visibleHours, id: \.self) { _ in
-                        SkeletonBlock(width: 34, height: 10)
+                        SkeletonBlock(width: 30, height: 10)
                             .frame(height: hourHeight, alignment: .top)
                     }
                 }
-                .frame(width: 52)
+                .frame(width: 44)
 
                 ZStack(alignment: .topLeading) {
                     VStack(spacing: 0) {
@@ -196,17 +205,26 @@ struct SkeletonPlanner: View {
                         }
                     }
 
-                    SkeletonBlock(height: hourHeight * 1.5 - 4, cornerRadius: 8)
-                        .padding(.trailing, 90)
+                    SkeletonBlock(height: hourHeight * 1.5 - 4, cornerRadius: 9)
+                        .padding(.trailing, 80)
                         .offset(y: hourHeight * 0.5)
 
-                    SkeletonBlock(height: hourHeight - 4, cornerRadius: 8)
-                        .padding(.leading, 100)
+                    SkeletonBlock(height: hourHeight - 4, cornerRadius: 9)
+                        .padding(.leading, 90)
                         .offset(y: hourHeight * 2.5)
                 }
             }
-            .padding(.horizontal, 16)
         }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.stackCardWhite)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(Color.stackBorder, lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
         .skeleton()
     }
 }

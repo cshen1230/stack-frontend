@@ -5,6 +5,9 @@ class HomeViewModel {
     /// Friends' usual availability, keyed by Calendar weekday (1 = Sunday).
     var schedulesByWeekday: [Int: [FriendScheduleRow]] = [:]
     var nearbyGames: [Game] = []
+    /// Sessions you're already in, so the planner can block those hours off rather than
+    /// offering you a slot you're busy for.
+    var mySessions: [Game] = []
     var participantAvatars: [UUID: [String]] = [:]
     var joinedGameIds: Set<UUID> = []
     var isLoading = false
@@ -33,6 +36,7 @@ class HomeViewModel {
             if let userId = currentUserId {
                 async let fetchedSchedules = ScheduleService.friendsSchedulesByWeekday(userId: userId)
                 async let fetchedIds = GameService.myJoinedGameIds(userId: userId)
+                async let fetchedMine = MessageService.myActiveSessions(userId: userId)
 
                 let allGames = try await fetchedGames
                 let joined = try await fetchedIds
@@ -40,7 +44,9 @@ class HomeViewModel {
                 nearbyGames = allGames.filter { !joined.contains($0.id) && $0.creatorId != userId }
 
                 schedulesByWeekday = try await fetchedSchedules
+                mySessions = try await fetchedMine
             } else {
+                mySessions = []
                 nearbyGames = try await fetchedGames
             }
 

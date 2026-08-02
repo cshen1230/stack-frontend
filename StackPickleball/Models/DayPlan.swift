@@ -12,6 +12,16 @@ enum DayPlan {
     /// Selections and drags snap to this, so you can't end up with a 5:37 start.
     static let snapMinutes = 30
 
+    /// How long a booked session is drawn as.
+    ///
+    /// `games` stores only `game_datetime` — the drag that created a session contributes its
+    /// start and the end is thrown away. So a block on the timeline is drawn at an assumed
+    /// length rather than a known one. Ninety minutes is roughly a real session, and drawing
+    /// something is much better than leaving an hour you're busy looking free; but until the
+    /// end time is stored, the bottom edge of a session block is a guess and shouldn't be
+    /// treated as more than that.
+    static let assumedSessionMinutes: Double = 90
+
     // MARK: - Point <-> time
 
     /// Minutes from the top of the timeline for a given date.
@@ -106,6 +116,47 @@ enum DayPlan {
         }
 
         return placed
+    }
+
+    /// A session already on the books, placed on the timeline.
+    struct SessionBlock: Identifiable {
+        let game: Game
+        let startMinutes: Double
+        let endMinutes: Double
+
+        var id: UUID { game.id }
+        var durationMinutes: Double { endMinutes - startMinutes }
+    }
+
+    /// The sessions falling on `day`, clipped to the visible window.
+    ///
+    /// Unlike availability bands these don't get laid out in lanes: two sessions at the same
+    /// time is a conflict, and drawing them side by side would make it look tidy. They stack,
+    /// so the overlap is visible as an overlap.
+    static func sessionBlocks(
+        for games: [Game],
+        on day: Date,
+        calendar: Calendar = .current
+    ) -> [SessionBlock] {
+        let start = dayStart(of: day, calendar: calendar)
+        let end = dayEnd(of: day, calendar: calendar)
+
+        return games
+            .filter { !$0.isCancelled && calendar.isDate($0.gameDatetime, inSameDayAs: day) }
+            .compactMap { game in
+                let from = max(game.gameDatetime, start)
+                let to = min(
+                    game.gameDatetime.addingTimeInterval(assumedSessionMinutes * 60),
+                    end
+                )
+                guard to > from else { return nil }
+                return SessionBlock(
+                    game: game,
+                    startMinutes: from.timeIntervalSince(start) / 60,
+                    endMinutes: to.timeIntervalSince(start) / 60
+                )
+            }
+            .sorted { $0.startMinutes < $1.startMinutes }
     }
 
     /// Everyone free for the whole of `range` — the people worth inviting to it.
