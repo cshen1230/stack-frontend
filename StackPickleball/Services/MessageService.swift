@@ -70,9 +70,11 @@ enum MessageService {
     }
 
     static func myActiveSessions(userId: UUID) async throws -> [Game] {
-        try await supabase.rpc(
+        let cutoff = Date().addingTimeInterval(-90 * 60)
+        let sessions: [Game] = try await supabase.rpc(
             "my_active_sessions",
             params: ["p_user_id": userId.uuidString]
         ).execute().value
+        return sessions.filter { $0.gameDatetime > cutoff }
     }
 }
