@@ -87,6 +87,23 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Validate: no scheduling conflict
+    const { data: conflicts, error: conflictError } = await supabase.rpc(
+      "check_schedule_conflict",
+      { p_user_id: user.id, p_game_datetime: game.game_datetime },
+    );
+    if (conflictError) throw conflictError;
+
+    if (conflicts && conflicts.length > 0) {
+      return new Response(
+        JSON.stringify({ error: "You already have a session that overlaps with this time" }),
+        {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     // Validate: friends only
     if (game.friends_only) {
       const { data: friendship } = await supabase

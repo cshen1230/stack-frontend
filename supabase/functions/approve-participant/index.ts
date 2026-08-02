@@ -79,6 +79,36 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check for scheduling conflicts before approving.
+    if (action === "approve") {
+      const { data: pendingInfo, error: pendingError } = await admin
+        .from("game_participants")
+        .select("user_id, game_id, games(game_datetime)")
+        .eq("id", participant_id)
+        .eq("rsvp_status", "pending_approval")
+        .single();
+
+      if (pendingError || !pendingInfo) {
+        return json({ error: "Pending request not found or already handled" }, 409);
+      }
+
+      const gameDatetime = (pendingInfo as any).games?.game_datetime;
+      if (gameDatetime) {
+        const { data: conflicts, error: conflictError } = await admin.rpc(
+          "check_schedule_conflict",
+          { p_user_id: pendingInfo.user_id, p_game_datetime: gameDatetime },
+        );
+        if (conflictError) throw conflictError;
+
+        if (conflicts && conflicts.length > 0) {
+          return json(
+            { error: "This player already has a session that overlaps with this time" },
+            409,
+          );
+        }
+      }
+    }
+
     if (action === "decline") {
       const { error: declineError } = await admin
         .from("game_participants")

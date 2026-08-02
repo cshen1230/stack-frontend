@@ -152,6 +152,27 @@ Deno.serve(async (req) => {
     const policy = game.invite_policy ?? "open";
     const needsApproval = VALID_POLICIES.includes(policy) && policy !== "open" && !isCreator;
 
+    // Check for scheduling conflicts when the friend would be directly confirmed.
+    // Pending-approval invites are checked at approve time instead.
+    if (!needsApproval) {
+      const admin0 = createAdminClient();
+      const { data: conflicts, error: conflictError } = await admin0.rpc(
+        "check_schedule_conflict",
+        { p_user_id: friend_id, p_game_datetime: game.game_datetime },
+      );
+      if (conflictError) throw conflictError;
+
+      if (conflicts && conflicts.length > 0) {
+        return new Response(
+          JSON.stringify({ error: "Your friend already has a session that overlaps with this time" }),
+          {
+            status: 409,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+    }
+
     // Use admin client to insert participant (bypasses RLS)
     const admin = createAdminClient();
 
