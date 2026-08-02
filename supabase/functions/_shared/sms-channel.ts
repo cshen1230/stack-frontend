@@ -7,7 +7,7 @@
 
 export interface InvitationChannel {
   sendInvite(to: string, body: string): Promise<string | null>; // returns SID
-  sendNotification(to: string, body: string): Promise<void>;
+  sendNotification(to: string, body: string): Promise<string | null>;
   validateInbound(req: Request, body: string): Promise<boolean>;
   parseInbound(params: URLSearchParams): InboundMessage;
 }
@@ -27,23 +27,99 @@ export interface GameSummary {
   roster: string[]; // display names of confirmed players
 }
 
+/** What the brand is called in a message. Carriers require it in the first one. */
+export const BRAND = "StackPickleball";
+
 // ── Phone normalisation ─────────────────────────────────────
 
-/** Normalises common US phone formats into E.164 (+1XXXXXXXXXX). */
-export function normalizePhoneNumber(raw: string): string {
-  const digits = raw.replace(/\D/g, "");
-  if (digits.length === 10) return `+1${digits}`;
-  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
-  if (raw.startsWith("+") && digits.length >= 10) return `+${digits}`;
-  return `+${digits}`; // best-effort
+/**
+ * Normalises common US phone formats into E.164, or returns null.
+ *
+ * Returning null matters more than the parsing does. The previous version ended in a
+ * best-effort `+${digits}`, which meant a typo, an extension, or a pasted street number all
+ * came back looking like a phone number and went out as a real billed send to whoever owns it.
+ * A number we cannot confidently parse is a number we should refuse, not guess at.
+ */
+export function normalizePhoneNumber(raw: string): string | null {
+  const trimmed = (raw ?? "").trim();
+  const digits = trimmed.replace(/\D/g, "");
+
+  // Written as international already: trust the country code, sanity-check the length.
+  if (trimmed.startsWith("+")) {
+    return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : null;
+  }
+
+  // NANP, with or without the country code. The first digit of an area code and of an exchange
+  // is 2-9, which is what separates a real number from ten digits of something else.
+  if (digits.length === 11 && digits.startsWith("1")) {
+    const nanp = digits.slice(1);
+    return /^[2-9]\d{2}[2-9]\d{6}$/.test(nanp) ? `+${digits}` : null;
+  }
+  if (digits.length === 10) {
+    return /^[2-9]\d{2}[2-9]\d{6}$/.test(digits) ? `+1${digits}` : null;
+  }
+
+  return null;
+}
+
+// ── Time ────────────────────────────────────────────────────
+
+/** Used when a game predates games.timezone and so has no zone of its own. */
+export const DEFAULT_TIMEZONE =
+  Deno.env.get("DEFAULT_TIMEZONE") ?? "America/Los_Angeles";
+
+/**
+ * Renders an instant in the zone the session belongs to.
+ *
+ * Without an explicit zone this falls to the runtime's, and the edge runtime is UTC — which is
+ * how a 6pm Pacific game came out of the formatter as "01:00 AM" the next day. The zone is a
+ * property of the session, not of whoever happens to be rendering it.
+ */
+export function formatGameTime(
+  isoDatetime: string,
+  timezone: string | null | undefined,
+): string {
+  const zone = timezone || DEFAULT_TIMEZONE;
+  const date = new Date(isoDatetime);
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short",
+      timeZone: zone,
+    }).format(date);
+  } catch {
+    // A bad zone string must not cost someone their invitation.
+    return new Intl.DateTimeFormat("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short",
+      timeZone: DEFAULT_TIMEZONE,
+    }).format(date);
+  }
 }
 
 // ── SMS templates ───────────────────────────────────────────
 
+/**
+ * The first message a number ever receives from us, and the only one carriers actually inspect.
+ *
+ * A US A2P 10DLC campaign is approved against sample copy that names the sender and tells the
+ * recipient how to stop. Copy without those gets the campaign rejected, and unregistered
+ * traffic on a 10DLC number gets filtered as error 30034 — the messages simply never arrive,
+ * with nothing in our logs saying they didn't. So the brand and the opt-out line are not
+ * politeness, they are the difference between the feature working and silently not.
+ */
 export function formatInviteSMS(inviterName: string, game: GameSummary): string {
   const title = game.sessionName ?? `${game.creatorName}'s Session`;
   const lines = [
-    `${inviterName} invited you to play pickleball!`,
+    `${BRAND}: ${inviterName} invited you to play pickleball!`,
     "",
     title,
     `${game.gameFormat} · ${game.gameDatetime}`,
@@ -52,8 +128,23 @@ export function formatInviteSMS(inviterName: string, game: GameSummary): string 
   if (game.roster.length > 0) {
     lines.push("", `Playing: ${game.roster.join(", ")}`);
   }
-  lines.push("", "Reply Y to join or N to pass.");
+  lines.push("", "Reply Y to join or N to pass. STOP to opt out, HELP for help.");
   return lines.join("\n");
+}
+
+export function formatHelpSMS(): string {
+  return `${BRAND}: we text you when a friend invites you to a pickleball session. Reply Y to join, N to pass, CANCEL to drop out, STOP to opt out. Msg&data rates may apply.`;
+}
+
+/**
+ * The confirmation for STOP.
+ *
+ * Twilio's default opt-out handling normally answers STOP itself and blocks the number before
+ * anything reaches us. This exists for the case where that handling is turned off, and it is
+ * deliberately the last message we ever send to that number.
+ */
+export function formatOptOutSMS(): string {
+  return `${BRAND}: you're unsubscribed and won't get any more messages from us.`;
 }
 
 export function formatAcceptedSMS(game: GameSummary): string {
@@ -102,23 +193,52 @@ export function formatNoInvitationFoundSMS(): string {
 
 // ── Twilio implementation ───────────────────────────────────
 
+/**
+ * Compares two signatures without letting the comparison time say how much of the guess was
+ * right. `===` bails at the first differing byte, which over enough attempts hands an attacker
+ * the signature one character at a time.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 export class TwilioSMSChannel implements InvitationChannel {
   private accountSid: string;
   private authToken: string;
   private fromNumber: string;
 
   constructor() {
-    this.accountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
-    this.authToken = Deno.env.get("TWILIO_AUTH_TOKEN")!;
-    this.fromNumber = Deno.env.get("TWILIO_PHONE_NUMBER")!;
+    // Checked rather than asserted: with `!` a missing variable becomes the string "undefined",
+    // which produces a well-formed `Authorization: Basic …` header and a 401 from Twilio that
+    // reads like a credentials problem instead of a configuration one.
+    const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+    const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+    const fromNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
+
+    const missing = [
+      ["TWILIO_ACCOUNT_SID", accountSid],
+      ["TWILIO_AUTH_TOKEN", authToken],
+      ["TWILIO_PHONE_NUMBER", fromNumber],
+    ].filter(([, v]) => !v).map(([k]) => k);
+
+    if (missing.length > 0) {
+      throw new Error(`SMS is not configured: missing ${missing.join(", ")}`);
+    }
+
+    this.accountSid = accountSid!;
+    this.authToken = authToken!;
+    this.fromNumber = fromNumber!;
   }
 
   async sendInvite(to: string, body: string): Promise<string | null> {
     return this.send(to, body);
   }
 
-  async sendNotification(to: string, body: string): Promise<void> {
-    await this.send(to, body);
+  async sendNotification(to: string, body: string): Promise<string | null> {
+    return this.send(to, body);
   }
 
   /** Validate Twilio's X-Twilio-Signature header (HMAC-SHA1). */
@@ -130,11 +250,14 @@ export class TwilioSMSChannel implements InvitationChannel {
     if (!webhookUrl) return false;
 
     const params = new URLSearchParams(rawBody);
-    // Twilio signs url + sorted params concatenated as key=value
-    const sortedKeys = [...params.keys()].sort();
+    // Twilio signs the URL followed by every parameter, sorted by name, as name then value.
+    // getAll rather than get: a repeated parameter contributes each of its values in order,
+    // and taking only the first silently produces a different digest and a 403 nobody can
+    // explain.
+    const sortedKeys = [...new Set(params.keys())].sort();
     let data = webhookUrl;
     for (const key of sortedKeys) {
-      data += key + params.get(key);
+      for (const value of params.getAll(key)) data += key + value;
     }
 
     const encoder = new TextEncoder();
@@ -147,7 +270,7 @@ export class TwilioSMSChannel implements InvitationChannel {
     );
     const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(data));
     const expected = btoa(String.fromCharCode(...new Uint8Array(sig)));
-    return expected === signature;
+    return timingSafeEqual(expected, signature);
   }
 
   parseInbound(params: URLSearchParams): InboundMessage {

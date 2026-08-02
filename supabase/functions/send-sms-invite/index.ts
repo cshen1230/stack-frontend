@@ -6,9 +6,25 @@ import {
 import {
   TwilioSMSChannel,
   normalizePhoneNumber,
+  formatGameTime,
   formatInviteSMS,
   type GameSummary,
 } from "../_shared/sms-channel.ts";
+
+/**
+ * Sending caps.
+ *
+ * Every send costs money and lands on somebody's phone, and nothing about being a confirmed
+ * participant makes an account trustworthy with either. The per-game uniqueness constraint
+ * stops a number being texted twice about the same session, but says nothing about one account
+ * creating twenty sessions and texting the same number about each — which is the shape an
+ * abuser would actually use.
+ *
+ * These are deliberately far above what organising real pickleball looks like: a big session is
+ * a dozen invitations, not fifty.
+ */
+const MAX_INVITES_PER_SENDER_PER_DAY = 50;
+const MAX_INVITES_PER_RECIPIENT_PER_DAY = 3;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -43,6 +59,17 @@ Deno.serve(async (req) => {
     }
 
     const normalized = normalizePhoneNumber(phone_number);
+    if (!normalized) {
+      return new Response(
+        JSON.stringify({
+          error: "That doesn't look like a valid phone number.",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
 
     // Fetch the game with creator profile
     const { data: game, error: gameError } = await supabase
@@ -110,6 +137,72 @@ Deno.serve(async (req) => {
     }
 
     const admin = createAdminClient();
+
+    // Never text a number that has opted out. Twilio would refuse the send anyway, but only
+    // after we had billed ourselves for it and written a row that sits at "pending" forever
+    // with nobody able to explain why.
+    const { data: optedOut } = await admin
+      .from("sms_opt_outs")
+      .select("phone_number")
+      .eq("phone_number", normalized)
+      .maybeSingle();
+
+    if (optedOut) {
+      return new Response(
+        JSON.stringify({
+          error: "That number has opted out of text messages.",
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+    const { count: sentToday } = await admin
+      .from("sms_invitations")
+      .select("id", { count: "exact", head: true })
+      .eq("invited_by", user.id)
+      .gte("created_at", since);
+
+    if ((sentToday ?? 0) >= MAX_INVITES_PER_SENDER_PER_DAY) {
+      return new Response(
+        JSON.stringify({
+          error: "You've sent a lot of text invites today. Try again tomorrow.",
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // Counted from the send log rather than the invitations table, and across every sender.
+    // An invitation row is reused when someone declines and is invited again, so counting rows
+    // would miss exactly the loop worth catching; the log has one entry per message that
+    // actually went out. And the person being texted experiences the total — they do not care
+    // how many different accounts it came from.
+    const { count: receivedToday } = await admin
+      .from("sms_log")
+      .select("id", { count: "exact", head: true })
+      .eq("phone_number", normalized)
+      .eq("direction", "outbound")
+      .eq("kind", "invite")
+      .gte("created_at", since);
+
+    if ((receivedToday ?? 0) >= MAX_INVITES_PER_RECIPIENT_PER_DAY) {
+      return new Response(
+        JSON.stringify({
+          error: "That number has already had several invites today.",
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
 
     // Check for existing invitation
     const { data: existing } = await admin
@@ -186,17 +279,12 @@ Deno.serve(async (req) => {
       : "Someone";
 
     const creatorUser = game.users as { first_name: string; last_name: string };
-    const dt = new Date(game.game_datetime);
     const gameSummary: GameSummary = {
       sessionName: game.session_name,
       creatorName: `${creatorUser.first_name} ${creatorUser.last_name}`,
-      gameDatetime: dt.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      }),
+      // In the session's own zone, not the edge runtime's. The runtime is UTC, which is how a
+      // 6pm Pacific game used to go out as "01:00 AM" the following day.
+      gameDatetime: formatGameTime(game.game_datetime, game.timezone),
       locationName: game.location_name,
       gameFormat: game.game_format,
       roster,
@@ -230,6 +318,7 @@ Deno.serve(async (req) => {
     await admin.from("sms_log").insert({
       invitation_id: invitationRow?.id ?? null,
       direction: "outbound",
+      kind: "invite",
       phone_number: normalized,
       message_body: smsBody,
       twilio_sid: sid,

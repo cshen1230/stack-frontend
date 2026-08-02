@@ -5,7 +5,7 @@
 -- ============================================================
 -- sms_invitations
 -- ============================================================
-CREATE TABLE sms_invitations (
+CREATE TABLE IF NOT EXISTS sms_invitations (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     game_id       UUID NOT NULL REFERENCES games(id) ON DELETE CASCADE,
     invited_by    UUID NOT NULL REFERENCES auth.users(id),
@@ -20,11 +20,11 @@ CREATE TABLE sms_invitations (
     UNIQUE (game_id, phone_number)
 );
 
-CREATE INDEX idx_sms_invitations_phone   ON sms_invitations (phone_number);
-CREATE INDEX idx_sms_invitations_game    ON sms_invitations (game_id);
+CREATE INDEX IF NOT EXISTS idx_sms_invitations_phone   ON sms_invitations (phone_number);
+CREATE INDEX IF NOT EXISTS idx_sms_invitations_game    ON sms_invitations (game_id);
 
 -- Partial index for the webhook: find the most recent actionable invitation fast.
-CREATE INDEX idx_sms_invitations_actionable
+CREATE INDEX IF NOT EXISTS idx_sms_invitations_actionable
     ON sms_invitations (phone_number, created_at DESC)
     WHERE rsvp_status IN ('pending', 'accepted');
 
@@ -37,6 +37,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_sms_invitations_updated_at ON sms_invitations;
 CREATE TRIGGER trg_sms_invitations_updated_at
     BEFORE UPDATE ON sms_invitations
     FOR EACH ROW EXECUTE FUNCTION touch_sms_invitation_updated_at();
@@ -44,6 +45,7 @@ CREATE TRIGGER trg_sms_invitations_updated_at
 -- RLS: block all client writes; SELECT only for inviter or game creator.
 ALTER TABLE sms_invitations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS sms_invitations_select ON sms_invitations;
 CREATE POLICY sms_invitations_select ON sms_invitations
     FOR SELECT
     USING (
@@ -57,7 +59,7 @@ CREATE POLICY sms_invitations_select ON sms_invitations
 -- ============================================================
 -- sms_log  (admin-only audit trail)
 -- ============================================================
-CREATE TABLE sms_log (
+CREATE TABLE IF NOT EXISTS sms_log (
     id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invitation_id UUID REFERENCES sms_invitations(id) ON DELETE SET NULL,
     direction     TEXT NOT NULL CHECK (direction IN ('inbound', 'outbound')),

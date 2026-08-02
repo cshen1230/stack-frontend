@@ -13,6 +13,8 @@ struct InviteFriendSheet: View {
     @State private var smsName = ""
     @State private var smsPhone = ""
     @State private var isSendingSMS = false
+    /// Needed to decide whose phone numbers this viewer is allowed to see.
+    @State private var currentUserId: UUID?
 
     var body: some View {
         NavigationStack {
@@ -117,9 +119,15 @@ struct InviteFriendSheet: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(inv.inviteeName)
                                         .font(.system(size: 15, weight: .semibold))
-                                    Text(inv.phoneNumber)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.stackSecondaryText)
+                                    if let phone = inv.displayPhoneNumber(viewerId: currentUserId) {
+                                        Text(phone)
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.stackSecondaryText)
+                                    } else {
+                                        Text("Invited by text")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.stackSecondaryText)
+                                    }
                                 }
 
                                 Spacer()
@@ -143,6 +151,7 @@ struct InviteFriendSheet: View {
                 }
             }
             .task {
+                currentUserId = await AuthService.currentUserId()
                 async let loadF: Void = loadFriends()
                 async let loadS: Void = loadSMSInvitations()
                 _ = await (loadF, loadS)
@@ -176,7 +185,7 @@ struct InviteFriendSheet: View {
 
     private var smsFieldsValid: Bool {
         !smsName.trimmingCharacters(in: .whitespaces).isEmpty
-            && smsPhone.filter(\.isNumber).count >= 10
+            && SMSInviteEntry.looksLikeAPhoneNumber(smsPhone)
     }
 
     private func loadSMSInvitations() async {

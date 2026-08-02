@@ -38,6 +38,7 @@ Deno.serve(async (req) => {
       session_type,
       num_rounds,
       friends_only,
+      timezone,
     } = body;
 
     // --- Validate required fields ---
@@ -176,6 +177,21 @@ Deno.serve(async (req) => {
 
     if (session_name) row.session_name = session_name;
     if (location_name) row.location_name = location_name;
+
+    // The zone the session happens in, taken from the creator's device. game_datetime is a
+    // timestamptz so the instant is unambiguous, but an instant can't be written into a text
+    // message without a zone to render it in — and anything reading this outside the app (SMS,
+    // notably) has no other way to know that 01:00Z means a 6pm game. Validated because an
+    // unusable zone here would surface much later as a wrong time in someone's invitation.
+    if (typeof timezone === "string" && timezone.length > 0) {
+      try {
+        new Intl.DateTimeFormat("en-US", { timeZone: timezone });
+        row.timezone = timezone;
+      } catch {
+        // Leave it null; readers fall back to the default rather than reject the session.
+        console.warn("create-game: ignoring unrecognised timezone", timezone);
+      }
+    }
     if (description) row.description = description;
     if (skill_level_min != null) row.skill_level_min = skill_level_min;
     if (skill_level_max != null) row.skill_level_max = skill_level_max;

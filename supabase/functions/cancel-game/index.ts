@@ -3,6 +3,7 @@ import { createUserClient, createAdminClient } from "../_shared/supabase-client.
 import {
   TwilioSMSChannel,
   formatGameCancelledSMS,
+  formatGameTime,
   type GameSummary,
 } from "../_shared/sms-channel.ts";
 
@@ -110,17 +111,11 @@ Deno.serve(async (req) => {
           .in("rsvp_status", ["pending", "accepted"]);
 
         // Send cancellation SMS to accepted invitees
-        const dt = new Date(game.game_datetime);
         const gameSummary: GameSummary = {
           sessionName: game.session_name,
           creatorName: "",
-          gameDatetime: dt.toLocaleDateString("en-US", {
-            weekday: "short",
-            month: "short",
-            day: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-          }),
+          // The session's zone, not the edge runtime's — see formatGameTime.
+          gameDatetime: formatGameTime(game.game_datetime, game.timezone),
           locationName: game.location_name,
           gameFormat: game.game_format,
           roster: [],

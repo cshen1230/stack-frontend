@@ -7,6 +7,7 @@ import { createAdminClient } from "../_shared/supabase-client.ts";
 import {
   TwilioSMSChannel,
   normalizePhoneNumber,
+  formatGameTime,
   formatAcceptedSMS,
   formatDeclinedSMS,
   formatCancelledSMS,
@@ -16,6 +17,8 @@ import {
   formatAlreadyRepliedSMS,
   formatUnrecognizedSMS,
   formatNoInvitationFoundSMS,
+  formatHelpSMS,
+  formatOptOutSMS,
   type GameSummary,
 } from "../_shared/sms-channel.ts";
 
@@ -29,35 +32,26 @@ function twimlResponse(): Response {
   });
 }
 
+type Intent = "accept" | "decline" | "cancel" | "stop" | "start" | "help" | "unknown";
+
 /** Parse the normalised reply intent. */
-function parseReply(
-  body: string,
-): "accept" | "decline" | "cancel" | "unknown" {
+function parseReply(body: string): Intent {
   const upper = body.toUpperCase().trim();
+
+  // Carrier-mandated keywords first — these outrank anything else the word could mean. STOP is
+  // not a request to leave one session, it is a request to never hear from us again.
+  if (["STOP", "STOPALL", "UNSUBSCRIBE", "END", "QUIT", "CANCELALL", "REVOKE"].includes(upper))
+    return "stop";
+  if (["START", "UNSTOP", "YES SUBSCRIBE", "RESUBSCRIBE"].includes(upper)) return "start";
+  if (["HELP", "INFO"].includes(upper)) return "help";
+
   if (["Y", "YES", "YEP", "YEAH", "YA", "YUP", "JOIN"].includes(upper))
     return "accept";
   if (["N", "NO", "NOPE", "NAH", "PASS"].includes(upper)) return "decline";
-  if (["CANCEL", "LEAVE", "OUT", "DROP", "QUIT", "REMOVE"].includes(upper))
+  // "QUIT" belongs to the opt-out set above; leaving a session is CANCEL and its neighbours.
+  if (["CANCEL", "LEAVE", "OUT", "DROP", "REMOVE"].includes(upper))
     return "cancel";
   return "unknown";
-}
-
-function buildGameSummary(game: Record<string, unknown>): GameSummary {
-  const dt = new Date(game.game_datetime as string);
-  return {
-    sessionName: game.session_name as string | null,
-    creatorName: "", // filled below if we have user join
-    gameDatetime: dt.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-    }),
-    locationName: game.location_name as string | null,
-    gameFormat: game.game_format as string,
-    roster: [],
-  };
 }
 
 Deno.serve(async (req) => {
@@ -76,32 +70,119 @@ Deno.serve(async (req) => {
 
   const params = new URLSearchParams(rawBody);
   const msg = twilio.parseInbound(params);
-  const phone = normalizePhoneNumber(msg.from);
+  // An inbound `From` is already E.164 from Twilio; if it somehow isn't, keep the raw value
+  // rather than dropping the message, since it still has to match what we stored.
+  const phone = normalizePhoneNumber(msg.from) ?? msg.from;
   const intent = parseReply(msg.body);
   const admin = createAdminClient();
 
+  /**
+   * Every database call here is best-effort in the sense that failing one must not take down
+   * the webhook — Twilio retries a non-2xx, so a crash means the same message arriving again
+   * and again. Note this is a real try/catch: a Supabase query builder is a PromiseLike with a
+   * `then` and no `catch`, so `.catch(() => {})` on one is a TypeError, not a safety net.
+   */
+  // deno-lint-ignore no-explicit-any
+  async function quietly(work: PromiseLike<any>): Promise<any> {
+    try {
+      return await work;
+    } catch (err) {
+      console.error("webhook side-effect failed:", err);
+      // Shaped like a Supabase response so every caller can destructure it the same way,
+      // whether the query returned an error or threw one.
+      return { data: null, error: err };
+    }
+  }
+
   // Log inbound
-  await admin.from("sms_log").insert({
-    direction: "inbound",
-    phone_number: phone,
-    message_body: msg.body,
-    twilio_sid: msg.messageSid,
-    status: "received",
-  }).catch(() => {}); // best-effort log
+  await quietly(
+    admin.from("sms_log").insert({
+      direction: "inbound",
+      phone_number: phone,
+      message_body: msg.body,
+      twilio_sid: msg.messageSid,
+      status: "received",
+    }),
+  );
 
   /** Send a reply SMS (best-effort). */
   async function reply(text: string) {
     try {
-      const sid = await twilio.sendInvite(phone, text);
-      await admin.from("sms_log").insert({
-        direction: "outbound",
-        phone_number: phone,
-        message_body: text,
-        twilio_sid: sid,
-        status: sid ? "sent" : "failed",
-      });
-    } catch { /* don't fail the webhook */ }
+      const sid = await twilio.sendNotification(phone, text);
+      await quietly(
+        admin.from("sms_log").insert({
+          direction: "outbound",
+          // Answers to something they sent us, so they never count against the cap on how
+          // often a number can be cold-texted.
+          kind: "reply",
+          phone_number: phone,
+          message_body: text,
+          twilio_sid: sid,
+          status: sid ? "sent" : "failed",
+        }),
+      );
+    } catch (err) {
+      console.error("webhook reply failed:", err);
+    }
   }
+
+  // ── Carrier keywords ──────────────────────────────────
+  //
+  // Handled before anything else and without touching a game: someone opting out is not making
+  // an RSVP decision, and the only correct response is to stop.
+
+  if (intent === "stop") {
+    await quietly(
+      admin.from("sms_opt_outs").upsert(
+        { phone_number: phone, source: "sms_reply", opted_out_at: new Date().toISOString() },
+        { onConflict: "phone_number" },
+      ),
+    );
+
+    // Withdraw their outstanding RSVPs too. Leaving someone counted in a session they can no
+    // longer be contacted about strands the organiser as much as it does them.
+    const { data: releasing } = await quietly(
+      admin
+        .from("sms_invitations")
+        .update({ rsvp_status: "cancelled" })
+        .eq("phone_number", phone)
+        .in("rsvp_status", ["pending", "accepted"])
+        .select("game_id, rsvp_status"),
+    );
+
+    for (const row of releasing ?? []) {
+      // Only an accepted invitation was holding a seat.
+      if (row.rsvp_status === "accepted") {
+        await quietly(
+          admin.rpc("decrement_spots_filled", { p_game_id: row.game_id }),
+        );
+      }
+    }
+
+    // Twilio's own opt-out handling usually answers and blocks before this runs. Sending here
+    // is harmless when it does (the send is rejected) and correct when it doesn't.
+    await reply(formatOptOutSMS());
+    return twimlResponse();
+  }
+
+  if (intent === "start") {
+    await quietly(admin.from("sms_opt_outs").delete().eq("phone_number", phone));
+    await reply(formatHelpSMS());
+    return twimlResponse();
+  }
+
+  if (intent === "help") {
+    await reply(formatHelpSMS());
+    return twimlResponse();
+  }
+
+  // Someone who has opted out should never get another message, including an explanation of
+  // why their reply did nothing.
+  const { data: optedOut } = await quietly(
+    admin.from("sms_opt_outs").select("phone_number").eq("phone_number", phone).maybeSingle(),
+  );
+
+  if (optedOut) return twimlResponse();
 
   if (intent === "unknown") {
     await reply(formatUnrecognizedSMS());
@@ -110,44 +191,33 @@ Deno.serve(async (req) => {
 
   // ── Find the relevant invitation ──────────────────────
 
-  let invitation: Record<string, unknown> | null = null;
+  const wanted = intent === "cancel" ? "accepted" : "pending";
 
-  if (intent === "accept" || intent === "decline") {
-    // Most recent pending invitation for this phone
-    const { data } = await admin
+  const { data: invitation } = await quietly(
+    admin
       .from("sms_invitations")
       .select("*")
       .eq("phone_number", phone)
-      .eq("rsvp_status", "pending")
+      .eq("rsvp_status", wanted)
       .order("created_at", { ascending: false })
       .limit(1)
-      .maybeSingle();
-    invitation = data;
-  } else if (intent === "cancel") {
-    // Most recent accepted invitation
-    const { data } = await admin
-      .from("sms_invitations")
-      .select("*")
-      .eq("phone_number", phone)
-      .eq("rsvp_status", "accepted")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    invitation = data;
-  }
+      .maybeSingle(),
+  );
 
   if (!invitation) {
     // Check if they have any invitation at all to give a better message
-    const { data: any } = await admin
-      .from("sms_invitations")
-      .select("rsvp_status")
-      .eq("phone_number", phone)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data: latest } = await quietly(
+      admin
+        .from("sms_invitations")
+        .select("rsvp_status")
+        .eq("phone_number", phone)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    );
 
-    if (any) {
-      await reply(formatAlreadyRepliedSMS(any.rsvp_status as string));
+    if (latest) {
+      await reply(formatAlreadyRepliedSMS(latest.rsvp_status as string));
     } else {
       await reply(formatNoInvitationFoundSMS());
     }
@@ -156,11 +226,13 @@ Deno.serve(async (req) => {
 
   // ── Fetch the game ────────────────────────────────────
 
-  const { data: game } = await admin
-    .from("games")
-    .select("*, users!games_creator_id_fkey(first_name, last_name)")
-    .eq("id", invitation.game_id)
-    .single();
+  const { data: game } = await quietly(
+    admin
+      .from("games")
+      .select("*, users!games_creator_id_fkey(first_name, last_name)")
+      .eq("id", invitation.game_id)
+      .single(),
+  );
 
   if (!game) {
     await reply(formatNoInvitationFoundSMS());
@@ -168,15 +240,23 @@ Deno.serve(async (req) => {
   }
 
   const creatorUser = game.users as { first_name: string; last_name: string };
-  const gameSummary = buildGameSummary(game);
-  gameSummary.creatorName = `${creatorUser.first_name} ${creatorUser.last_name}`;
+  const gameSummary: GameSummary = {
+    sessionName: game.session_name as string | null,
+    creatorName: `${creatorUser.first_name} ${creatorUser.last_name}`,
+    gameDatetime: formatGameTime(game.game_datetime, game.timezone),
+    locationName: game.location_name as string | null,
+    gameFormat: game.game_format as string,
+    roster: [],
+  };
 
   // Check game is still active
   if (game.is_cancelled) {
-    await admin
-      .from("sms_invitations")
-      .update({ rsvp_status: "cancelled" })
-      .eq("id", invitation.id);
+    await quietly(
+      admin
+        .from("sms_invitations")
+        .update({ rsvp_status: "cancelled" })
+        .eq("id", invitation.id),
+    );
     await reply(formatGameCancelledSMS(gameSummary));
     return twimlResponse();
   }
@@ -194,56 +274,82 @@ Deno.serve(async (req) => {
       return twimlResponse();
     }
 
-    const { error: updateErr } = await admin
-      .from("sms_invitations")
-      .update({ rsvp_status: "accepted" })
-      .eq("id", invitation.id)
-      .eq("rsvp_status", "pending"); // atomic guard
+    // Claim the row, and only if it is still pending. `.select()` is what makes this a guard:
+    // an update matching zero rows is not a PostgREST error, so without reading back what
+    // changed, a second concurrent "Y" would sail past an error check that never fires and
+    // take the seat a second time.
+    const { data: claimed } = await quietly(
+      admin
+        .from("sms_invitations")
+        .update({ rsvp_status: "accepted" })
+        .eq("id", invitation.id)
+        .eq("rsvp_status", "pending")
+        .select("id")
+        .maybeSingle(),
+    );
 
-    if (updateErr) {
-      console.error("SMS accept update error:", updateErr);
+    if (!claimed) {
       await reply(formatAlreadyRepliedSMS("accepted"));
       return twimlResponse();
     }
 
-    // Increment spots_filled
-    const { error: rpcErr } = await admin.rpc("increment_spots_filled", {
-      p_game_id: invitation.game_id,
-    });
-    if (rpcErr) console.error("increment_spots_filled error:", rpcErr);
+    const { error: rpcErr } = await quietly(
+      admin.rpc("increment_spots_filled", { p_game_id: invitation.game_id }),
+    );
+
+    if (rpcErr) {
+      // The last seat went while we were writing. Put the invitation back rather than leaving
+      // someone told they are in a session that has no room for them.
+      console.error("increment_spots_filled error:", rpcErr);
+      await quietly(
+        admin
+          .from("sms_invitations")
+          .update({ rsvp_status: "pending" })
+          .eq("id", invitation.id),
+      );
+      await reply(formatGameFullSMS());
+      return twimlResponse();
+    }
 
     // Update sms_log with invitation_id
-    await admin
-      .from("sms_log")
-      .update({ invitation_id: invitation.id })
-      .eq("twilio_sid", msg.messageSid)
-      .catch(() => {});
+    await quietly(
+      admin
+        .from("sms_log")
+        .update({ invitation_id: invitation.id })
+        .eq("twilio_sid", msg.messageSid),
+    );
 
     await reply(formatAcceptedSMS(gameSummary));
   } else if (intent === "decline") {
-    await admin
-      .from("sms_invitations")
-      .update({ rsvp_status: "declined" })
-      .eq("id", invitation.id);
+    await quietly(
+      admin
+        .from("sms_invitations")
+        .update({ rsvp_status: "declined" })
+        .eq("id", invitation.id)
+        .eq("rsvp_status", "pending"),
+    );
 
     await reply(formatDeclinedSMS());
   } else if (intent === "cancel") {
-    const { error: updateErr } = await admin
-      .from("sms_invitations")
-      .update({ rsvp_status: "cancelled" })
-      .eq("id", invitation.id)
-      .eq("rsvp_status", "accepted"); // atomic guard
+    const { data: released } = await quietly(
+      admin
+        .from("sms_invitations")
+        .update({ rsvp_status: "cancelled" })
+        .eq("id", invitation.id)
+        .eq("rsvp_status", "accepted")
+        .select("id")
+        .maybeSingle(),
+    );
 
-    if (updateErr) {
-      console.error("SMS cancel update error:", updateErr);
+    if (!released) {
       await reply(formatAlreadyRepliedSMS("cancelled"));
       return twimlResponse();
     }
 
-    // Decrement spots_filled
-    const { error: rpcErr } = await admin.rpc("decrement_spots_filled", {
-      p_game_id: invitation.game_id,
-    });
+    // Only give the seat back if this call is the one that took it away.
+    const { error: rpcErr } = await quietly(
+      admin.rpc("decrement_spots_filled", { p_game_id: invitation.game_id }),
+    );
     if (rpcErr) console.error("decrement_spots_filled error:", rpcErr);
 
     await reply(formatCancelledSMS());

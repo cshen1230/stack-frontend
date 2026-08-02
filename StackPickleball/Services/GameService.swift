@@ -23,6 +23,7 @@ enum GameService {
         var session_type: String?
         var num_rounds: Int?
         var friends_only: Bool
+        var timezone: String?
     }
 
     /// Just the id off the create-game response. Decoding the whole row here would need the
@@ -64,7 +65,11 @@ enum GameService {
             description: description,
             session_type: sessionType.rawValue,
             num_rounds: numRounds,
-            friends_only: friendsOnly
+            friends_only: friendsOnly,
+            // The zone the session is being scheduled in. Sent at creation because this is the
+            // only moment anyone knows it: a text message rendered on the server later has an
+            // instant and no way to turn it back into "6pm at the court".
+            timezone: TimeZone.current.identifier
         )
         let response: CreateGameResponse = try await supabase.functions.invoke(
             "create-game",
