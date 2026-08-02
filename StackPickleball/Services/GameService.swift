@@ -340,7 +340,7 @@ enum GameService {
     static func gameParticipants(gameId: UUID) async throws -> [ParticipantWithProfile] {
         let rows: [ParticipantWithProfile] = try await supabase
             .from("game_participants")
-            .select("id, game_id, user_id, rsvp_status, created_at, users(username, first_name, last_name, dupr_rating, dupr_verified, avatar_url)")
+            .select("id, game_id, user_id, rsvp_status, created_at, users!game_participants_user_id_fkey(username, first_name, last_name, dupr_rating, dupr_verified, avatar_url)")
             .eq("game_id", value: gameId)
             .eq("rsvp_status", value: "confirmed")
             .execute()
@@ -353,7 +353,7 @@ enum GameService {
         guard !gameIds.isEmpty else { return [:] }
         let rows: [ParticipantSummaryRow] = try await supabase
             .from("game_participants")
-            .select("game_id, user_id, users(first_name, last_name, avatar_url)")
+            .select("game_id, user_id, users!game_participants_user_id_fkey(first_name, last_name, avatar_url)")
             .in("game_id", values: gameIds.map(\.uuidString))
             .eq("rsvp_status", value: "confirmed")
             .execute()
@@ -370,7 +370,7 @@ enum GameService {
         guard !gameIds.isEmpty else { return [:] }
         let rows: [ParticipantAvatarRow] = try await supabase
             .from("game_participants")
-            .select("game_id, users(avatar_url)")
+            .select("game_id, users!game_participants_user_id_fkey(avatar_url)")
             .in("game_id", values: gameIds.map(\.uuidString))
             .eq("rsvp_status", value: "confirmed")
             .execute()

@@ -248,7 +248,9 @@ Deno.serve(async (req) => {
     // Build roster for the SMS body
     const { data: participants } = await admin
       .from("game_participants")
-      .select("users(first_name, last_name)")
+      // Named relationship: game_participants also points at users through invited_by and
+      // approved_by, so a bare `users(…)` is ambiguous and PostgREST refuses the whole query.
+      .select("users!game_participants_user_id_fkey(first_name, last_name)")
       .eq("game_id", game_id)
       .eq("rsvp_status", "confirmed");
 
