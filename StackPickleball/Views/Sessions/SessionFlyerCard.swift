@@ -116,13 +116,10 @@ struct SessionFlyerCard: View {
                 }
             }
         }
-        .padding(16)
-        .background(Color.stackCardWhite)
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.black.opacity(0.08), lineWidth: 1)
-        )
+        .padding(AppConstants.cardPadding)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius))
+        .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)
     }
 
     @ViewBuilder

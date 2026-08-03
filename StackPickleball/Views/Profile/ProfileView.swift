@@ -9,6 +9,7 @@ struct ProfileView: View {
     /// lives here rather than competing with the Schedule tab.
     @State private var scheduleViewModel = ScheduleViewModel()
     @State private var showingScheduleEditor = false
+    @State private var showingSignOutConfirmation = false
     private let friendRequestsScrollId = "friendRequests"
 
     var body: some View {
@@ -58,7 +59,7 @@ struct ProfileView: View {
 
                                 // Sign out
                                 Button(action: {
-                                    Task { await viewModel.signOut() }
+                                    showingSignOutConfirmation = true
                                 }) {
                                     HStack(spacing: 8) {
                                         Text("Sign Out")
@@ -116,6 +117,14 @@ struct ProfileView: View {
                 MyScheduleEditorSheet(viewModel: scheduleViewModel)
             }
             .errorAlert($viewModel.errorMessage)
+            .alert("Sign Out?", isPresented: $showingSignOutConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Sign Out", role: .destructive) {
+                    Task { await viewModel.signOut() }
+                }
+            } message: {
+                Text("You'll need to sign back in to access your account.")
+            }
         }
     }
 

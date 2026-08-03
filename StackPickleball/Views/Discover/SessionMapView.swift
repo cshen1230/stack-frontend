@@ -168,12 +168,9 @@ struct SessionMapView: View {
             .lineLimit(1)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(isSelected ? game.gameFormat.accentColor : Color.stackCardWhite)
+            .background(isSelected ? game.gameFormat.accentColor : Color(.systemBackground))
             .cornerRadius(20)
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.black, lineWidth: 1)
-            )
+            .shadow(color: .black.opacity(0.1), radius: 3, y: 1)
             .scaleEffect(isSelected ? 1.1 : 1.0)
     }
 
@@ -289,13 +286,9 @@ struct SessionMapView: View {
                 }
             }
         }
-        .padding(16)
-        .background(Color.stackCardWhite)
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.black, lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.15), radius: 12, y: 4)
+        .padding(AppConstants.cardPadding)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius))
+        .shadow(color: .black.opacity(0.1), radius: 12, y: 4)
     }
 }

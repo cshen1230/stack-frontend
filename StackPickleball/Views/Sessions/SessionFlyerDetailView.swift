@@ -112,15 +112,8 @@ struct SessionFlyerDetailView: View {
                             .foregroundColor(.primary)
                     }
                 }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.stackCardWhite)
-                .cornerRadius(16)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.black, lineWidth: 1)
-                )
-                .padding(.horizontal, 16)
+                .cardStyle()
+                .padding(.horizontal, AppConstants.screenPadding)
                 .padding(.top, 12)
 
                 // Description
@@ -141,14 +134,8 @@ struct SessionFlyerDetailView: View {
                             .lineSpacing(3)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .padding(16)
-                    .background(Color.stackCardWhite)
-                    .cornerRadius(16)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.black, lineWidth: 1)
-                    )
-                    .padding(.horizontal, 16)
+                    .cardStyle()
+                    .padding(.horizontal, AppConstants.screenPadding)
                     .padding(.top, 12)
                 }
 
@@ -170,12 +157,9 @@ struct SessionFlyerDetailView: View {
                                 .foregroundColor(.secondary)
                         }
                         .padding(16)
-                        .background(Color.stackCardWhite)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.stackGreen.opacity(0.3), lineWidth: 1)
-                        )
+                        .background(Color(.systemBackground))
+                        .cornerRadius(AppConstants.cardCornerRadius)
+                        .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 20)
@@ -202,12 +186,9 @@ struct SessionFlyerDetailView: View {
                                 .foregroundColor(.secondary)
                         }
                         .padding(16)
-                        .background(Color.stackCardWhite)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.stackGreen.opacity(0.3), lineWidth: 1)
-                        )
+                        .background(Color(.systemBackground))
+                        .cornerRadius(AppConstants.cardCornerRadius)
+                        .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
@@ -231,12 +212,9 @@ struct SessionFlyerDetailView: View {
                                 .foregroundColor(.secondary)
                         }
                         .padding(16)
-                        .background(Color.stackCardWhite)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.stackGreen.opacity(0.3), lineWidth: 1)
-                        )
+                        .background(Color(.systemBackground))
+                        .cornerRadius(AppConstants.cardCornerRadius)
+                        .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)
                     }
                     .padding(.horizontal, 16)
                     .padding(.top, 12)
@@ -483,12 +461,9 @@ private struct FlyerPlayerRow: View {
             }
         }
         .padding(12)
-        .background(Color.stackCardWhite)
+        .background(Color(.systemBackground))
         .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.black.opacity(0.08), lineWidth: 1)
-        )
+        .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur / 2, y: 1)
     }
 
     private var avatarPlaceholder: some View {
@@ -539,11 +514,8 @@ private struct SMSInviteeRow: View {
             }
         }
         .padding(12)
-        .background(Color.stackCardWhite)
+        .background(Color(.systemBackground))
         .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.black.opacity(0.08), lineWidth: 1)
-        )
+        .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur / 2, y: 1)
     }
 }

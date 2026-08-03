@@ -5,44 +5,51 @@ struct GameCardView: View {
     let isHost: Bool
     let isJoined: Bool
     let avatarURLs: [String]
-    let isExpanded: Bool
-    let onTap: () -> Void
     let onJoin: () -> Void
     let onView: () -> Void
 
     var body: some View {
-        HStack(alignment: .center) {
-            // Left: Session info
-            VStack(alignment: .leading, spacing: 4) {
-                if isHost {
-                    Text("Host")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.stackGreen)
-                }
-
-                HStack(spacing: 5) {
-                    if game.friendsOnly {
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 13))
-                            .foregroundColor(.orange)
+        Button(action: onView) {
+            HStack(alignment: .center, spacing: 14) {
+                // Left: Session info
+                VStack(alignment: .leading, spacing: 4) {
+                    if isHost {
+                        Text("Host")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.stackGreen)
                     }
-                    Text(game.sessionName ?? game.creatorDisplayName)
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.primary)
-                        .lineLimit(2)
-                }
 
-                VStack(alignment: .leading, spacing: 2) {
-                    // Seats filled says nothing about whether the number works; the balance
-                    // leads with what the session is actually short of.
-                    Text(game.balance.summary)
-                        .font(.system(size: 13, weight: game.balance.wanted > 0 ? .semibold : .regular))
-                        .foregroundColor(game.balance.wanted > 0 ? .stackGreen : .secondary)
+                    HStack(spacing: 5) {
+                        if game.friendsOnly {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.orange)
+                        }
+                        Text(game.sessionName ?? game.creatorDisplayName)
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                    }
 
+                    // Date and time — the most important info on a scheduling card
                     HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 11))
+                        (Text(game.gameDatetime, format: .dateTime.weekday(.abbreviated))
+                        + Text(" ")
+                        + Text(game.gameDatetime, format: .dateTime.hour().minute()))
+                    }
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.stackSecondaryText)
+
+                    HStack(spacing: 8) {
                         Text(game.gameFormat.displayName)
                             .font(.system(size: 13, weight: .medium))
                             .foregroundColor(.secondary)
+
+                        Text(game.balance.summary)
+                            .font(.system(size: 13, weight: game.balance.wanted > 0 ? .semibold : .regular))
+                            .foregroundColor(game.balance.wanted > 0 ? .stackGreen : .secondary)
 
                         if game.sessionType == .roundRobin {
                             HStack(spacing: 2) {
@@ -52,71 +59,39 @@ struct GameCardView: View {
                                     .font(.system(size: 11, weight: .semibold))
                             }
                             .foregroundColor(.stackGreen)
-
-                            if let min = game.skillLevelMin, min > 0 {
-                                Text("DUPR \(String(format: "%.1f", min))+")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(.stackGreen)
-                            }
                         }
                     }
                 }
-            }
 
-            Spacer(minLength: 12)
+                Spacer(minLength: 8)
 
-            // Right: Avatars or action buttons (swap in place)
-            ZStack {
-                // Avatar cluster — visible when collapsed
-                AvatarClusterView(
-                    avatarURLs: avatarURLs,
-                    totalParticipants: game.spotsFilled
-                )
-                .opacity(isExpanded ? 0 : 1)
-                .scaleEffect(isExpanded ? 0.6 : 1)
-
-                // Action buttons — visible when expanded
-                VStack(spacing: 8) {
-                    Button(action: onView) {
-                        Text("View")
+                // Right: Join button or status
+                if isJoined || isHost {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.stackSecondaryText)
+                } else if game.spotsRemaining > 0 {
+                    Button(action: {
+                        onJoin()
+                    }) {
+                        Text("Join")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.primary)
-                            .frame(width: 80)
-                            .padding(.vertical, 10)
-                            .background(Color(.tertiarySystemFill))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 18)
+                            .padding(.vertical, 9)
+                            .background(Color.stackGreen)
                             .cornerRadius(10)
                     }
-
-                    if !isJoined {
-                        if game.spotsRemaining > 0 {
-                            Button(action: onJoin) {
-                                Text("Join")
-                                    .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .frame(width: 80)
-                                    .padding(.vertical, 10)
-                                    .background(Color.stackGreen)
-                                    .cornerRadius(10)
-                            }
-                        } else {
-                            Text("Full")
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundColor(.secondary)
-                                .frame(width: 80)
-                                .padding(.vertical, 10)
-                        }
-                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Text("Full")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
                 }
-                .opacity(isExpanded ? 1 : 0)
-                .scaleEffect(isExpanded ? 1 : 0.6)
             }
-            .frame(width: 90, height: 80)
+            .cardStyle()
         }
-        .cardStyle()
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onTap()
-        }
+        .buttonStyle(.plain)
     }
 }
 

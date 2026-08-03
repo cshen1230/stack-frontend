@@ -7,7 +7,6 @@ struct HomeView: View {
     @State private var viewModel = HomeViewModel()
     @State private var selectedGame: Game?
     @State private var showingMap = false
-    @State private var expandedGameId: UUID?
     @State private var createdSessionInfo: CreatedSessionInfo?
     @State private var showingAddFriends = false
     /// Set by the hero's button or a suggestion chip; the planner picks it up and opens the
@@ -111,16 +110,7 @@ struct HomeView: View {
                                             isHost: game.creatorId == currentUserId,
                                             isJoined: viewModel.joinedGameIds.contains(game.id),
                                             avatarURLs: viewModel.participantAvatars[game.id] ?? [],
-                                            isExpanded: expandedGameId == game.id,
-                                            onTap: {
-                                                withAnimation(Motion.state) {
-                                                    expandedGameId = expandedGameId == game.id ? nil : game.id
-                                                }
-                                            },
                                             onJoin: {
-                                                withAnimation(Motion.state) {
-                                                    expandedGameId = nil
-                                                }
                                                 Task { await viewModel.rsvpToGame(game) }
                                             },
                                             onView: {
@@ -150,7 +140,7 @@ struct HomeView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.stackBackground)
-            .navigationTitle(greeting)
+            .navigationTitle("Home")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif

@@ -106,10 +106,10 @@ struct RoundRobinDetailView: View {
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.stackCardWhite)
-                .cornerRadius(16)
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.black, lineWidth: 1))
-                .padding(.horizontal, 16)
+                .background(Color(.systemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius))
+                .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)
+                .padding(.horizontal, AppConstants.screenPadding)
 
                 // Player list
                 VStack(alignment: .leading, spacing: 8) {
@@ -226,12 +226,12 @@ struct RoundRobinDetailView: View {
                         }
                     }
                     .padding(12)
-                    .background(Color.stackCardWhite)
+                    .background(Color(.systemBackground))
                     .cornerRadius(12)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black.opacity(0.08), lineWidth: 1))
+                    .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur / 2, y: 1)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppConstants.screenPadding)
             .padding(.top, 12)
         }
     }
@@ -282,12 +282,12 @@ struct RoundRobinDetailView: View {
                         Spacer()
                     }
                     .padding(12)
-                    .background(Color.stackCardWhite)
+                    .background(Color(.systemBackground))
                     .cornerRadius(12)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black.opacity(0.08), lineWidth: 1))
+                    .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur / 2, y: 1)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppConstants.screenPadding)
             .padding(.top, 12)
         }
     }
@@ -351,12 +351,9 @@ private struct MatchCard: View {
                 }
             }
             .padding(12)
-            .background(match.hasScore ? Color.stackBadgeBg : Color.stackCardWhite)
+            .background(match.hasScore ? Color.stackBadgeBg : Color(.systemBackground))
             .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(match.hasScore ? Color.stackGreen.opacity(0.3) : Color.black.opacity(0.08), lineWidth: 1)
-            )
+            .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur / 2, y: 1)
         }
         .buttonStyle(.plain)
     }

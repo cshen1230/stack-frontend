@@ -78,22 +78,7 @@ struct DUPRConnectView: View {
                 }
             }
         }
-        .padding(18)
-        .background(Color.white)
-        .cornerRadius(14)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.black, lineWidth: 1)
-        )
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(Color.stackGreen)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.black, lineWidth: 1)
-                )
-                .offset(x: 3, y: 4)
-        )
+        .cardStyle()
     }
 
     private func connectDUPR() {

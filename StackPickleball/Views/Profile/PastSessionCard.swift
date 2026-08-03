@@ -84,21 +84,6 @@ struct PastSessionCard: View {
 
             Spacer()
         }
-        .padding(16)
-        .background(Color.stackCardWhite)
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.black, lineWidth: 1)
-        )
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(game.gameFormat.accentColor.opacity(0.5))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.black, lineWidth: 1)
-                )
-                .offset(x: 3, y: 4)
-        )
+        .cardStyle()
     }
 }

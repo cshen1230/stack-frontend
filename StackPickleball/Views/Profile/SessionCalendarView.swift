@@ -133,22 +133,7 @@ struct SessionCalendarView: View {
                 }
             }
         }
-        .padding(16)
-        .background(Color.white)
-        .cornerRadius(20)
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.black, lineWidth: 1)
-        )
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.stackGreen)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.black, lineWidth: 1)
-                )
-                .offset(x: 3, y: 4)
-        )
+        .cardStyle()
     }
 
     // MARK: - Day Cell
@@ -292,12 +277,9 @@ struct SessionCalendarView: View {
                 .foregroundColor(.stackSecondaryText)
         }
         .padding(12)
-        .background(Color.stackCardWhite)
+        .background(Color(.systemBackground))
         .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.black.opacity(0.08), lineWidth: 1)
-        )
+        .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur / 2, y: 1)
     }
 
     // MARK: - Helpers
