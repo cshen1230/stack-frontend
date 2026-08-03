@@ -29,7 +29,7 @@ struct LoginView: View {
                         .foregroundColor(.stackGreen)
 
                     Text("Your Pickleball Community")
-                        .font(.system(size: 17, weight: .regular))
+                        .font(AppFonts.headline())
                         .foregroundColor(.stackSecondaryText)
                 }
 
@@ -40,7 +40,7 @@ struct LoginView: View {
                     HStack(spacing: 12) {
                         Image(systemName: "envelope")
                             .font(.system(size: 16))
-                            .foregroundColor(Color(hex: "#9CA3AF"))
+                            .foregroundColor(.stackInputIcon)
                         TextField("Email", text: $viewModel.email)
                             .font(.system(size: 16))
                             .foregroundColor(.primary)
@@ -51,30 +51,22 @@ struct LoginView: View {
                             #endif
                     }
                     .padding()
-                    .background(Color.white)
-                    .cornerRadius(14)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(Color(hex: "#E5E7EB"), lineWidth: 1)
-                    )
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(AppConstants.buttonCornerRadius)
                     .colorScheme(.light)
 
                     HStack(spacing: 12) {
                         Image(systemName: "lock")
                             .font(.system(size: 16))
-                            .foregroundColor(Color(hex: "#9CA3AF"))
+                            .foregroundColor(.stackInputIcon)
                         SecureField("Password", text: $viewModel.password)
                             .font(.system(size: 16))
                             .foregroundColor(.primary)
                             .textContentType(.password)
                     }
                     .padding()
-                    .background(Color.white)
-                    .cornerRadius(14)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(Color(hex: "#E5E7EB"), lineWidth: 1)
-                    )
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(AppConstants.buttonCornerRadius)
                     .colorScheme(.light)
                 }
                 .padding(.horizontal, 24)
@@ -84,7 +76,7 @@ struct LoginView: View {
                 // Error message
                 if let error = viewModel.errorMessage {
                     Text(error)
-                        .font(.system(size: 14))
+                        .font(AppFonts.callout())
                         .foregroundColor(.red)
                         .padding(.horizontal, 24)
                         .padding(.top, 8)
@@ -100,7 +92,7 @@ struct LoginView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
                             .background(Color.stackGreen)
-                            .cornerRadius(14)
+                            .cornerRadius(AppConstants.buttonCornerRadius)
                     } else {
                         Text("Sign In")
                             .font(.system(size: 18, weight: .semibold))
@@ -108,7 +100,7 @@ struct LoginView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
                             .background(Color.stackGreen)
-                            .cornerRadius(14)
+                            .cornerRadius(AppConstants.buttonCornerRadius)
                     }
                 }
                 .buttonStyle(.plain)

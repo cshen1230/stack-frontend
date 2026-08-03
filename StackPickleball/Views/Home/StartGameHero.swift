@@ -8,6 +8,7 @@ import SwiftUI
 /// even in view — a tap on a slot that already works, or a button that opens the same sheet the
 /// drag does.
 struct StartGameHero: View {
+    let greeting: String
     let suggestions: [SessionSuggestion]
     /// True once we know whether there are suggestions, so the row doesn't flash empty.
     let isLoaded: Bool
@@ -15,17 +16,10 @@ struct StartGameHero: View {
     var onPick: (SessionSuggestion) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Get a game together")
-                    .font(.system(size: 26, weight: .bold))
-                    .foregroundColor(.primary)
-
-                Text(subtitle)
-                    .font(.system(size: 14))
-                    .foregroundColor(.stackSecondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+        VStack(alignment: .leading, spacing: 16) {
+            Text(greeting)
+                .font(AppFonts.pageTitle())
+                .foregroundColor(.primary)
 
             Button(action: onStart) {
                 HStack(spacing: 7) {
@@ -36,9 +30,9 @@ struct StartGameHero: View {
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+                .padding(.vertical, 16)
                 .background(Color.stackGreen)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .clipShape(RoundedRectangle(cornerRadius: AppConstants.buttonCornerRadius))
             }
             .buttonStyle(.plain)
 
@@ -46,16 +40,7 @@ struct StartGameHero: View {
                 suggestionRow
             }
         }
-        .padding(.horizontal, 16)
-    }
-
-    /// Says what to do when there's nothing to suggest, and what's on offer when there is.
-    private var subtitle: String {
-        guard isLoaded else { return "Finding times that work…" }
-        if suggestions.isEmpty {
-            return "Pick a time below and invite whoever you want to play with."
-        }
-        return "These times already work for people. Tap one, or pick your own below."
+        .padding(.horizontal, AppConstants.screenPadding)
     }
 
     private var suggestionRow: some View {
@@ -80,21 +65,15 @@ struct StartGameHero: View {
                             }
                             .foregroundColor(suggestion.friendCount > 0 ? .stackGreen : .stackSecondaryText)
                         }
-                        .padding(.horizontal, 13)
-                        .padding(.vertical, 10)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 11)
                         .background(
-                            RoundedRectangle(cornerRadius: 12).fill(Color.stackCardWhite)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(Color.stackBorder, lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground))
                         )
                     }
                     .buttonStyle(.plain)
                 }
             }
-            // The row can outrun the screen, unlike the week strip — it's a short list of
-            // offers, not a fixed set of columns that has to line up with anything.
             .padding(.horizontal, 1)
         }
         .scrollClipDisabled()

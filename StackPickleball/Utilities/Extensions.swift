@@ -7,14 +7,37 @@ extension View {
     func cardStyle() -> some View {
         self
             .padding(AppConstants.cardPadding)
-            .background(Color.white)
-            .cornerRadius(AppConstants.cardCornerRadius)
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius))
             .shadow(
                 color: .black.opacity(AppConstants.shadowOpacity),
                 radius: AppConstants.shadowBlur,
                 x: 0,
                 y: AppConstants.shadowYOffset
             )
+    }
+
+    /// Card with no shadow, just a thin separator border — for inline sections.
+    func sectionCard() -> some View {
+        self
+            .padding(AppConstants.cardPadding)
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius)
+                    .strokeBorder(Color(.separator), lineWidth: 0.5)
+            )
+    }
+
+    /// Full-width green CTA with large padding and rounded corners.
+    func primaryButton() -> some View {
+        self
+            .font(.system(size: 17, weight: .bold))
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(Color.stackGreen)
+            .clipShape(RoundedRectangle(cornerRadius: AppConstants.buttonCornerRadius))
     }
 
     func errorAlert(_ errorMessage: Binding<String?>) -> some View {

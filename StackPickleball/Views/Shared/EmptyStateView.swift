@@ -10,15 +10,15 @@ struct EmptyStateView: View {
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: icon)
-                .font(.system(size: 64))
-                .foregroundColor(Color(hex: "#757575"))
+                .font(.system(size: 56, weight: .light))
+                .foregroundColor(.stackSecondaryText)
 
             Text(title)
-                .font(.system(size: 20, weight: .bold))
+                .font(AppFonts.sectionTitle())
                 .foregroundColor(.primary)
 
             Text(message)
-                .font(.system(size: 16))
+                .font(AppFonts.body())
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
@@ -30,13 +30,13 @@ struct EmptyStateView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 12)
-                        .background(Color(hex: "#2D5016"))
-                        .cornerRadius(12)
+                        .background(Color.stackGreen)
+                        .cornerRadius(AppConstants.buttonCornerRadius)
                 }
                 .padding(.top, 8)
             }
         }
-        .padding(32)
+        .padding(AppConstants.sectionSpacing)
     }
 }
 

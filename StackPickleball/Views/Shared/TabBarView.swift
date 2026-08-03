@@ -28,7 +28,7 @@ struct TabBarView: View {
                 .badge(appState.pendingFriendRequestCount)
                 .tag(2)
         }
-        .accentColor(.stackGreen)
+        .tint(.stackGreen)
         .onChange(of: deepLinkRouter.pendingGameId) {
             if deepLinkRouter.pendingGameId != nil {
                 appState.selectedTab = 0

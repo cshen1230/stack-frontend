@@ -85,9 +85,6 @@ struct DayStrip: View {
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(enabled ? .stackGreen : .stackSecondaryText.opacity(0.35))
                 .frame(width: 32, height: 32)
-                .background(
-                    Circle().fill(enabled ? Color.stackGreen.opacity(0.1) : Color.clear)
-                )
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
@@ -145,12 +142,8 @@ struct DayStrip: View {
             // maxWidth rather than a fixed width: seven equal shares of whatever space there
             // is, which is what stops the row drifting off-centre on any given screen.
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            .padding(.vertical, 9)
             .background(chipBackground(isSelected: isSelected, isPast: isPast))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(borderColor(isSelected: isSelected, isPast: isPast), lineWidth: 1)
-            )
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
@@ -161,13 +154,8 @@ struct DayStrip: View {
 
     private func chipBackground(isSelected: Bool, isPast: Bool) -> some View {
         RoundedRectangle(cornerRadius: 12)
-            .fill(isSelected ? Color.stackGreen : Color.stackCardWhite)
+            .fill(isSelected ? Color.stackGreen : Color(.secondarySystemBackground))
             .opacity(isPast ? 0.5 : 1)
-    }
-
-    private func borderColor(isSelected: Bool, isPast: Bool) -> Color {
-        if isSelected { return .clear }
-        return isPast ? Color.stackBorder.opacity(0.4) : Color.stackBorder
     }
 
     private func labelColor(isSelected: Bool, isPast: Bool) -> Color {

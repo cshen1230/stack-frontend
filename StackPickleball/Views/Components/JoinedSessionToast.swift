@@ -26,7 +26,7 @@ struct JoinedSessionToast: View {
 
                 // Title
                 Text("You're In!")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(AppFonts.sectionTitle())
                     .foregroundColor(.primary)
 
                 // Session details
@@ -38,20 +38,20 @@ struct JoinedSessionToast: View {
 
                     HStack(spacing: 8) {
                         Label(game.gameFormat.displayName, systemImage: "sportscourt")
-                            .font(.system(size: 13))
+                            .font(AppFonts.subheadline())
                             .foregroundColor(.stackSecondaryText)
 
                         Text("·")
                             .foregroundColor(.stackSecondaryText)
 
                         Text("\(game.spotsFilled)/\(game.spotsAvailable) spots")
-                            .font(.system(size: 13))
+                            .font(AppFonts.subheadline())
                             .foregroundColor(.stackSecondaryText)
                     }
 
                     if let location = game.locationName {
                         Label(location, systemImage: "mappin")
-                            .font(.system(size: 13))
+                            .font(AppFonts.subheadline())
                             .foregroundColor(.stackSecondaryText)
                             .lineLimit(1)
                     }
@@ -59,19 +59,15 @@ struct JoinedSessionToast: View {
 
                 // Hint
                 Text("Check Sessions tab to view details")
-                    .font(.system(size: 12))
-                    .foregroundColor(.stackTimestamp)
+                    .font(AppFonts.caption())
+                    .foregroundColor(.stackSecondaryText)
                     .padding(.top, 2)
             }
             .padding(.vertical, 24)
             .padding(.horizontal, 28)
             .frame(maxWidth: .infinity)
-            .background(Color.stackCardWhite)
-            .cornerRadius(20)
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.stackGreen.opacity(0.3), lineWidth: 1.5)
-            )
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius))
             .shadow(color: .black.opacity(0.12), radius: 20, y: -4)
             .padding(.horizontal, 20)
             .padding(.bottom, 24)

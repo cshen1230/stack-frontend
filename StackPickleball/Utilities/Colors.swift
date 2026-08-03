@@ -1,24 +1,28 @@
 import SwiftUI
 
 extension Color {
-    static let stackGreen = Color(hex: "#2D5016")
-    static let stackBackground = Color(hex: "#F2F4F0")
-    static let stackCardWhite = Color.white
-    static let stackSecondaryText = Color(hex: "#6B7280")
-    static let stackBorder = Color(hex: "#E5E7EB")
+    static let stackGreen = Color(hex: "#34A853")
+    static let stackBackground = Color(hex: "#F7F7F5")
+    static let stackCardWhite = Color(.systemBackground)
+    static let stackSecondaryText = Color(.secondaryLabel)
+    static let stackBorder = Color(.separator)
     static let stackWinGreen = Color(hex: "#D1FAE5")
     static let stackWinIcon = Color(hex: "#059669")
     static let stackLossRed = Color(hex: "#FEE2E2")
     static let stackLossIcon = Color(hex: "#DC2626")
-    static let stackFilterActive = Color(hex: "#2D5016")
-    static let stackFilterInactive = Color(hex: "#F3F4F6")
-    static let stackDUPRBadge = Color(hex: "#2D5016")
-    static let stackInputIcon = Color(hex: "#9CA3AF")
-    static let stackTimestamp = Color(hex: "#9CA3AF")
-    static let stackGameDetailBg = Color(hex: "#F9FAFB")
+    static let stackFilterActive = Color.stackGreen
+    static let stackFilterInactive = Color(.tertiarySystemFill)
+    static let stackDUPRBadge = Color.stackGreen
+    static let stackInputIcon = Color(.secondaryLabel)
+    static let stackTimestamp = Color(.secondaryLabel)
+    static let stackGameDetailBg = Color(.secondarySystemBackground)
     static let stackCourtPlaceholder = Color(hex: "#C4783A")
-    static let stackBadgeBg = Color(hex: "#E8F5E9")
-    static let stackLoginGradientEnd = Color(hex: "#F1F8E9")
+    static let stackBadgeBg = Color.stackGreen.opacity(0.1)
+    static let stackLoginGradientEnd = Color.stackGreen.opacity(0.06)
+
+    // New tokens
+    static let stackAccentLight = Color.stackGreen.opacity(0.08)
+    static let stackCardShadow = Color.black.opacity(0.04)
 
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)

@@ -103,9 +103,6 @@ struct DayPlannerBoard: View {
                 }
             }
 
-            Divider()
-                .overlay(Color.stackBorder)
-
             DayTimelineView(
                 day: selectedDay,
                 slots: slotsOnSelectedDay,
@@ -138,17 +135,8 @@ struct DayPlannerBoard: View {
                 FriendAvailabilitySheet(slot: slot)
             }
         }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.stackCardWhite)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .strokeBorder(Color.stackBorder, lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.04), radius: 10, y: 3)
-        .padding(.horizontal, 16)
+        .cardStyle()
+        .padding(.horizontal, AppConstants.screenPadding)
         .task(id: appState.currentUser?.id) {
             guard let userId = appState.currentUser?.id else { return }
             await scheduleViewModel.loadMySchedule(userId: userId)
@@ -215,7 +203,7 @@ struct DayPlannerBoard: View {
         if schedulesByWeekday.isEmpty {
             HStack(spacing: 5) {
                 Text("No friends have shared when they play.")
-                    .font(.system(size: 12))
+                    .font(AppFonts.caption())
                     .foregroundColor(.stackSecondaryText)
 
                 Button(action: onAddFriends) {
@@ -228,13 +216,13 @@ struct DayPlannerBoard: View {
             .fixedSize(horizontal: false, vertical: true)
         } else if let booked = bookedLabel {
             Text(booked)
-                .font(.system(size: 12))
+                .font(AppFonts.caption())
                 .foregroundColor(.stackSecondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         } else if friendSlots.isEmpty {
             HStack(spacing: 5) {
                 Text("Nobody's free \(dayName).")
-                    .font(.system(size: 12))
+                    .font(AppFonts.caption())
                     .foregroundColor(.stackSecondaryText)
 
                 // Pointing at a day that works beats telling someone this one doesn't.
@@ -253,7 +241,7 @@ struct DayPlannerBoard: View {
         } else {
             let count = Set(friendSlots.map(\.userId)).count
             Text("\(count) friend\(count == 1 ? "" : "s") free · hold and drag to pick a time")
-                .font(.system(size: 12))
+                .font(AppFonts.caption())
                 .foregroundColor(.stackSecondaryText)
                 .fixedSize(horizontal: false, vertical: true)
         }

@@ -17,11 +17,7 @@ struct GameCardView: View {
                 if isHost {
                     Text("Host")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.orange)
-                        .cornerRadius(4)
+                        .foregroundColor(.stackGreen)
                 }
 
                 HStack(spacing: 5) {
@@ -84,10 +80,10 @@ struct GameCardView: View {
                     Button(action: onView) {
                         Text("View")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.stackGreen)
+                            .foregroundColor(.primary)
                             .frame(width: 80)
                             .padding(.vertical, 10)
-                            .background(Color.stackGreen.opacity(0.15))
+                            .background(Color(.tertiarySystemFill))
                             .cornerRadius(10)
                     }
 
@@ -116,24 +112,7 @@ struct GameCardView: View {
             }
             .frame(width: 90, height: 80)
         }
-        .padding(16)
-        .background(Color.stackCardWhite)
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.black, lineWidth: 1)
-        )
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(game.gameFormat.accentColor)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.black, lineWidth: 1)
-                )
-                .offset(x: isExpanded ? 3 : 0, y: isExpanded ? 4 : 0)
-                .opacity(isExpanded ? 1 : 0)
-        )
-        .scaleEffect(isExpanded ? 1.02 : 1.0)
+        .cardStyle()
         .contentShape(Rectangle())
         .onTapGesture {
             onTap()
@@ -199,7 +178,7 @@ struct AvatarClusterView: View {
                     .frame(width: 30, height: 30)
                     .background(Color(.systemGray5))
                     .clipShape(Circle())
-                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                    .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 2))
                     .offset(x: 28, y: 24)
             }
         }
@@ -221,7 +200,7 @@ struct AvatarClusterView: View {
         }
         .frame(width: size, height: size)
         .clipShape(Circle())
-        .overlay(Circle().stroke(Color.white, lineWidth: 2))
+        .overlay(Circle().stroke(Color(.systemBackground), lineWidth: 2))
     }
 
     private func placeholderCircle(size: CGFloat) -> some View {

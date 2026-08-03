@@ -20,34 +20,47 @@ struct HomeView: View {
 
     private var currentUserId: UUID? { appState.currentUser?.id }
 
+    /// Time-of-day greeting.
+    private var greeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        let firstName = appState.currentUser?.displayName.components(separatedBy: " ").first ?? ""
+        let timeOfDay: String
+        switch hour {
+        case 0..<12: timeOfDay = "Good morning"
+        case 12..<17: timeOfDay = "Good afternoon"
+        default: timeOfDay = "Good evening"
+        }
+        return firstName.isEmpty ? timeOfDay : "\(timeOfDay), \(firstName)"
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 if viewModel.isLoading && viewModel.nearbyGames.isEmpty && viewModel.schedulesByWeekday.isEmpty {
-                    VStack(spacing: 22) {
+                    VStack(spacing: AppConstants.sectionSpacing) {
                         SkeletonHero()
                         SkeletonPlanner()
                         SkeletonList(count: 2) { SkeletonCard() }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppConstants.screenPadding)
                     }
                     .padding(.top, 10)
                 } else {
-                    VStack(spacing: 22) {
+                    VStack(spacing: AppConstants.sectionSpacing) {
+                        // 1. GREETING + PRIMARY CTA
                         StartGameHero(
+                            greeting: greeting,
                             suggestions: viewModel.suggestions,
                             isLoaded: !viewModel.isLoading,
                             onStart: { requestedRange = SessionSuggestion.defaultRange() },
                             onPick: { requestedRange = $0.range }
                         )
 
-                        // The calendar is a way to refine the answer, not the question itself —
-                        // so it sits under the button rather than being the first thing on the
-                        // screen, and says what it's for.
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Or pick your own time")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(.stackSecondaryText)
-                                .padding(.horizontal, 16)
+                        // 2. YOUR SCHEDULE
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("Your schedule")
+                                .font(AppFonts.sectionTitle())
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, AppConstants.screenPadding)
 
                             DayPlannerBoard(
                                 schedulesByWeekday: viewModel.schedulesByWeekday,
@@ -71,14 +84,27 @@ struct HomeView: View {
                             )
                         }
 
-                        // Open Games Near You
+                        // 3. GAMES NEAR YOU
                         if !viewModel.nearbyGames.isEmpty {
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("Games near you")
-                                    .font(.system(size: 18, weight: .bold))
-                                    .padding(.horizontal, 16)
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack {
+                                    Text("Games near you")
+                                        .font(AppFonts.sectionTitle())
+                                        .foregroundColor(.primary)
 
-                                LazyVStack(spacing: 12) {
+                                    Spacer()
+
+                                    Button {
+                                        showingMap = true
+                                    } label: {
+                                        Image(systemName: "map")
+                                            .font(.system(size: 17, weight: .medium))
+                                            .foregroundColor(.stackSecondaryText)
+                                    }
+                                }
+                                .padding(.horizontal, AppConstants.screenPadding)
+
+                                LazyVStack(spacing: AppConstants.cardSpacing) {
                                     ForEach(viewModel.nearbyGames) { game in
                                         GameCardView(
                                             game: game,
@@ -104,33 +130,9 @@ struct HomeView: View {
                                         .growsInto(game.id, in: cardTransition)
                                     }
                                 }
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppConstants.screenPadding)
                             }
                         }
-
-                        // Quick Actions
-                        HStack(spacing: 12) {
-                            Button {
-                                appState.selectedTab = 1
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "calendar")
-                                        .font(.system(size: 15))
-                                    Text("See when friends play")
-                                        .font(.system(size: 14, weight: .semibold))
-                                }
-                                .foregroundColor(.stackGreen)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                                .background(Color.stackGreen.opacity(0.1))
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.stackGreen.opacity(0.3), lineWidth: 1)
-                                )
-                            }
-                        }
-                        .padding(.horizontal, 16)
 
                         // Empty state when no friends ready and no games
                         if viewModel.schedulesByWeekday.isEmpty && viewModel.nearbyGames.isEmpty {
@@ -139,38 +141,16 @@ struct HomeView: View {
                                 title: "Nobody's playing yet",
                                 message: "Add friends to see when they're free, or start a game anyway and invite people to it."
                             )
-                            .padding(.top, 20)
+                            .padding(.top, 8)
                         }
                     }
                     .padding(.top, 10)
-                    .padding(.bottom, 16)
-                }
-            }
-            // Floating Map button
-            .overlay(alignment: .bottom) {
-                if !viewModel.nearbyGames.isEmpty {
-                    Button {
-                        showingMap = true
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "map.fill")
-                                .font(.system(size: 14, weight: .semibold))
-                            Text("Map")
-                                .font(.system(size: 14, weight: .semibold))
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(Color.stackGreen)
-                        .clipShape(Capsule())
-                        .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
-                    }
-                    .padding(.bottom, 16)
+                    .padding(.bottom, 20)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.stackBackground)
-            .navigationTitle("Home")
+            .navigationTitle(greeting)
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif

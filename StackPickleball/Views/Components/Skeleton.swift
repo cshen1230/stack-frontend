@@ -9,7 +9,7 @@ struct SkeletonBlock: View {
 
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(Color.stackSecondaryText.opacity(0.13))
+            .fill(Color(.quaternaryLabel))
             .frame(width: width, height: height)
             .frame(maxWidth: width == nil ? .infinity : nil, alignment: .leading)
     }
@@ -20,7 +20,7 @@ struct SkeletonCircle: View {
 
     var body: some View {
         Circle()
-            .fill(Color.stackSecondaryText.opacity(0.13))
+            .fill(Color(.quaternaryLabel))
             .frame(width: size, height: size)
     }
 }
@@ -111,12 +111,13 @@ struct SkeletonCard: View {
                 SkeletonBlock(width: 76, height: 28, cornerRadius: 9)
             }
         }
-        .padding(14)
-        .background(Color.stackCardWhite)
-        .cornerRadius(14)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.stackBorder, lineWidth: 1)
+        .padding(AppConstants.cardPadding)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius))
+        .shadow(
+            color: .black.opacity(AppConstants.shadowOpacity),
+            radius: AppConstants.shadowBlur,
+            y: AppConstants.shadowYOffset
         )
     }
 }
@@ -160,20 +161,17 @@ struct SkeletonMessages: View {
 /// The Home hero: headline, primary button, and a couple of suggestion chips.
 struct SkeletonHero: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            VStack(alignment: .leading, spacing: 7) {
-                SkeletonBlock(width: 240, height: 24, cornerRadius: 7)
-                SkeletonBlock(width: 280, height: 13)
-            }
+        VStack(alignment: .leading, spacing: 16) {
+            SkeletonBlock(width: 260, height: 30, cornerRadius: 8)
 
-            SkeletonBlock(height: 48, cornerRadius: 14)
+            SkeletonBlock(height: 52, cornerRadius: AppConstants.buttonCornerRadius)
 
             HStack(spacing: 8) {
-                SkeletonBlock(width: 140, height: 52, cornerRadius: 12)
-                SkeletonBlock(width: 140, height: 52, cornerRadius: 12)
+                SkeletonBlock(width: 140, height: 48, cornerRadius: 12)
+                SkeletonBlock(width: 140, height: 48, cornerRadius: 12)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppConstants.screenPadding)
         .skeleton()
     }
 }
@@ -218,7 +216,7 @@ struct SkeletonPlanner: View {
                         ForEach(0..<visibleHours, id: \.self) { _ in
                             VStack(spacing: 0) {
                                 Rectangle()
-                                    .fill(Color.stackBorder.opacity(0.7))
+                                    .fill(Color(.separator).opacity(0.5))
                                     .frame(height: 1)
                                 Spacer(minLength: 0)
                             }
@@ -236,16 +234,8 @@ struct SkeletonPlanner: View {
                 }
             }
         }
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.stackCardWhite)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .strokeBorder(Color.stackBorder, lineWidth: 1)
-        )
-        .padding(.horizontal, 16)
+        .cardStyle()
+        .padding(.horizontal, AppConstants.screenPadding)
         .skeleton()
     }
 }

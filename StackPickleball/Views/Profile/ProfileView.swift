@@ -20,7 +20,7 @@ struct ProfileView: View {
                             SkeletonBlock(height: 150, cornerRadius: 18)
                             SkeletonList(count: 3) { SkeletonRow() }
                         }
-                        .padding(16)
+                        .padding(AppConstants.screenPadding)
                         .skeleton()
                     }
                 } else if let user = viewModel.user {
@@ -46,8 +46,8 @@ struct ProfileView: View {
                                 // Calendar section
                                 VStack(alignment: .leading, spacing: 12) {
                                     Text("Past Sessions")
-                                        .font(.system(size: 20, weight: .bold))
-                                        .foregroundColor(.black)
+                                        .font(AppFonts.sectionTitle())
+                                        .foregroundColor(.primary)
                                         .padding(.leading, 4)
 
                                     SessionCalendarView(
@@ -67,28 +67,11 @@ struct ProfileView: View {
                                             .font(.system(size: 15))
                                     }
                                     .foregroundColor(.red)
-                                    .padding(.horizontal, 32)
-                                    .padding(.vertical, 14)
-                                    .background(Color.white)
-                                    .cornerRadius(14)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .stroke(Color.black, lineWidth: 1)
-                                    )
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .fill(Color.red)
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 14)
-                                                    .stroke(Color.black, lineWidth: 1)
-                                            )
-                                            .offset(x: 3, y: 4)
-                                    )
                                 }
 
                                 Spacer(minLength: 24)
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppConstants.screenPadding)
                             .padding(.top, 16)
                         }
                     }
@@ -151,13 +134,13 @@ struct ProfileView: View {
                 // Display name
                 Text(user.displayName)
                     .font(.system(size: 26, weight: .bold))
-                    .foregroundColor(.black)
+                    .foregroundColor(.primary)
 
                 // Username
                 Button(action: { showingEditProfile = true }) {
                     HStack(spacing: 4) {
                         Text("@\(user.username)")
-                            .font(.system(size: 15))
+                            .font(AppFonts.body())
                             .foregroundColor(.stackSecondaryText)
                         Image(systemName: "chevron.right")
                             .font(.system(size: 12, weight: .medium))
@@ -229,7 +212,7 @@ struct ProfileView: View {
                     )
 
                     Rectangle()
-                        .fill(Color.stackBorder)
+                        .fill(Color(.separator))
                         .frame(width: 1, height: 36)
 
                     NavigationLink {
@@ -248,20 +231,12 @@ struct ProfileView: View {
             .frame(maxWidth: .infinity)
             .padding(.top, 72)
             .padding(.bottom, 20)
-            .background(Color.white)
-            .cornerRadius(20)
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(Color.black, lineWidth: 1)
-            )
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.stackGreen)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.black, lineWidth: 1)
-                    )
-                    .offset(x: 3, y: 4)
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius))
+            .shadow(
+                color: .black.opacity(AppConstants.shadowOpacity),
+                radius: AppConstants.shadowBlur,
+                y: AppConstants.shadowYOffset
             )
             .padding(.top, 60)
 
@@ -297,7 +272,7 @@ struct ProfileView: View {
                 .foregroundColor(.stackSecondaryText)
             Text(value)
                 .font(.system(size: 22, weight: .bold))
-                .foregroundColor(.black)
+                .foregroundColor(.primary)
         }
         .frame(maxWidth: .infinity)
     }
@@ -318,8 +293,8 @@ struct ProfileView: View {
     private func friendsSection(proxy: ScrollViewProxy) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Friends")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.black)
+                .font(AppFonts.sectionTitle())
+                .foregroundColor(.primary)
                 .padding(.leading, 4)
 
             friendsQuickActionsCard(proxy: proxy)
@@ -328,7 +303,7 @@ struct ProfileView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Friend Requests")
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.black)
+                        .foregroundColor(.primary)
                         .padding(.top, 6)
                         .id(friendRequestsScrollId)
 
@@ -338,22 +313,7 @@ struct ProfileView: View {
                         }
                     }
                 }
-                .padding(14)
-                .background(Color.white)
-                .cornerRadius(18)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color.black, lineWidth: 1)
-                )
-                .background(
-                    RoundedRectangle(cornerRadius: 18)
-                        .fill(Color.stackGreen)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 18)
-                                .stroke(Color.black, lineWidth: 1)
-                        )
-                        .offset(x: 3, y: 4)
-                )
+                .cardStyle()
             }
         }
     }
@@ -428,20 +388,12 @@ struct ProfileView: View {
             }
             .buttonStyle(.plain)
         }
-        .background(Color.white)
-        .cornerRadius(18)
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.black, lineWidth: 1)
-        )
-        .background(
-            RoundedRectangle(cornerRadius: 18)
-                .fill(Color.stackGreen)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(Color.black, lineWidth: 1)
-                )
-                .offset(x: 3, y: 4)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius))
+        .shadow(
+            color: .black.opacity(AppConstants.shadowOpacity),
+            radius: AppConstants.shadowBlur,
+            y: AppConstants.shadowYOffset
         )
     }
 
@@ -464,9 +416,9 @@ struct ProfileView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.black)
+                    .foregroundColor(.primary)
                 Text(subtitle)
-                    .font(.system(size: 13))
+                    .font(AppFonts.subheadline())
                     .foregroundColor(.stackSecondaryText)
             }
 
@@ -495,7 +447,7 @@ struct ProfileView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(request.displayName)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.black)
+                    .foregroundColor(.primary)
 
                 if let dupr = request.duprRating {
                     HStack(spacing: 3) {
@@ -505,12 +457,12 @@ struct ProfileView: View {
                                 .foregroundColor(.stackGreen)
                         }
                         Text("DUPR \(String(format: "%.1f", dupr))")
-                            .font(.system(size: 13))
+                            .font(AppFonts.subheadline())
                             .foregroundColor(.stackGreen)
                     }
                 } else {
                     Text("@\(request.username)")
-                        .font(.system(size: 13))
+                        .font(AppFonts.subheadline())
                         .foregroundColor(.stackSecondaryText)
                 }
             }
@@ -545,7 +497,7 @@ struct ProfileView: View {
             }
         }
         .padding(12)
-        .background(Color.stackGameDetailBg)
+        .background(Color(.secondarySystemBackground))
         .cornerRadius(14)
     }
 

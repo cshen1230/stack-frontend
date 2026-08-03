@@ -24,7 +24,7 @@ struct SessionDraftSheet: View {
                     locationRow
                     invitesSection
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppConstants.screenPadding)
                 .padding(.top, 4)
                 .padding(.bottom, 100)
             }
@@ -65,7 +65,7 @@ struct SessionDraftSheet: View {
                 .font(.system(size: 30, weight: .bold))
                 .foregroundColor(.stackGreen)
             Text(viewModel.dayLabel)
-                .font(.system(size: 15))
+                .font(AppFonts.body())
                 .foregroundColor(.stackSecondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -94,12 +94,8 @@ struct SessionDraftSheet: View {
                                 .foregroundColor(viewModel.gameFormat == format ? .white : .primary)
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 8)
-                                .background(viewModel.gameFormat == format ? Color.stackGreen : Color.stackCardWhite)
+                                .background(viewModel.gameFormat == format ? Color.stackGreen : Color(.secondarySystemBackground))
                                 .cornerRadius(9)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 9)
-                                        .stroke(viewModel.gameFormat == format ? Color.clear : Color.stackBorder, lineWidth: 1)
-                                )
                         }
                     }
                 }
@@ -107,7 +103,7 @@ struct SessionDraftSheet: View {
 
             if viewModel.isRoundRobin {
                 Stepper("Rounds: \(viewModel.numRounds)", value: $viewModel.numRounds, in: 1...30)
-                    .font(.system(size: 15))
+                    .font(AppFonts.body())
             }
         }
         .onChange(of: viewModel.sessionType) {
@@ -141,7 +137,7 @@ struct SessionDraftSheet: View {
                     .foregroundColor(.stackSecondaryText)
             }
             .padding(14)
-            .background(Color.stackCardWhite)
+            .background(Color(.systemBackground))
             .cornerRadius(12)
         }
         .buttonStyle(.plain)
@@ -163,7 +159,7 @@ struct SessionDraftSheet: View {
                         )
                     }
                 }
-                .background(Color.stackCardWhite)
+                .background(Color(.systemBackground))
                 .cornerRadius(12)
             }
 
@@ -174,14 +170,14 @@ struct SessionDraftSheet: View {
                     .font(.system(size: 14))
                     .foregroundColor(.stackSecondaryText)
                 TextField("Search players by name", text: $viewModel.searchQuery)
-                    .font(.system(size: 15))
+                    .font(AppFonts.body())
                     .autocorrectionDisabled()
                 if viewModel.isSearching {
                     ProgressView().controlSize(.small)
                 }
             }
             .padding(12)
-            .background(Color.stackCardWhite)
+            .background(Color(.systemBackground))
             .cornerRadius(12)
             .onChange(of: viewModel.searchQuery) {
                 searchTask?.cancel()
@@ -197,7 +193,7 @@ struct SessionDraftSheet: View {
                 Text(viewModel.searchQuery.isEmpty
                      ? "Add friends to invite them in one tap."
                      : "No players found.")
-                    .font(.system(size: 14))
+                    .font(AppFonts.callout())
                     .foregroundColor(.stackSecondaryText)
                     .padding(.vertical, 8)
             } else {
@@ -206,7 +202,7 @@ struct SessionDraftSheet: View {
                         inviteRow(id: row.id, name: row.name, avatarUrl: row.avatarUrl, detail: row.detail)
                     }
                 }
-                .background(Color.stackCardWhite)
+                .background(Color(.systemBackground))
                 .cornerRadius(12)
             }
 
@@ -216,19 +212,19 @@ struct SessionDraftSheet: View {
             VStack(spacing: 8) {
                 HStack(spacing: 8) {
                     TextField("Name", text: $viewModel.currentSMSEntry.name)
-                        .font(.system(size: 15))
+                        .font(AppFonts.body())
                         .textContentType(.name)
                         .autocorrectionDisabled()
                         .padding(10)
-                        .background(Color.stackCardWhite)
+                        .background(Color(.systemBackground))
                         .cornerRadius(10)
 
                     TextField("Phone", text: $viewModel.currentSMSEntry.phoneNumber)
-                        .font(.system(size: 15))
+                        .font(AppFonts.body())
                         .textContentType(.telephoneNumber)
                         .keyboardType(.phonePad)
                         .padding(10)
-                        .background(Color.stackCardWhite)
+                        .background(Color(.systemBackground))
                         .cornerRadius(10)
 
                     Button {
@@ -258,7 +254,7 @@ struct SessionDraftSheet: View {
                                         .foregroundColor(.primary)
                                         .lineLimit(1)
                                     Text(entry.phoneNumber)
-                                        .font(.system(size: 12))
+                                        .font(AppFonts.caption())
                                         .foregroundColor(.stackSecondaryText)
                                         .lineLimit(1)
                                 }
@@ -279,7 +275,7 @@ struct SessionDraftSheet: View {
                             .padding(.vertical, 10)
                         }
                     }
-                    .background(Color.stackCardWhite)
+                    .background(Color(.systemBackground))
                     .cornerRadius(12)
                 }
             }
@@ -328,7 +324,7 @@ struct SessionDraftSheet: View {
                         .foregroundColor(.primary)
                         .lineLimit(1)
                     Text(detail)
-                        .font(.system(size: 12))
+                        .font(AppFonts.caption())
                         .foregroundColor(.stackSecondaryText)
                         .lineLimit(1)
                 }
@@ -362,16 +358,11 @@ struct SessionDraftSheet: View {
                     ProgressView().tint(.white)
                 }
                 Text(createTitle)
-                    .font(.system(size: 17, weight: .bold))
             }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(Color.stackGreen)
-            .cornerRadius(14)
+            .primaryButton()
         }
         .disabled(viewModel.isCreating)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppConstants.screenPadding)
         .padding(.bottom, 8)
         .background(.ultraThinMaterial)
     }
