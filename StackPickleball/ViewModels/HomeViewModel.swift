@@ -15,6 +15,7 @@ class HomeViewModel {
     /// own copy because it also edits them.
     private var mySchedule: [UserSchedule] = []
     var joinedGameIds: Set<UUID> = []
+    var suggestedPlayTime: SuggestedPlayTime?
     var isLoading = false
     var errorMessage: String?
     var joinedGame: Game?
@@ -43,6 +44,7 @@ class HomeViewModel {
                 async let fetchedIds = GameService.myJoinedGameIds(userId: userId)
                 async let fetchedMine = MessageService.myActiveSessions(userId: userId)
                 async let fetchedOwnTimes = ScheduleService.getMySchedule(userId: userId)
+                async let fetchedSuggestions = GameService.suggestedPlayTimes(userId: userId)
 
                 let allGames = try await fetchedGames
                 let joined = try await fetchedIds
@@ -52,6 +54,7 @@ class HomeViewModel {
                 schedulesByWeekday = try await fetchedSchedules
                 mySessions = try await fetchedMine
                 mySchedule = (try? await fetchedOwnTimes) ?? []
+                suggestedPlayTime = try? await fetchedSuggestions.first
 
                 suggestions = SessionSuggestion.best(
                     friendSchedules: schedulesByWeekday,

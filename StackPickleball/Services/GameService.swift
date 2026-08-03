@@ -229,6 +229,17 @@ enum GameService {
         ).execute().value
     }
 
+    /// Top play-time slots from history, e.g. "Thursdays at 6 PM (7 times)".
+    static func suggestedPlayTimes(userId: UUID) async throws -> [SuggestedPlayTime] {
+        try await supabase.rpc(
+            "suggested_play_times",
+            params: [
+                "p_user_id": userId.uuidString,
+                "p_timezone": TimeZone.current.identifier
+            ]
+        ).execute().value
+    }
+
     /// Returns the set of game IDs where the given user is a confirmed participant.
     static func myJoinedGameIds(userId: UUID) async throws -> Set<UUID> {
         let participants: [GameParticipant] = try await supabase

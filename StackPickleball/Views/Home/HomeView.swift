@@ -52,6 +52,7 @@ struct HomeView: View {
                             DayPlannerBoard(
                                 schedulesByWeekday: viewModel.schedulesByWeekday,
                                 mySessions: viewModel.mySessions,
+                                suggestedPlayTime: viewModel.suggestedPlayTime,
                                 onCreated: { info in
                                     createdSessionInfo = info
                                     Task {

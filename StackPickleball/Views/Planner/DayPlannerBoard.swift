@@ -9,6 +9,7 @@ struct DayPlannerBoard: View {
     let schedulesByWeekday: [Int: [FriendScheduleRow]]
     /// Sessions you're already committed to, drawn as blocks on the day they fall on.
     var mySessions: [Game] = []
+    var suggestedPlayTime: SuggestedPlayTime?
     var onCreated: (CreatedSessionInfo) -> Void
     /// Set from outside to open the draft on a given slot — how the hero's button and its
     /// suggestion chips create a game. Routed through here rather than duplicated so there is
@@ -73,6 +74,12 @@ struct DayPlannerBoard: View {
                 selectedDay: $selectedDay,
                 playedWeekdays: playedWeekdays
             )
+
+            if let suggestion = suggestedPlayTime {
+                SuggestedTimeCard(suggestion: suggestion) {
+                    applySuggestion(suggestion)
+                }
+            }
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 status
@@ -275,5 +282,12 @@ struct DayPlannerBoard: View {
                   played.contains(calendar.component(.weekday, from: day)) else { return nil }
             return day
         }.first
+    }
+
+    /// Jumps the planner to the suggested slot and opens a draft for it.
+    private func applySuggestion(_ suggestion: SuggestedPlayTime) {
+        let target = suggestion.nextOccurrence()
+        let end = calendar.date(byAdding: .minute, value: 90, to: target)!
+        requestedRange = target...end
     }
 }
