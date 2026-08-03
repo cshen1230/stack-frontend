@@ -30,13 +30,22 @@ struct SessionDraftSheet: View {
             }
             .background(Color.stackBackground)
             .safeAreaInset(edge: .bottom) { createBar }
-            .navigationTitle("New Session")
+            .navigationTitle("New game")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    // A symbol, not the word "Cancel". This slot renders inside a circular
+                    // container, which a text label can only lose a fight with — it came out as
+                    // a white circle reading "Ca…". A close glyph is what the shape is for.
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .accessibilityLabel("Cancel")
                 }
             }
             .sheet(isPresented: $showingLocationPicker) {
@@ -54,7 +63,9 @@ struct SessionDraftSheet: View {
             }
             .errorAlert($viewModel.errorMessage)
         }
-        .presentationDetents([.large])
+        // No explicit detents: a sheet without them is already full height, and pinning one
+        // constrains the zoom's interactive dismiss — the drag-down that should shrink the sheet
+        // back into the block it came from.
     }
 
     // MARK: - Time

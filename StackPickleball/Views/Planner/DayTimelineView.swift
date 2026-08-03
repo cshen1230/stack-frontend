@@ -17,6 +17,9 @@ struct DayTimelineView: View {
     /// that plans a session, so the two gestures don't collide.
     var onFriendTapped: (FriendAvailability) -> Void = { _ in }
     var onSessionTapped: (Game) -> Void = { _ in }
+    /// Ties the drawn block to the draft sheet, so the sheet grows out of the slot you chose
+    /// rather than sliding up from the bottom of the screen with no stated origin.
+    var draftTransition: Namespace.ID?
 
     private let hourHeight: CGFloat = 50
     private let gutterWidth: CGFloat = 44
@@ -338,6 +341,11 @@ struct DayTimelineView: View {
             .offset(y: CGFloat(top) / 60 * hourHeight)
             .allowsHitTesting(false)
             .animation(Motion.transition, value: confirmedInfo != nil)
+            // The source is this block, not the timeline around it. Anchored on the whole grid
+            // the zoom had nothing to converge on — a source the size of the screen expanding to
+            // a sheet the size of the screen is indistinguishable from no transition at all,
+            // which is why it read as an ordinary slide up from the bottom.
+            .draftSource(draftTransition)
         }
     }
 
@@ -473,5 +481,18 @@ private struct AvailabilityBandView: View {
 
     private var initial: String {
         String(band.slot.shortName.prefix(1)).uppercased()
+    }
+}
+
+
+private extension View {
+    /// `growsInto` needs a namespace; the timeline is used in places that don't have one.
+    @ViewBuilder
+    func draftSource(_ namespace: Namespace.ID?) -> some View {
+        if let namespace {
+            growsInto("draft", in: namespace)
+        } else {
+            self
+        }
     }
 }

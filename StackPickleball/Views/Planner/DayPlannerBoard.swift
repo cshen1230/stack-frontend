@@ -126,9 +126,9 @@ struct DayPlannerBoard: View {
                         selectedFriend = slot
                     }
                 },
-                onSessionTapped: onSessionTapped
+                onSessionTapped: onSessionTapped,
+                draftTransition: draftTransition
             )
-            .growsInto("draft", in: draftTransition)
             // Attached to the timeline rather than the root so it doesn't contend with the
             // draft sheet below — stacking two presentations on one view is unreliable.
             .sheet(item: $selectedFriend) { slot in
