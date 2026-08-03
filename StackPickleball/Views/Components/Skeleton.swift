@@ -157,6 +157,27 @@ struct SkeletonMessages: View {
     }
 }
 
+/// The Home hero: headline, primary button, and a couple of suggestion chips.
+struct SkeletonHero: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 7) {
+                SkeletonBlock(width: 240, height: 24, cornerRadius: 7)
+                SkeletonBlock(width: 280, height: 13)
+            }
+
+            SkeletonBlock(height: 48, cornerRadius: 14)
+
+            HStack(spacing: 8) {
+                SkeletonBlock(width: 140, height: 52, cornerRadius: 12)
+                SkeletonBlock(width: 140, height: 52, cornerRadius: 12)
+            }
+        }
+        .padding(.horizontal, 16)
+        .skeleton()
+    }
+}
+
 /// The planner: day chips over an hour grid with a couple of bands.
 struct SkeletonPlanner: View {
     private let hourHeight: CGFloat = 52

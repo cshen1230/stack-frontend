@@ -18,37 +18,67 @@ struct DayTimelineView: View {
     var onFriendTapped: (FriendAvailability) -> Void = { _ in }
     var onSessionTapped: (Game) -> Void = { _ in }
 
-    private let hourHeight: CGFloat = 52
+    private let hourHeight: CGFloat = 50
     private let gutterWidth: CGFloat = 44
+
+    /// Set once the reader asks for the whole day, which turns the trimming off for good.
+    @State private var showingAllHours = false
+
+    /// The hours drawn. Trimmed to what's on the day so the grid stays a control on the page
+    /// rather than a page of its own — with a way out, because a window that quietly refuses to
+    /// let you plan a 7am game would be worse than a tall one.
+    private var window: DayPlan.HourWindow {
+        guard !showingAllHours else { return .full }
+        let content = slots.map { $0.start...$0.end }
+            + sessions.map { $0.gameDatetime...$0.gameDatetime.addingTimeInterval(DayPlan.assumedSessionMinutes * 60) }
+        return DayPlan.HourWindow.fitting(content, on: day, now: now)
+    }
+
+    private var isTrimmed: Bool { window != .full }
 
     /// Where the drag started, in minutes from the top. Kept so we can build the range in
     /// either direction — dragging upward is just as valid as downward.
     @State private var anchorMinutes: Double?
 
-    private var totalHeight: CGFloat { CGFloat(DayPlan.hourCount) * hourHeight }
+    private var totalHeight: CGFloat { CGFloat(window.hourCount) * hourHeight }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            hourGutter
+        VStack(spacing: 8) {
+            HStack(alignment: .top, spacing: 0) {
+                hourGutter
 
-            GeometryReader { geo in
-                ZStack(alignment: .topLeading) {
-                    gridLines
-                    pastShading
-                    availabilityBands(laneWidth: geo.size.width)
-                    // Above availability: a booked hour is not a free one, and the block has to
-                    // win that argument visually or the calendar lies about what's open.
-                    sessionBlocks(laneWidth: geo.size.width)
-                    nowIndicator
-                    selectionOverlay(laneWidth: geo.size.width)
+                GeometryReader { geo in
+                    ZStack(alignment: .topLeading) {
+                        gridLines
+                        pastShading
+                        dragAffordance(laneWidth: geo.size.width)
+                        availabilityBands(laneWidth: geo.size.width)
+                        // Above availability: a booked hour is not a free one, and the block has
+                        // to win that argument visually or the calendar lies about what's open.
+                        sessionBlocks(laneWidth: geo.size.width)
+                        nowIndicator
+                        selectionOverlay(laneWidth: geo.size.width)
+                    }
+                    .frame(width: geo.size.width, height: totalHeight)
+                    .contentShape(Rectangle())
+                    .gesture(plannerGesture)
                 }
-                .frame(width: geo.size.width, height: totalHeight)
-                .contentShape(Rectangle())
-                .gesture(plannerGesture)
+                .frame(height: totalHeight)
             }
             .frame(height: totalHeight)
+
+            if isTrimmed {
+                Button {
+                    withAnimation(Motion.transition) { showingAllHours = true }
+                } label: {
+                    Text("Show all hours")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.stackSecondaryText)
+                }
+                .buttonStyle(.plain)
+            }
         }
-        .frame(height: totalHeight)
+        .animation(Motion.transition, value: window)
     }
 
     // MARK: - Gesture
@@ -85,12 +115,56 @@ struct DayTimelineView: View {
         Double(y / hourHeight) * 60
     }
 
+    /// A dashed ghost where a session would go, shown only when the day is otherwise empty.
+    ///
+    /// Hold-and-drag has no affordance of its own — an empty grid looks like a picture of a
+    /// grid. This is the one place the gesture can be taught at the moment it's needed, and it
+    /// disappears the instant there's anything real to look at.
+    @ViewBuilder
+    private func dragAffordance(laneWidth: CGFloat) -> some View {
+        if slots.isEmpty, sessions.isEmpty, selection == nil {
+            let top = DayPlan.minutesFromTop(for: ghostStart, on: day, window: window)
+            if top >= 0, top < Double(window.hourCount * 60) {
+                VStack(spacing: 3) {
+                    Image(systemName: "hand.draw")
+                        .font(.system(size: 15, weight: .medium))
+                    Text("Hold and drag")
+                        .font(.system(size: 12, weight: .semibold))
+                }
+                .foregroundColor(.stackGreen.opacity(0.7))
+                .frame(width: laneWidth, height: hourHeight * 1.5)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.stackGreen.opacity(0.06))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(
+                            Color.stackGreen.opacity(0.45),
+                            style: StrokeStyle(lineWidth: 1.5, dash: [5, 4])
+                        )
+                )
+                .offset(y: CGFloat(top) / 60 * hourHeight)
+                .allowsHitTesting(false)
+            }
+        }
+    }
+
+    /// Where the ghost sits: early evening, or the next clear hour if that's already gone.
+    private var ghostStart: Date {
+        let calendar = Calendar.current
+        let evening = calendar.date(bySettingHour: 18, minute: 0, second: 0, of: day) ?? day
+        guard calendar.isDate(day, inSameDayAs: now), now > evening else { return evening }
+        return DayPlan.date(atMinutes: DayPlan.minutesFromTop(for: now, on: day, window: window) + 60,
+                            on: day, window: window)
+    }
+
     /// Always at least one snap step long, however small the drag was.
     private func range(from anchor: Double, to other: Double) -> ClosedRange<Date> {
         let lower = min(anchor, other)
         let upper = max(anchor, other)
-        let start = DayPlan.date(atMinutes: lower, on: day)
-        var end = DayPlan.date(atMinutes: upper, on: day)
+        let start = DayPlan.date(atMinutes: lower, on: day, window: window)
+        var end = DayPlan.date(atMinutes: upper, on: day, window: window)
         if end <= start {
             end = start.addingTimeInterval(TimeInterval(DayPlan.snapMinutes * 60))
         }
@@ -101,14 +175,14 @@ struct DayTimelineView: View {
 
     private var hourGutter: some View {
         VStack(alignment: .trailing, spacing: 0) {
-            ForEach(0..<DayPlan.hourCount, id: \.self) { offset in
-                Text(DayPlan.hourLabel(DayPlan.firstHour + offset))
+            ForEach(0..<window.hourCount, id: \.self) { offset in
+                Text(DayPlan.hourLabel(window.first + offset))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.stackSecondaryText)
                     .frame(height: hourHeight, alignment: .top)
                     .offset(y: -5)
                     // Anchors so the planner can open on the current hour.
-                    .id(DayPlan.firstHour + offset)
+                    .id(window.first + offset)
             }
         }
         .frame(width: gutterWidth)
@@ -117,7 +191,7 @@ struct DayTimelineView: View {
 
     private var gridLines: some View {
         VStack(spacing: 0) {
-            ForEach(0..<DayPlan.hourCount, id: \.self) { _ in
+            ForEach(0..<window.hourCount, id: \.self) { _ in
                 VStack(spacing: 0) {
                     Rectangle()
                         .fill(Color.stackBorder.opacity(0.7))
@@ -131,7 +205,7 @@ struct DayTimelineView: View {
 
     @ViewBuilder
     private func availabilityBands(laneWidth: CGFloat) -> some View {
-        let bands = DayPlan.bands(for: slots, on: day)
+        let bands = DayPlan.bands(for: slots, on: day, window: window)
         ForEach(bands) { band in
             let width = laneWidth / CGFloat(band.columnCount)
             AvailabilityBandView(band: band, isLive: band.slot.end > now && band.slot.start <= now)
@@ -150,7 +224,7 @@ struct DayTimelineView: View {
     /// Sessions already on the books for this day.
     @ViewBuilder
     private func sessionBlocks(laneWidth: CGFloat) -> some View {
-        ForEach(DayPlan.sessionBlocks(for: sessions, on: day)) { block in
+        ForEach(DayPlan.sessionBlocks(for: sessions, on: day, window: window)) { block in
             let width = laneWidth / CGFloat(block.columnCount)
             SessionBlockView(
                 block: block,
@@ -172,7 +246,7 @@ struct DayTimelineView: View {
     /// Hours already gone, greyed so it's obvious there's nothing to plan there.
     @ViewBuilder
     private var pastShading: some View {
-        let minutes = DayPlan.minutesFromTop(for: now, on: day)
+        let minutes = DayPlan.minutesFromTop(for: now, on: day, window: window)
         if minutes > 0 {
             Rectangle()
                 .fill(Color.stackSecondaryText.opacity(0.07))
@@ -183,8 +257,8 @@ struct DayTimelineView: View {
 
     @ViewBuilder
     private var nowIndicator: some View {
-        let minutes = DayPlan.minutesFromTop(for: now, on: day)
-        if minutes >= 0, minutes <= Double(DayPlan.hourCount * 60) {
+        let minutes = DayPlan.minutesFromTop(for: now, on: day, window: window)
+        if minutes >= 0, minutes <= Double(window.hourCount * 60) {
             HStack(spacing: 0) {
                 Circle()
                     .fill(Color.red)
@@ -201,7 +275,7 @@ struct DayTimelineView: View {
     @ViewBuilder
     private func selectionOverlay(laneWidth: CGFloat) -> some View {
         if let selection {
-            let top = DayPlan.minutesFromTop(for: selection.lowerBound, on: day)
+            let top = DayPlan.minutesFromTop(for: selection.lowerBound, on: day, window: window)
             let height = selection.upperBound.timeIntervalSince(selection.lowerBound) / 60
 
             Group {

@@ -10,6 +10,9 @@ struct HomeView: View {
     @State private var expandedGameId: UUID?
     @State private var createdSessionInfo: CreatedSessionInfo?
     @State private var showingAddFriends = false
+    /// Set by the hero's button or a suggestion chip; the planner picks it up and opens the
+    /// draft, so every route to creating a game runs through the same sheet.
+    @State private var requestedRange: ClosedRange<Date>?
 
     /// Ties each card to the screen it becomes, so the detail grows out of the card the user
     /// touched rather than sliding in from the edge with no stated origin.
@@ -21,18 +24,29 @@ struct HomeView: View {
         NavigationStack {
             ScrollView {
                 if viewModel.isLoading && viewModel.nearbyGames.isEmpty && viewModel.schedulesByWeekday.isEmpty {
-                    VStack(spacing: 20) {
+                    VStack(spacing: 22) {
+                        SkeletonHero()
                         SkeletonPlanner()
                         SkeletonList(count: 2) { SkeletonCard() }
                             .padding(.horizontal, 16)
                     }
                     .padding(.top, 10)
                 } else {
-                    VStack(spacing: 20) {
-                        // Who's free, and where you plan a session — same calendar.
+                    VStack(spacing: 22) {
+                        StartGameHero(
+                            suggestions: viewModel.suggestions,
+                            isLoaded: !viewModel.isLoading,
+                            onStart: { requestedRange = SessionSuggestion.defaultRange() },
+                            onPick: { requestedRange = $0.range }
+                        )
+
+                        // The calendar is a way to refine the answer, not the question itself —
+                        // so it sits under the button rather than being the first thing on the
+                        // screen, and says what it's for.
                         VStack(alignment: .leading, spacing: 8) {
-                            Text("Plan a Session")
-                                .font(.system(size: 18, weight: .bold))
+                            Text("Or pick your own time")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(.stackSecondaryText)
                                 .padding(.horizontal, 16)
 
                             DayPlannerBoard(
@@ -48,6 +62,8 @@ struct HomeView: View {
                                         )
                                     }
                                 },
+                                requestedRange: $requestedRange,
+                                onAddFriends: { showingAddFriends = true },
                                 onSessionTapped: { game in
                                     selectedGame = game
                                 }
@@ -57,7 +73,7 @@ struct HomeView: View {
                         // Open Games Near You
                         if !viewModel.nearbyGames.isEmpty {
                             VStack(alignment: .leading, spacing: 10) {
-                                Text("Open Games Near You")
+                                Text("Games near you")
                                     .font(.system(size: 18, weight: .bold))
                                     .padding(.horizontal, 16)
 
@@ -99,7 +115,7 @@ struct HomeView: View {
                                 HStack(spacing: 6) {
                                     Image(systemName: "calendar")
                                         .font(.system(size: 15))
-                                    Text("Browse Schedules")
+                                    Text("See when friends play")
                                         .font(.system(size: 14, weight: .semibold))
                                 }
                                 .foregroundColor(.stackGreen)
@@ -118,9 +134,9 @@ struct HomeView: View {
                         // Empty state when no friends ready and no games
                         if viewModel.schedulesByWeekday.isEmpty && viewModel.nearbyGames.isEmpty {
                             EmptyStateView(
-                                icon: "house",
-                                title: "No Activity Nearby",
-                                message: "No friends have posted times and there are no open games nearby. Add friends, or block out a slot above to start a session."
+                                icon: "figure.pickleball",
+                                title: "Nobody's playing yet",
+                                message: "Add friends to see when they're free, or start a game anyway and invite people to it."
                             )
                             .padding(.top, 20)
                         }

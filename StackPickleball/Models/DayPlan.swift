@@ -19,6 +19,75 @@ enum DayPlan {
 
     static var hourCount: Int { lastHour - firstHour }
 
+    /// The slice of the day the timeline actually draws.
+    ///
+    /// Drawing all seventeen hours makes the grid taller than the screen, which is most of why
+    /// the planner read as the whole app rather than one control in it — and the top third of
+    /// it is 6am, which almost nobody is choosing. Trimming to the hours that have something in
+    /// them puts the timeline back in proportion without hiding anything anyone was looking at.
+    struct HourWindow: Equatable {
+        var first: Int
+        var last: Int
+
+        var hourCount: Int { last - first }
+
+        static let full = HourWindow(first: DayPlan.firstHour, last: DayPlan.lastHour)
+
+        /// Never trim below this, or the grid stops reading as a day.
+        static let minimumHours = 8
+
+        /// The window worth showing for a day, given what's on it.
+        ///
+        /// `interesting` are the times that have content — availability bands, booked sessions.
+        /// They get an hour of breathing room either side so nothing sits against the edge, and
+        /// the result is widened to `minimumHours` and clamped back inside the real day.
+        static func fitting(
+            _ interesting: [ClosedRange<Date>],
+            on day: Date,
+            now: Date? = nil,
+            calendar: Calendar = .current
+        ) -> HourWindow {
+            var hours: [Int] = interesting.flatMap { range -> [Int] in
+                [calendar.component(.hour, from: range.lowerBound),
+                 // A window ending at 3:00 shouldn't drag the 3 o'clock hour in with it.
+                 calendar.component(.minute, from: range.upperBound) > 0
+                    ? calendar.component(.hour, from: range.upperBound)
+                    : calendar.component(.hour, from: range.upperBound) - 1]
+            }
+
+            // On today, "now" is content: the red line has to have somewhere to be.
+            if let now, calendar.isDate(now, inSameDayAs: day) {
+                hours.append(calendar.component(.hour, from: now))
+            }
+
+            guard let low = hours.min(), let high = hours.max() else {
+                // An empty day still needs a sensible default. Late morning to early evening is
+                // when pickleball actually happens, and it's a window you can drag anywhere in.
+                return clamped(HourWindow(first: 9, last: 20))
+            }
+
+            return clamped(HourWindow(first: low - 1, last: high + 2))
+        }
+
+        /// Grows a window to the minimum span and pushes it back inside the day.
+        private static func clamped(_ window: HourWindow) -> HourWindow {
+            var first = max(DayPlan.firstHour, window.first)
+            var last = min(DayPlan.lastHour, window.last)
+
+            if last - first < minimumHours {
+                let shortfall = minimumHours - (last - first)
+                first = max(DayPlan.firstHour, first - shortfall / 2)
+                last = min(DayPlan.lastHour, first + minimumHours)
+                // Ran out of room at the bottom; take it back off the top.
+                if last - first < minimumHours {
+                    first = max(DayPlan.firstHour, last - minimumHours)
+                }
+            }
+
+            return HourWindow(first: first, last: last)
+        }
+    }
+
     /// Selections and drags snap to this, so you can't end up with a 5:37 start.
     static let snapMinutes = 30
 
@@ -35,26 +104,37 @@ enum DayPlan {
     // MARK: - Point <-> time
 
     /// Minutes from the top of the timeline for a given date.
-    static func minutesFromTop(for date: Date, on day: Date, calendar: Calendar = .current) -> Double {
-        let start = dayStart(of: day, calendar: calendar)
+    static func minutesFromTop(
+        for date: Date,
+        on day: Date,
+        window: HourWindow = .full,
+        calendar: Calendar = .current
+    ) -> Double {
+        let start = dayStart(of: day, window: window, calendar: calendar)
         return date.timeIntervalSince(start) / 60
     }
 
     /// The date represented by a vertical offset, snapped to `snapMinutes`.
-    static func date(atMinutes minutes: Double, on day: Date, calendar: Calendar = .current) -> Date {
+    static func date(
+        atMinutes minutes: Double,
+        on day: Date,
+        window: HourWindow = .full,
+        calendar: Calendar = .current
+    ) -> Date {
         let snapped = (minutes / Double(snapMinutes)).rounded() * Double(snapMinutes)
-        let clamped = min(max(snapped, 0), Double(hourCount * 60))
-        return dayStart(of: day, calendar: calendar).addingTimeInterval(clamped * 60)
+        let clamped = min(max(snapped, 0), Double(window.hourCount * 60))
+        return dayStart(of: day, window: window, calendar: calendar).addingTimeInterval(clamped * 60)
     }
 
-    /// `firstHour` on the given day.
-    static func dayStart(of day: Date, calendar: Calendar = .current) -> Date {
+    /// The first drawn hour on the given day.
+    static func dayStart(of day: Date, window: HourWindow = .full, calendar: Calendar = .current) -> Date {
         let midnight = calendar.startOfDay(for: day)
-        return calendar.date(byAdding: .hour, value: firstHour, to: midnight) ?? midnight
+        return calendar.date(byAdding: .hour, value: window.first, to: midnight) ?? midnight
     }
 
-    static func dayEnd(of day: Date, calendar: Calendar = .current) -> Date {
-        dayStart(of: day, calendar: calendar).addingTimeInterval(TimeInterval(hourCount * 3600))
+    static func dayEnd(of day: Date, window: HourWindow = .full, calendar: Calendar = .current) -> Date {
+        dayStart(of: day, window: window, calendar: calendar)
+            .addingTimeInterval(TimeInterval(window.hourCount * 3600))
     }
 
     /// Hour label for the gutter: "6 AM", "12 PM", "8 PM".
@@ -114,10 +194,11 @@ enum DayPlan {
     static func bands(
         for slots: [FriendAvailability],
         on day: Date,
+        window: HourWindow = .full,
         calendar: Calendar = .current
     ) -> [Band] {
-        let start = dayStart(of: day, calendar: calendar)
-        let end = dayEnd(of: day, calendar: calendar)
+        let start = dayStart(of: day, window: window, calendar: calendar)
+        let end = dayEnd(of: day, window: window, calendar: calendar)
 
         let placed: [Band] = slots.compactMap { slot in
             let from = max(slot.start, start)
@@ -156,10 +237,11 @@ enum DayPlan {
     static func sessionBlocks(
         for games: [Game],
         on day: Date,
+        window: HourWindow = .full,
         calendar: Calendar = .current
     ) -> [SessionBlock] {
-        let start = dayStart(of: day, calendar: calendar)
-        let end = dayEnd(of: day, calendar: calendar)
+        let start = dayStart(of: day, window: window, calendar: calendar)
+        let end = dayEnd(of: day, window: window, calendar: calendar)
 
         let placed: [SessionBlock] = games
             .filter { !$0.isCancelled && calendar.isDate($0.gameDatetime, inSameDayAs: day) }

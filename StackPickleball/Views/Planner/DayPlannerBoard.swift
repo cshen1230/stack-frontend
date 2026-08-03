@@ -10,6 +10,13 @@ struct DayPlannerBoard: View {
     /// Sessions you're already committed to, drawn as blocks on the day they fall on.
     var mySessions: [Game] = []
     var onCreated: (CreatedSessionInfo) -> Void
+    /// Set from outside to open the draft on a given slot — how the hero's button and its
+    /// suggestion chips create a game. Routed through here rather than duplicated so there is
+    /// exactly one path from "a time was chosen" to "the draft sheet is up".
+    @Binding var requestedRange: ClosedRange<Date>?
+    /// Nothing to plan around until you have friends, so the empty state has to be able to say
+    /// so and do something about it.
+    var onAddFriends: () -> Void = {}
     /// Tapping a booked block opens it. Handed up rather than presented here: the board already
     /// owns two sheets, and stacking a third on one view is unreliable.
     var onSessionTapped: (Game) -> Void = { _ in }
@@ -67,13 +74,10 @@ struct DayPlannerBoard: View {
                 playedWeekdays: playedWeekdays
             )
 
-            HStack(alignment: .firstTextBaseline) {
-                Text(hint)
-                    .font(.system(size: 12))
-                    .foregroundColor(.stackSecondaryText)
-                    .fixedSize(horizontal: false, vertical: true)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                status
 
-                Spacer(minLength: 8)
+                Spacer(minLength: 0)
 
                 Button {
                     showingAvailabilityEditor = true
@@ -144,6 +148,21 @@ struct DayPlannerBoard: View {
         }
         .onReceive(clock) { now = $0 }
         .onChange(of: selectedDay) { withAnimation(Motion.state) { selection = nil; confirmedInfo = nil } }
+        .onChange(of: requestedRange) {
+            guard let range = requestedRange else { return }
+            requestedRange = nil
+            withAnimation(Motion.transition) {
+                selectedDay = range.lowerBound
+                confirmedInfo = nil
+                selection = range
+            }
+            draft = SessionDraftViewModel(
+                range: range,
+                locationName: "",
+                latitude: locationManager.latitude,
+                longitude: locationManager.longitude
+            )
+        }
         // Driven by isPresented rather than item: the draft is a reference type built at the
         // moment of the drag, and presentation here follows "is there a draft", not identity.
         .sheet(isPresented: isDrafting, onDismiss: {
@@ -180,17 +199,81 @@ struct DayPlannerBoard: View {
         scheduleViewModel.mySchedule.isEmpty ? "Set your times" : "Your times"
     }
 
-    private var hint: String {
-        // What you already agreed to outranks who might be free — if the day is booked, that's
-        // the thing worth saying first.
-        let booked = sessionsOnSelectedDay.count
-        if booked > 0 {
-            return "\(booked) session\(booked == 1 ? "" : "s") booked · hold and drag to plan another"
+    /// The line under the week strip. It has three jobs depending on what's actually there:
+    /// report, teach, or unblock — and "No friends free" managed none of them. A dead end
+    /// stated as a fact is the worst of the three, so the case with nothing to show is the one
+    /// that gets an action attached.
+    @ViewBuilder
+    private var status: some View {
+        if schedulesByWeekday.isEmpty {
+            HStack(spacing: 5) {
+                Text("No friends have shared when they play.")
+                    .font(.system(size: 12))
+                    .foregroundColor(.stackSecondaryText)
+
+                Button(action: onAddFriends) {
+                    Text("Add friends")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.stackGreen)
+                }
+                .buttonStyle(.plain)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+        } else if let booked = bookedLabel {
+            Text(booked)
+                .font(.system(size: 12))
+                .foregroundColor(.stackSecondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+        } else if friendSlots.isEmpty {
+            HStack(spacing: 5) {
+                Text("Nobody's free \(dayName).")
+                    .font(.system(size: 12))
+                    .foregroundColor(.stackSecondaryText)
+
+                // Pointing at a day that works beats telling someone this one doesn't.
+                if let next = nextDayWithFriends {
+                    Button {
+                        withAnimation(Motion.state) { selectedDay = next }
+                    } label: {
+                        Text("Try \(dayName(next))")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.stackGreen)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+        } else {
+            let count = Set(friendSlots.map(\.userId)).count
+            Text("\(count) friend\(count == 1 ? "" : "s") free · hold and drag to pick a time")
+                .font(.system(size: 12))
+                .foregroundColor(.stackSecondaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        let count = Set(friendSlots.map(\.userId)).count
-        let who = count == 0
-            ? "No friends free"
-            : "\(count) friend\(count == 1 ? "" : "s") free"
-        return "\(who) · hold and drag to plan a session"
+    }
+
+    private var bookedLabel: String? {
+        let booked = sessionsOnSelectedDay.count
+        guard booked > 0 else { return nil }
+        return "\(booked) game\(booked == 1 ? "" : "s") on \(dayName) · hold and drag to add another"
+    }
+
+    private var dayName: String { dayName(selectedDay) }
+
+    private func dayName(_ day: Date) -> String {
+        if calendar.isDateInToday(day) { return "today" }
+        if calendar.isDateInTomorrow(day) { return "tomorrow" }
+        return day.formatted(.dateTime.weekday(.wide))
+    }
+
+    /// The next day in the coming fortnight somebody plays on.
+    private var nextDayWithFriends: Date? {
+        let played = playedWeekdays
+        guard !played.isEmpty else { return nil }
+        return (1...14).lazy.compactMap { offset -> Date? in
+            guard let day = calendar.date(byAdding: .day, value: offset, to: selectedDay),
+                  played.contains(calendar.component(.weekday, from: day)) else { return nil }
+            return day
+        }.first
     }
 }

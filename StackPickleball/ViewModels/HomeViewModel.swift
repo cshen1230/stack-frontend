@@ -9,6 +9,11 @@ class HomeViewModel {
     /// offering you a slot you're busy for.
     var mySessions: [Game] = []
     var participantAvatars: [UUID: [String]] = [:]
+    /// Slots worth proposing outright, so the common case doesn't need the calendar at all.
+    var suggestions: [SessionSuggestion] = []
+    /// Your own recurring times. Held here only to compute suggestions — the planner keeps its
+    /// own copy because it also edits them.
+    private var mySchedule: [UserSchedule] = []
     var joinedGameIds: Set<UUID> = []
     var isLoading = false
     var errorMessage: String?
@@ -37,6 +42,7 @@ class HomeViewModel {
                 async let fetchedSchedules = ScheduleService.friendsSchedulesByWeekday(userId: userId)
                 async let fetchedIds = GameService.myJoinedGameIds(userId: userId)
                 async let fetchedMine = MessageService.myActiveSessions(userId: userId)
+                async let fetchedOwnTimes = ScheduleService.getMySchedule(userId: userId)
 
                 let allGames = try await fetchedGames
                 let joined = try await fetchedIds
@@ -45,8 +51,16 @@ class HomeViewModel {
 
                 schedulesByWeekday = try await fetchedSchedules
                 mySessions = try await fetchedMine
+                mySchedule = (try? await fetchedOwnTimes) ?? []
+
+                suggestions = SessionSuggestion.best(
+                    friendSchedules: schedulesByWeekday,
+                    mySchedule: mySchedule,
+                    busy: mySessions
+                )
             } else {
                 mySessions = []
+                suggestions = []
                 nearbyGames = try await fetchedGames
             }
 

@@ -7,6 +7,9 @@ struct DayPlannerView: View {
     var onCreated: (CreatedSessionInfo) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    /// Unused here — this wrapper has no hero to request a slot from — but the board owns the
+    /// one path into the draft sheet, so the storage lives with whoever presents it.
+    @State private var requestedRange: ClosedRange<Date>?
 
     var body: some View {
         NavigationStack {
@@ -18,13 +21,14 @@ struct DayPlannerView: View {
                     onCreated: { info in
                         onCreated(info)
                         dismiss()
-                    }
+                    },
+                    requestedRange: $requestedRange
                 )
                 .padding(.top, 8)
                 .padding(.bottom, 24)
             }
             .background(Color.stackBackground)
-            .navigationTitle("Plan a session")
+            .navigationTitle("New game")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
