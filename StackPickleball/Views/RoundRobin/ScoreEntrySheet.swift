@@ -36,7 +36,8 @@ struct ScoreEntrySheet: View {
         NavigationStack {
             VStack(spacing: 24) {
                 Text("Round \(round.roundNumber) · Court \(round.courtNumber)")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(AppFonts.callout())
+                    .fontWeight(.medium)
                     .foregroundColor(.secondary)
                     .padding(.top, 16)
 
@@ -87,17 +88,12 @@ struct ScoreEntrySheet: View {
                     }
                 } label: {
                     Text(round.hasScore ? "Update Score" : "Submit Score")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color.stackGreen)
-                        .cornerRadius(14)
                 }
+                .primaryButton()
                 .disabled(isSubmitting || (team1ScoreText.isEmpty && team2ScoreText.isEmpty))
                 .padding(.bottom, 16)
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppConstants.screenPadding)
             .background(Color.stackBackground)
             .navigationTitle("Enter Score")
             #if os(iOS)

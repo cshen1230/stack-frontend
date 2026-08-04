@@ -213,7 +213,7 @@ struct InvitePlayersSheet: View {
 
     private func avatarPlaceholder(size: CGFloat) -> some View {
         Circle()
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color(.tertiarySystemFill))
             .frame(width: size, height: size)
             .overlay(
                 Image(systemName: "person.fill")

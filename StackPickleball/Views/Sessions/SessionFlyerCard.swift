@@ -13,7 +13,8 @@ struct SessionFlyerCard: View {
             HStack {
                 HStack(spacing: 6) {
                     Text(game.gameFormat.displayName)
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(AppFonts.caption())
+                        .fontWeight(.semibold)
                         .foregroundColor(.stackGreen)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
@@ -48,13 +49,14 @@ struct SessionFlyerCard: View {
                 Spacer()
 
                 Text("\(game.spotsFilled)/\(game.spotsAvailable)")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(AppFonts.subheadline())
+                    .fontWeight(.bold)
                     .foregroundColor(.stackSecondaryText)
             }
 
             // Session name
             Text(game.sessionName ?? game.creatorDisplayName + "'s Session")
-                .font(.system(size: 18, weight: .bold))
+                .font(AppFonts.headline())
                 .foregroundColor(.primary)
                 .lineLimit(2)
 
@@ -68,7 +70,8 @@ struct SessionFlyerCard: View {
                 + Text(game.gameDatetime, format: .dateTime.month(.abbreviated).day())
                 + Text(" at ")
                 + Text(game.gameDatetime, format: .dateTime.hour().minute()))
-                    .font(.system(size: 14, weight: .medium))
+                    .font(AppFonts.callout())
+                    .fontWeight(.medium)
                     .foregroundColor(.primary)
             }
 
@@ -79,7 +82,7 @@ struct SessionFlyerCard: View {
                         .font(.system(size: 13))
                         .foregroundColor(.stackSecondaryText)
                     Text(location)
-                        .font(.system(size: 14))
+                        .font(AppFonts.callout())
                         .foregroundColor(.primary)
                         .lineLimit(1)
                 }

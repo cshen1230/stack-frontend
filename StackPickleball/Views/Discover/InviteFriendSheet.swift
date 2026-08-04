@@ -32,7 +32,8 @@ struct InviteFriendSheet: View {
 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(friend.displayName)
-                                        .font(.system(size: 15, weight: .semibold))
+                                        .font(AppFonts.body())
+                                        .fontWeight(.semibold)
                                     if let dupr = friend.duprRating {
                                         HStack(spacing: 3) {
                                             if friend.isDuprConnected {
@@ -41,7 +42,7 @@ struct InviteFriendSheet: View {
                                                     .foregroundColor(.stackGreen)
                                             }
                                             Text("DUPR \(String(format: "%.1f", dupr))")
-                                                .font(.system(size: 13))
+                                                .font(AppFonts.subheadline())
                                                 .foregroundColor(.stackGreen)
                                         }
                                     }
@@ -51,7 +52,8 @@ struct InviteFriendSheet: View {
 
                                 if invitedIds.contains(friend.friendUserId) {
                                     Text("Invited")
-                                        .font(.system(size: 13, weight: .medium))
+                                        .font(AppFonts.subheadline())
+                                        .fontWeight(.medium)
                                         .foregroundColor(.stackSecondaryText)
                                 } else {
                                     Button {
@@ -75,12 +77,12 @@ struct InviteFriendSheet: View {
                 // ── Invite via Text section ────────────────
                 Section("Invite via Text") {
                     TextField("Name", text: $smsName)
-                        .font(.system(size: 15))
+                        .font(AppFonts.body())
                         .textContentType(.name)
                         .autocorrectionDisabled()
 
                     TextField("Phone number", text: $smsPhone)
-                        .font(.system(size: 15))
+                        .font(AppFonts.body())
                         .textContentType(.telephoneNumber)
                         .keyboardType(.phonePad)
 
@@ -92,7 +94,8 @@ struct InviteFriendSheet: View {
                                 ProgressView().controlSize(.small)
                             }
                             Text("Send Text Invite")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(AppFonts.body())
+                                .fontWeight(.semibold)
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -118,14 +121,15 @@ struct InviteFriendSheet: View {
 
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(inv.inviteeName)
-                                        .font(.system(size: 15, weight: .semibold))
+                                        .font(AppFonts.body())
+                                        .fontWeight(.semibold)
                                     if let phone = inv.displayPhoneNumber(viewerId: currentUserId) {
                                         Text(phone)
-                                            .font(.system(size: 12))
+                                            .font(AppFonts.caption())
                                             .foregroundColor(.stackSecondaryText)
                                     } else {
                                         Text("Invited by text")
-                                            .font(.system(size: 12))
+                                            .font(AppFonts.caption())
                                             .foregroundColor(.stackSecondaryText)
                                     }
                                 }
@@ -223,7 +227,8 @@ struct InviteFriendSheet: View {
             }
         }()
         return Text(label)
-            .font(.system(size: 12, weight: .semibold))
+            .font(AppFonts.caption())
+            .fontWeight(.semibold)
             .foregroundColor(color)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
@@ -249,7 +254,7 @@ struct InviteFriendSheet: View {
 
     private func avatarPlaceholder(size: CGFloat) -> some View {
         Circle()
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color(.tertiarySystemFill))
             .frame(width: size, height: size)
             .overlay(
                 Image(systemName: "person.fill")

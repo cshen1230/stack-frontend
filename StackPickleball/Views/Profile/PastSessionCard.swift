@@ -9,7 +9,7 @@ struct PastSessionCard: View {
             // Creator avatar with crown overlay for host
             ZStack(alignment: .top) {
                 Circle()
-                    .fill(Color.gray.opacity(0.3))
+                    .fill(Color(.tertiarySystemFill))
                     .frame(width: 48, height: 48)
                     .overlay(
                         Image(systemName: "person.fill")
@@ -29,7 +29,8 @@ struct PastSessionCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
                     Text(game.sessionName ?? game.creatorDisplayName)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppFonts.body())
+                        .fontWeight(.semibold)
                         .foregroundColor(.primary)
 
                     Text(game.gameFormat.displayName)
@@ -55,7 +56,8 @@ struct PastSessionCard: View {
                 (Text(game.gameDatetime, format: .dateTime.month(.abbreviated).day().year())
                 + Text("  ·  ")
                 + Text(game.gameDatetime, format: .dateTime.hour().minute()))
-                    .font(.system(size: 14, weight: .medium))
+                    .font(AppFonts.callout())
+                    .fontWeight(.medium)
                     .foregroundColor(.stackSecondaryText)
                     .padding(.bottom, 6)
 

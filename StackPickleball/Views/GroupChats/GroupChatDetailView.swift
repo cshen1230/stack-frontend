@@ -30,7 +30,9 @@ struct GroupChatDetailView: View {
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
+                .accessibilityLabel("Back")
 
                 Spacer()
 
@@ -39,15 +41,16 @@ struct GroupChatDetailView: View {
                 } label: {
                     VStack(spacing: 1) {
                         Text(groupChat.name)
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(AppFonts.headline())
                             .foregroundColor(.primary)
                         if let count = groupChat.memberCount {
                             Text("\(count) members")
-                                .font(.system(size: 11))
+                                .font(AppFonts.caption2())
                                 .foregroundColor(.stackSecondaryText)
                         }
                     }
                 }
+                .accessibilityLabel("\(groupChat.name), community info")
 
                 Spacer()
 
@@ -58,7 +61,9 @@ struct GroupChatDetailView: View {
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
+                .accessibilityLabel("Community info")
             }
             .padding(.horizontal, 8)
             .background(Color.stackBackground)
@@ -79,11 +84,11 @@ struct GroupChatDetailView: View {
                                 .foregroundColor(.stackGreen.opacity(0.4))
 
                             Text("Start the conversation")
-                                .font(.system(size: 22, weight: .bold))
+                                .font(AppFonts.sectionTitle())
                                 .foregroundColor(.primary)
 
                             Text("Say hello to your community!")
-                                .font(.system(size: 15))
+                                .font(AppFonts.body())
                                 .foregroundColor(.secondary)
                         }
                         .frame(maxWidth: .infinity)
@@ -154,7 +159,7 @@ struct GroupChatDetailView: View {
                     .padding(.bottom, 3)
 
                     TextField("Message", text: $messageText, axis: .vertical)
-                        .font(.system(size: 16))
+                        .font(AppFonts.body())
                         .lineLimit(1...5)
                         .focused($isInputFocused)
                         .padding(.horizontal, 16)
@@ -165,6 +170,7 @@ struct GroupChatDetailView: View {
                         )
 
                     Button {
+                        Haptics.tap()
                         Task { await sendMessage() }
                     } label: {
                         Image(systemName: "arrow.up")
@@ -177,8 +183,10 @@ struct GroupChatDetailView: View {
                             )
                     }
                     .disabled(!canSend)
+                    .accessibilityLabel("Send message")
+                    .animation(Motion.state, value: canSend)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppConstants.screenPadding)
                 .padding(.vertical, 10)
             }
             .background(Color.stackBackground)
@@ -305,12 +313,13 @@ private struct GroupChatMessageBubble: View {
             VStack(alignment: isFromCurrentUser ? .trailing : .leading, spacing: 4) {
                 if !isFromCurrentUser {
                     Text(message.senderDisplayName)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(AppFonts.caption())
+                        .fontWeight(.medium)
                         .foregroundColor(.stackSecondaryText)
                 }
 
                 Text(message.content)
-                    .font(.system(size: 15))
+                    .font(AppFonts.body())
                     .foregroundColor(isFromCurrentUser ? .white : .primary)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
@@ -318,7 +327,7 @@ private struct GroupChatMessageBubble: View {
                     .cornerRadius(20)
 
                 Text(message.createdAt, format: .dateTime.hour().minute())
-                    .font(.system(size: 11))
+                    .font(AppFonts.caption2())
                     .foregroundColor(.stackTimestamp)
             }
 
@@ -337,7 +346,7 @@ private struct SystemMessageView: View {
 
     var body: some View {
         Text(message.content)
-            .font(.system(size: 12))
+            .font(AppFonts.caption())
             .foregroundColor(.stackSecondaryText)
             .padding(.horizontal, 16)
             .padding(.vertical, 6)

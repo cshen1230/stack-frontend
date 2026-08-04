@@ -43,20 +43,22 @@ struct CreateGroupChatView: View {
                     // Community name
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Community Name")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(AppFonts.callout())
+                            .fontWeight(.semibold)
                             .foregroundColor(.primary)
                         TextField("e.g. Tuesday Crew", text: $chatName)
-                            .font(.system(size: 16))
+                            .font(AppFonts.body())
                             .padding(12)
                             .background(Color(.systemGray6))
                             .cornerRadius(10)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
 
                     // Visibility picker
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Visibility")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(AppFonts.callout())
+                            .fontWeight(.semibold)
                             .foregroundColor(.primary)
 
                         HStack(spacing: 8) {
@@ -90,7 +92,7 @@ struct CreateGroupChatView: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
 
                     // Selected members chips
                     if !selectedUsers.isEmpty {
@@ -98,7 +100,7 @@ struct CreateGroupChatView: View {
                             Text("Selected (\(selectedUsers.count))")
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(.stackSecondaryText)
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppConstants.screenPadding)
 
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 8) {
@@ -122,7 +124,7 @@ struct CreateGroupChatView: View {
                                         .cornerRadius(20)
                                     }
                                 }
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppConstants.screenPadding)
                             }
                         }
                     }
@@ -131,7 +133,7 @@ struct CreateGroupChatView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
                             Text("Friends")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(AppFonts.headline())
                                 .foregroundColor(.primary)
                             Spacer()
                             if friends.count > 6 {
@@ -140,31 +142,31 @@ struct CreateGroupChatView: View {
                                     .foregroundColor(.stackSecondaryText)
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
 
                         // Inline filter for friends (only show when > 6 friends)
                         if friends.count > 6 {
                             TextField("Filter friends", text: $friendFilter)
-                                .font(.system(size: 15))
+                                .font(AppFonts.body())
                                 .padding(10)
                                 .background(Color(.systemGray6))
                                 .cornerRadius(8)
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppConstants.screenPadding)
                         }
 
                         if isLoadingFriends {
                             SkeletonList(count: 4) { SkeletonRow() }
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppConstants.screenPadding)
                         } else if friends.isEmpty {
                             VStack(spacing: 8) {
                                 Image(systemName: "person.2.slash")
                                     .font(.system(size: 28))
                                     .foregroundColor(Color(.tertiaryLabel))
                                 Text("No friends yet")
-                                    .font(.system(size: 14))
+                                    .font(AppFonts.callout())
                                     .foregroundColor(Color(.tertiaryLabel))
                                 Text("Invite players below to add them")
-                                    .font(.system(size: 13))
+                                    .font(AppFonts.subheadline())
                                     .foregroundColor(Color(.quaternaryLabel))
                             }
                             .frame(maxWidth: .infinity)
@@ -181,7 +183,8 @@ struct CreateGroupChatView: View {
 
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text(friend.displayName)
-                                                    .font(.system(size: 15, weight: .medium))
+                                                    .font(AppFonts.body())
+                                                    .fontWeight(.medium)
                                                     .foregroundColor(.primary)
                                                 if let rating = friend.duprRating {
                                                     HStack(spacing: 3) {
@@ -203,7 +206,7 @@ struct CreateGroupChatView: View {
                                                 .font(.system(size: 22))
                                                 .foregroundColor(isSelected ? .stackGreen : Color(.systemGray3))
                                         }
-                                        .padding(.horizontal, 16)
+                                        .padding(.horizontal, AppConstants.screenPadding)
                                         .padding(.vertical, 10)
                                         .background(isSelected ? Color.stackGreen.opacity(0.04) : Color.clear)
                                     }
@@ -239,13 +242,13 @@ struct CreateGroupChatView: View {
                                 .stroke(Color.stackGreen.opacity(0.2), lineWidth: 1)
                         )
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
 
                     if let error = errorMessage {
                         Text(error)
                             .font(.system(size: 13))
                             .foregroundColor(.red)
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppConstants.screenPadding)
                     }
                 }
                 .padding(.top, 8)
@@ -356,7 +359,7 @@ struct CreateGroupChatView: View {
 
     private func avatarPlaceholder(size: CGFloat) -> some View {
         Circle()
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color(.tertiarySystemFill))
             .frame(width: size, height: size)
             .overlay(
                 Image(systemName: "person.fill")

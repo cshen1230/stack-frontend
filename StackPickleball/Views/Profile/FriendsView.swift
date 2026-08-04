@@ -17,9 +17,10 @@ struct FriendsView: View {
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(user.displayName)
-                                    .font(.system(size: 15, weight: .semibold))
+                                    .font(AppFonts.body())
+                                    .fontWeight(.semibold)
                                 Text("@\(user.username)")
-                                    .font(.system(size: 13))
+                                    .font(AppFonts.subheadline())
                                     .foregroundColor(.stackSecondaryText)
                             }
 
@@ -52,7 +53,7 @@ struct FriendsView: View {
                         .padding(.top, 8)
                 } else if viewModel.friends.isEmpty && viewModel.searchResults.isEmpty {
                     Text("No friends yet. Search for players above to add friends.")
-                        .font(.system(size: 14))
+                        .font(AppFonts.callout())
                         .foregroundColor(.stackSecondaryText)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 20)
@@ -63,10 +64,11 @@ struct FriendsView: View {
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(friend.displayName)
-                                    .font(.system(size: 15, weight: .semibold))
+                                    .font(AppFonts.body())
+                                    .fontWeight(.semibold)
                                 HStack(spacing: 6) {
                                     Text("@\(friend.username)")
-                                        .font(.system(size: 13))
+                                        .font(AppFonts.subheadline())
                                         .foregroundColor(.stackSecondaryText)
                                     if let dupr = friend.duprRating {
                                         HStack(spacing: 3) {
@@ -76,7 +78,8 @@ struct FriendsView: View {
                                                     .foregroundColor(.stackGreen)
                                             }
                                             Text("\(String(format: "%.1f", dupr)) DUPR")
-                                                .font(.system(size: 12, weight: .medium))
+                                                .font(AppFonts.caption())
+                                                .fontWeight(.medium)
                                                 .foregroundColor(.stackGreen)
                                         }
                                     }
@@ -141,7 +144,7 @@ struct FriendsView: View {
 
     private func avatarPlaceholder(size: CGFloat) -> some View {
         Circle()
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color(.tertiarySystemFill))
             .frame(width: size, height: size)
             .overlay(
                 Image(systemName: "person.fill")

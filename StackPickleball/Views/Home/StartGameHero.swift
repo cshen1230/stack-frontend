@@ -26,7 +26,8 @@ struct StartGameHero: View {
                     Image(systemName: "plus")
                         .font(.system(size: 15, weight: .bold))
                     Text("Start a game")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppFonts.body())
+                        .fontWeight(.semibold)
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
@@ -34,7 +35,8 @@ struct StartGameHero: View {
                 .background(Color.stackGreen)
                 .clipShape(RoundedRectangle(cornerRadius: AppConstants.buttonCornerRadius))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.pressable)
+            .contentShape(RoundedRectangle(cornerRadius: AppConstants.buttonCornerRadius))
 
             if isLoaded, !suggestions.isEmpty {
                 suggestionRow
@@ -52,7 +54,8 @@ struct StartGameHero: View {
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(suggestion.title())
-                                .font(.system(size: 14, weight: .bold))
+                                .font(AppFonts.callout())
+                                .fontWeight(.bold)
                                 .foregroundColor(.primary)
 
                             HStack(spacing: 4) {
@@ -61,7 +64,8 @@ struct StartGameHero: View {
                                         .font(.system(size: 9, weight: .semibold))
                                 }
                                 Text(suggestion.subtitle)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(AppFonts.caption())
+                                    .fontWeight(.medium)
                             }
                             .foregroundColor(suggestion.friendCount > 0 ? .stackGreen : .stackSecondaryText)
                         }
@@ -71,7 +75,7 @@ struct StartGameHero: View {
                             RoundedRectangle(cornerRadius: 12).fill(Color(.secondarySystemBackground))
                         )
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressableSubtle)
                 }
             }
             .padding(.horizontal, 1)

@@ -22,7 +22,7 @@ struct LocationPickerView: View {
             List {
                 if isResolving {
                     SkeletonList(count: 4) { SkeletonRow(avatarSize: 32) }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                 } else if isSearching {
                     // Autocomplete results while typing
                     if completer.results.isEmpty {
@@ -42,7 +42,7 @@ struct LocationPickerView: View {
                     Section {
                         if isLoadingNearby {
                             SkeletonList(count: 3) { SkeletonRow(avatarSize: 32) }
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppConstants.screenPadding)
                         } else if nearbyCourts.isEmpty {
                             Text("No courts found nearby")
                                 .foregroundColor(.secondary)
@@ -88,12 +88,13 @@ struct LocationPickerView: View {
     private func completionRow(_ completion: MKLocalSearchCompletion) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(completion.title)
-                .font(.system(size: 16, weight: .medium))
+                .font(AppFonts.body())
+                .fontWeight(.medium)
                 .foregroundColor(.primary)
 
             if !completion.subtitle.isEmpty {
                 Text(completion.subtitle)
-                    .font(.system(size: 13))
+                    .font(AppFonts.subheadline())
                     .foregroundColor(.secondary)
             }
         }
@@ -109,12 +110,13 @@ struct LocationPickerView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.name ?? "Unknown")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(AppFonts.body())
+                    .fontWeight(.medium)
                     .foregroundColor(.primary)
 
                 if let subtitle = formatSubtitle(item) {
                     Text(subtitle)
-                        .font(.system(size: 13))
+                        .font(AppFonts.subheadline())
                         .foregroundColor(.secondary)
                 }
             }

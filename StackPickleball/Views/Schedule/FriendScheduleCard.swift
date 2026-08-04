@@ -21,7 +21,8 @@ struct FriendScheduleCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(schedule.displayName)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(AppFonts.body())
+                        .fontWeight(.semibold)
                         .foregroundColor(.primary)
                         .lineLimit(1)
 
@@ -33,7 +34,8 @@ struct FriendScheduleCard: View {
                                     .foregroundColor(.stackDUPRBadge)
                             }
                             Text("\(String(format: "%.1f", rating))")
-                                .font(.system(size: 11, weight: .semibold))
+                                .font(AppFonts.caption2())
+                                .fontWeight(.semibold)
                                 .foregroundColor(.stackDUPRBadge)
                         }
                         .padding(.horizontal, 5)
@@ -48,7 +50,7 @@ struct FriendScheduleCard: View {
                         .font(.system(size: 11))
                         .foregroundColor(.stackSecondaryText)
                     Text(schedule.formattedTimeRange)
-                        .font(.system(size: 13))
+                        .font(AppFonts.subheadline())
                         .foregroundColor(.stackSecondaryText)
                 }
             }
@@ -65,13 +67,10 @@ struct FriendScheduleCard: View {
                     .cornerRadius(6)
             }
         }
-        .padding(12)
-        .background(Color.stackCardWhite)
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.stackBorder, lineWidth: 1)
-        )
+        .padding(14)
+        .background(Color(.systemBackground))
+        .clipShape(RoundedRectangle(cornerRadius: AppConstants.buttonCornerRadius))
+        .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur / 2, y: 1)
     }
 
     private var initialCircle: some View {

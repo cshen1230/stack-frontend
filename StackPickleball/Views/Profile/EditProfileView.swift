@@ -88,7 +88,8 @@ struct EditProfileView: View {
                             Image(systemName: "checkmark.seal.fill")
                                 .foregroundColor(.stackGreen)
                             Text("DUPR Verified")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(AppFonts.body())
+                                .fontWeight(.semibold)
                                 .foregroundColor(.stackGreen)
                         }
 
@@ -184,7 +185,7 @@ struct EditProfileView: View {
 
     private var avatarPlaceholder: some View {
         Circle()
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color(.tertiarySystemFill))
             .frame(width: 90, height: 90)
             .overlay(
                 Image(systemName: "person.fill")

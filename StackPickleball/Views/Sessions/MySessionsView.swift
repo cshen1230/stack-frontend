@@ -21,7 +21,7 @@ struct MySessionsView: View {
                 if isLoading {
                     ScrollView {
                         SkeletonList(count: 3) { SkeletonCard() }
-                            .padding(16)
+                            .padding(AppConstants.screenPadding)
                     }
                 } else if sessions.isEmpty {
                     EmptyStateView(
@@ -46,7 +46,8 @@ struct MySessionsView: View {
                                         }
                                     )
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(.pressableSubtle)
+                                .contentShape(RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius))
                                 .contextMenu {
                                     if game.creatorId == currentUserId {
                                         Button(role: .destructive) {
@@ -64,9 +65,9 @@ struct MySessionsView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                         .padding(.top, 8)
-                        .padding(.bottom, 16)
+                        .padding(.bottom, AppConstants.screenPadding)
                     }
                 }
             }

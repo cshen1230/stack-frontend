@@ -283,7 +283,7 @@ struct GroupChatSettingsSheet: View {
 
     private var memberPlaceholder: some View {
         Circle()
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color(.tertiarySystemFill))
             .frame(width: 40, height: 40)
             .overlay(
                 Image(systemName: "person.fill")

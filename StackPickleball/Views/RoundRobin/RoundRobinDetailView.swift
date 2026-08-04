@@ -19,7 +19,7 @@ struct RoundRobinDetailView: View {
         VStack(spacing: 0) {
             if viewModel.isLoading {
                 SkeletonList(count: 3) { SkeletonCard() }
-                    .padding(16)
+                    .padding(AppConstants.screenPadding)
                 Spacer()
             } else if viewModel.rounds.isEmpty {
                 waitingView
@@ -31,7 +31,7 @@ struct RoundRobinDetailView: View {
                     Text("Players").tag(2)
                 }
                 .pickerStyle(.segmented)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppConstants.screenPadding)
                 .padding(.top, 8)
 
                 switch selectedTab {
@@ -114,13 +114,13 @@ struct RoundRobinDetailView: View {
                 // Player list
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Players (\(viewModel.participants.count))")
-                        .font(.system(size: 18, weight: .bold))
-                        .padding(.horizontal, 16)
+                        .font(AppFonts.headline())
+                        .padding(.horizontal, AppConstants.screenPadding)
 
                     ForEach(viewModel.participants) { p in
                         HStack(spacing: 12) {
                             Circle()
-                                .fill(Color.gray.opacity(0.3))
+                                .fill(Color(.tertiarySystemFill))
                                 .frame(width: 40, height: 40)
                                 .overlay(
                                     Image(systemName: "person.fill")
@@ -136,7 +136,7 @@ struct RoundRobinDetailView: View {
                             }
                             Spacer()
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                     }
                 }
 
@@ -146,14 +146,9 @@ struct RoundRobinDetailView: View {
                         Task { await viewModel.startSession() }
                     } label: {
                         Text("Start Round Robin")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(Color.stackGreen)
-                            .cornerRadius(14)
                     }
-                    .padding(.horizontal, 16)
+                    .primaryButton()
+                    .padding(.horizontal, AppConstants.screenPadding)
                 }
 
                 Spacer(minLength: 24)
@@ -170,8 +165,8 @@ struct RoundRobinDetailView: View {
                 ForEach(viewModel.roundGroups, id: \.number) { group in
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Round \(group.number)")
-                            .font(.system(size: 16, weight: .bold))
-                            .padding(.horizontal, 16)
+                            .font(AppFonts.headline())
+                            .padding(.horizontal, AppConstants.screenPadding)
 
                         if !group.byes.isEmpty {
                             HStack(spacing: 4) {
@@ -182,14 +177,14 @@ struct RoundRobinDetailView: View {
                                     .font(.system(size: 13))
                                     .foregroundColor(.secondary)
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppConstants.screenPadding)
                         }
 
                         ForEach(group.matches) { match in
                             MatchCard(match: match, viewModel: viewModel) {
                                 scoreRound = match
                             }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppConstants.screenPadding)
                         }
                     }
                 }
@@ -244,7 +239,7 @@ struct RoundRobinDetailView: View {
                 ForEach(viewModel.participants) { p in
                     HStack(spacing: 12) {
                         Circle()
-                            .fill(Color.gray.opacity(0.3))
+                            .fill(Color(.tertiarySystemFill))
                             .frame(width: 48, height: 48)
                             .overlay(
                                 Image(systemName: "person.fill")
@@ -355,6 +350,7 @@ private struct MatchCard: View {
             .cornerRadius(12)
             .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur / 2, y: 1)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressableSubtle)
+        .contentShape(RoundedRectangle(cornerRadius: 12))
     }
 }

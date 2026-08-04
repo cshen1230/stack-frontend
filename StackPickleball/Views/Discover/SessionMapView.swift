@@ -117,6 +117,7 @@ struct SessionMapView: View {
                                 .background(Color.black.opacity(0.8))
                                 .clipShape(Circle())
                         }
+                        .accessibilityLabel("Center on my location")
 
                         Button {
                             dismiss()
@@ -133,6 +134,7 @@ struct SessionMapView: View {
                             .background(Color.black.opacity(0.8))
                             .clipShape(Capsule())
                         }
+                        .accessibilityLabel("Switch to list view")
                     }
                     .padding(.trailing, 16)
                 }

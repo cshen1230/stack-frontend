@@ -161,7 +161,7 @@ struct SessionFlyerDetailView: View {
                         .cornerRadius(AppConstants.cardCornerRadius)
                         .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                     .padding(.top, 20)
                 }
 
@@ -190,7 +190,7 @@ struct SessionFlyerDetailView: View {
                         .cornerRadius(AppConstants.cardCornerRadius)
                         .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                     .padding(.top, 12)
                 }
 
@@ -216,7 +216,7 @@ struct SessionFlyerDetailView: View {
                         .cornerRadius(AppConstants.cardCornerRadius)
                         .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                     .padding(.top, 12)
                 }
 
@@ -224,11 +224,11 @@ struct SessionFlyerDetailView: View {
                 HStack {
                     let acceptedSMS = smsInvitations.filter { $0.rsvpStatus == .accepted }.count
                     Text("Players (\(participants.count + acceptedSMS))")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(AppFonts.headline())
                         .foregroundColor(.primary)
                     Spacer()
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppConstants.screenPadding)
                 .padding(.top, 24)
                 .padding(.bottom, 8)
 
@@ -238,7 +238,7 @@ struct SessionFlyerDetailView: View {
                     .padding(.top, 20)
                 } else if participants.isEmpty {
                     Text("No players yet")
-                        .font(.system(size: 15))
+                        .font(AppFonts.body())
                         .foregroundColor(.secondary)
                         .padding(.top, 20)
                 } else {
@@ -256,7 +256,7 @@ struct SessionFlyerDetailView: View {
                             )
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                 }
 
                 // SMS invitees
@@ -266,7 +266,7 @@ struct SessionFlyerDetailView: View {
                             SMSInviteeRow(invitation: inv)
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                 }
 
                 if let error = errorMessage {
@@ -274,7 +274,7 @@ struct SessionFlyerDetailView: View {
                         .foregroundColor(.red)
                         .font(.caption)
                         .padding(.top, 12)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                 }
 
                 Spacer(minLength: 24)
@@ -468,7 +468,7 @@ private struct FlyerPlayerRow: View {
 
     private var avatarPlaceholder: some View {
         Circle()
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color(.tertiarySystemFill))
             .overlay(
                 Image(systemName: "person.fill")
                     .font(.system(size: 20))

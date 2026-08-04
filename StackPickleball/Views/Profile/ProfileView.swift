@@ -63,7 +63,8 @@ struct ProfileView: View {
                                 }) {
                                     HStack(spacing: 8) {
                                         Text("Sign Out")
-                                            .font(.system(size: 16, weight: .semibold))
+                                            .font(AppFonts.body())
+                                            .fontWeight(.semibold)
                                         Image(systemName: "rectangle.portrait.and.arrow.right")
                                             .font(.system(size: 15))
                                     }
@@ -89,7 +90,8 @@ struct ProfileView: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: { showingEditProfile = true }) {
                         Text("Edit")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(AppFonts.body())
+                            .fontWeight(.medium)
                             .foregroundColor(.stackGreen)
                     }
                 }
@@ -176,12 +178,14 @@ struct ProfileView: View {
                         HStack(spacing: 12) {
                             if let singles = user.duprSinglesRating {
                                 Text("Singles: \(String(format: "%.2f", singles))")
-                                    .font(.system(size: 13, weight: .medium))
+                                    .font(AppFonts.subheadline())
+                                    .fontWeight(.medium)
                                     .foregroundColor(.stackSecondaryText)
                             }
                             if let doubles = user.duprDoublesRating {
                                 Text("Doubles: \(String(format: "%.2f", doubles))")
-                                    .font(.system(size: 13, weight: .medium))
+                                    .font(AppFonts.subheadline())
+                                    .fontWeight(.medium)
                                     .foregroundColor(.stackSecondaryText)
                             }
                         }
@@ -277,10 +281,11 @@ struct ProfileView: View {
     private func statItem(label: String, value: String) -> some View {
         VStack(spacing: 4) {
             Text(label)
-                .font(.system(size: 12, weight: .medium))
+                .font(AppFonts.caption())
+                .fontWeight(.medium)
                 .foregroundColor(.stackSecondaryText)
             Text(value)
-                .font(.system(size: 22, weight: .bold))
+                .font(AppFonts.sectionTitle())
                 .foregroundColor(.primary)
         }
         .frame(maxWidth: .infinity)
@@ -288,7 +293,7 @@ struct ProfileView: View {
 
     private var avatarPlaceholder: some View {
         Circle()
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color(.tertiarySystemFill))
             .frame(width: 110, height: 110)
             .overlay(
                 Image(systemName: "person.fill")
@@ -311,7 +316,7 @@ struct ProfileView: View {
             if !friendsViewModel.friendRequests.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Friend Requests")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(AppFonts.headline())
                         .foregroundColor(.primary)
                         .padding(.top, 6)
                         .id(friendRequestsScrollId)
@@ -424,7 +429,8 @@ struct ProfileView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(AppFonts.body())
+                    .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 Text(subtitle)
                     .font(AppFonts.subheadline())
@@ -528,7 +534,7 @@ struct ProfileView: View {
 
     private func friendAvatarPlaceholder(size: CGFloat) -> some View {
         Circle()
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color(.tertiarySystemFill))
             .frame(width: size, height: size)
             .overlay(
                 Image(systemName: "person.fill")

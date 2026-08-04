@@ -36,7 +36,7 @@ struct ScheduleTab: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppConstants.screenPadding)
                 .padding(.vertical, 8)
 
                 // Content
@@ -148,7 +148,7 @@ struct ScheduleTab: View {
         if viewModel.isLoading && viewModel.upcomingSessions.isEmpty {
             ScrollView {
                 SkeletonList(count: 3) { SkeletonCard() }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                     .padding(.top, 8)
             }
         } else if viewModel.upcomingSessions.isEmpty {
@@ -165,13 +165,14 @@ struct ScheduleTab: View {
                         Image(systemName: "plus.circle.fill")
                             .font(.system(size: 15))
                         Text("Create Game")
-                            .font(.system(size: 15, weight: .semibold))
+                            .font(AppFonts.body())
+                            .fontWeight(.semibold)
                     }
                     .foregroundColor(.white)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 12)
                     .background(Color.stackGreen)
-                    .cornerRadius(12)
+                    .cornerRadius(AppConstants.buttonCornerRadius)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -211,9 +212,9 @@ struct ScheduleTab: View {
                         }
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppConstants.screenPadding)
                 .padding(.top, 8)
-                .padding(.bottom, 16)
+                .padding(.bottom, AppConstants.screenPadding)
             }
         }
     }
@@ -229,33 +230,32 @@ struct ScheduleTab: View {
                     HStack(spacing: 6) {
                         ForEach(0..<7, id: \.self) { day in
                             Button {
-                                viewModel.selectedDayOfWeek = day
+                                withAnimation(Motion.state) {
+                                    viewModel.selectedDayOfWeek = day
+                                }
                                 if let userId = currentUserId {
                                     Task { await viewModel.loadFriendSchedules(userId: userId) }
                                 }
                             } label: {
                                 Text(dayNames[day])
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .font(AppFonts.callout())
+                                    .fontWeight(.semibold)
                                     .foregroundColor(viewModel.selectedDayOfWeek == day ? .white : .primary)
                                     .padding(.horizontal, 14)
                                     .padding(.vertical, 8)
-                                    .background(viewModel.selectedDayOfWeek == day ? Color.stackGreen : Color.stackBackground)
+                                    .background(viewModel.selectedDayOfWeek == day ? Color.stackGreen : Color(.secondarySystemBackground))
                                     .cornerRadius(8)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(viewModel.selectedDayOfWeek == day ? Color.clear : Color.stackBorder, lineWidth: 1)
-                                    )
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                 }
 
                 // Usually Available section
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Usually Available on \(dayNames[viewModel.selectedDayOfWeek])")
-                        .font(.system(size: 16, weight: .bold))
-                        .padding(.horizontal, 16)
+                        .font(AppFonts.headline())
+                        .padding(.horizontal, AppConstants.screenPadding)
 
                     if viewModel.friendSchedules.isEmpty {
                         VStack(spacing: 8) {
@@ -263,7 +263,7 @@ struct ScheduleTab: View {
                                 .font(.system(size: 24))
                                 .foregroundColor(.stackSecondaryText)
                             Text("No friends have availability set for \(dayNames[viewModel.selectedDayOfWeek])")
-                                .font(.system(size: 14))
+                                .font(AppFonts.callout())
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
                         }
@@ -275,7 +275,7 @@ struct ScheduleTab: View {
                                 FriendScheduleCard(schedule: schedule)
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                     }
                 }
 
@@ -288,19 +288,20 @@ struct ScheduleTab: View {
                             Image(systemName: "plus.circle.fill")
                                 .font(.system(size: 15))
                             Text("Create Game")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(AppFonts.body())
+                                .fontWeight(.semibold)
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 14)
                         .background(Color.stackGreen)
-                        .cornerRadius(12)
+                        .cornerRadius(AppConstants.buttonCornerRadius)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                 }
             }
             .padding(.top, 8)
-            .padding(.bottom, 16)
+            .padding(.bottom, AppConstants.screenPadding)
         }
     }
 

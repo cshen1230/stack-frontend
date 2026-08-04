@@ -141,11 +141,11 @@ struct GameDetailView: View {
                 // Players header
                 HStack {
                     Text("Players (\(participants.count))")
-                        .font(.system(size: 18, weight: .bold))
+                        .font(AppFonts.headline())
                         .foregroundColor(.primary)
                     Spacer()
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppConstants.screenPadding)
                 .padding(.top, 24)
                 .padding(.bottom, 8)
 
@@ -155,7 +155,7 @@ struct GameDetailView: View {
                     .padding(.top, 20)
                 } else if participants.isEmpty {
                     Text("No players yet")
-                        .font(.system(size: 15))
+                        .font(AppFonts.body())
                         .foregroundColor(.secondary)
                         .padding(.top, 20)
                 } else {
@@ -176,7 +176,7 @@ struct GameDetailView: View {
                             )
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                 }
 
                 // Join button — for non-participants
@@ -186,14 +186,14 @@ struct GameDetailView: View {
                             Image(systemName: "lock.fill")
                                 .font(.system(size: 15))
                             Text("Friends Only")
-                                .font(.system(size: 17, weight: .bold))
+                                .font(AppFonts.headline())
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
                         .background(Color.gray)
-                        .cornerRadius(14)
-                        .padding(.horizontal, 16)
+                        .cornerRadius(AppConstants.buttonCornerRadius)
+                        .padding(.horizontal, AppConstants.screenPadding)
                         .padding(.top, 24)
                     } else {
                         Button {
@@ -205,16 +205,16 @@ struct GameDetailView: View {
                                         .tint(.white)
                                 }
                                 Text(isFull ? "Session Full" : "Join Session")
-                                    .font(.system(size: 17, weight: .bold))
+                                    .font(AppFonts.headline())
                             }
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                             .background(isFull ? Color.gray : Color.stackGreen)
-                            .cornerRadius(14)
+                            .cornerRadius(AppConstants.buttonCornerRadius)
                         }
                         .disabled(isJoining || isFull)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                         .padding(.top, 24)
                     }
                 }
@@ -241,7 +241,7 @@ struct GameDetailView: View {
                         .cornerRadius(AppConstants.cardCornerRadius)
                         .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                     .padding(.top, 20)
                 }
 
@@ -270,7 +270,7 @@ struct GameDetailView: View {
                         .cornerRadius(AppConstants.cardCornerRadius)
                         .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                     .padding(.top, 20)
                 }
 
@@ -296,7 +296,7 @@ struct GameDetailView: View {
                         .cornerRadius(AppConstants.cardCornerRadius)
                         .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                     .padding(.top, 12)
                 }
 
@@ -305,7 +305,7 @@ struct GameDetailView: View {
                         .foregroundColor(.red)
                         .font(.caption)
                         .padding(.top, 12)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                 }
 
                 Spacer(minLength: 24)
@@ -447,7 +447,8 @@ private struct PlayerRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(participant.displayName)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppFonts.body())
+                        .fontWeight(.semibold)
                         .foregroundColor(.primary)
 
                     if isHost {
@@ -469,7 +470,8 @@ private struct PlayerRow: View {
                                 .foregroundColor(.stackGreen)
                         }
                         Text("DUPR \(String(format: "%.1f", rating))")
-                            .font(.system(size: 13, weight: .medium))
+                            .font(AppFonts.subheadline())
+                            .fontWeight(.medium)
                             .foregroundColor(.stackGreen)
                     }
                 }
@@ -508,7 +510,7 @@ private struct PlayerRow: View {
 
     private var avatarPlaceholder: some View {
         Circle()
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color(.tertiarySystemFill))
             .overlay(
                 Image(systemName: "person.fill")
                     .font(.system(size: 20))

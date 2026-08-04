@@ -25,7 +25,7 @@ struct GroupChatsListView: View {
                 if viewModel.isLoading && viewModel.groupChats.isEmpty {
                     ScrollView {
                         SkeletonList(count: 5) { SkeletonRow(avatarSize: 48) }
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppConstants.screenPadding)
                             .padding(.top, 8)
                     }
                 } else if viewModel.groupChats.isEmpty && viewModel.discoverableResults.isEmpty {
@@ -90,7 +90,8 @@ struct GroupChatsListView: View {
                                 }
                             } header: {
                                 Text("Discover")
-                                    .font(.system(size: 14, weight: .semibold))
+                                    .font(AppFonts.callout())
+                                    .fontWeight(.semibold)
                                     .foregroundColor(.stackSecondaryText)
                                     .textCase(nil)
                             }
@@ -98,7 +99,7 @@ struct GroupChatsListView: View {
 
                         if viewModel.isSearching {
                             SkeletonList(count: 3) { SkeletonRow(avatarSize: 48) }
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, AppConstants.screenPadding)
                             .listRowBackground(Color(.systemBackground))
                         }
                     }
@@ -226,7 +227,8 @@ private struct GroupChatRow: View {
                 // Name + timestamp
                 HStack(alignment: .firstTextBaseline) {
                     Text(groupChat.name)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppFonts.body())
+                        .fontWeight(.semibold)
                         .foregroundColor(.primary)
                         .lineLimit(1)
 
@@ -234,7 +236,7 @@ private struct GroupChatRow: View {
 
                     if let lastAt = groupChat.lastMessageAt {
                         Text(relativeTime(from: lastAt))
-                            .font(.system(size: 13))
+                            .font(AppFonts.subheadline())
                             .foregroundColor(Color(.secondaryLabel))
                     }
                 }
@@ -242,12 +244,12 @@ private struct GroupChatRow: View {
                 // Last message preview
                 if let preview = groupChat.lastMessagePreview {
                     Text(preview)
-                        .font(.system(size: 14))
+                        .font(AppFonts.callout())
                         .foregroundColor(Color(.secondaryLabel))
                         .lineLimit(2)
                 } else {
                     Text("No messages yet")
-                        .font(.system(size: 14))
+                        .font(AppFonts.callout())
                         .foregroundColor(Color(.tertiaryLabel))
                         .lineLimit(1)
                 }
@@ -352,7 +354,8 @@ private struct DiscoverableCommunityRow: View {
             // Name + member count
             VStack(alignment: .leading, spacing: 3) {
                 Text(community.name)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(AppFonts.body())
+                    .fontWeight(.semibold)
                     .foregroundColor(.primary)
                     .lineLimit(1)
 
@@ -360,7 +363,7 @@ private struct DiscoverableCommunityRow: View {
                     Image(systemName: "person.2")
                         .font(.system(size: 11))
                     Text("\(community.memberCount ?? 0) members")
-                        .font(.system(size: 13))
+                        .font(AppFonts.subheadline())
                 }
                 .foregroundColor(.stackSecondaryText)
             }

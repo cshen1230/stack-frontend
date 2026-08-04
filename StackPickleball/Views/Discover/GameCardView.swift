@@ -24,9 +24,10 @@ struct GameCardView: View {
                             Image(systemName: "lock.fill")
                                 .font(.system(size: 12))
                                 .foregroundColor(.orange)
+                                .accessibilityLabel("Friends only")
                         }
                         Text(game.sessionName ?? game.creatorDisplayName)
-                            .font(.system(size: 17, weight: .bold))
+                            .font(AppFonts.headline())
                             .foregroundColor(.primary)
                             .lineLimit(1)
                     }
@@ -44,7 +45,7 @@ struct GameCardView: View {
 
                     HStack(spacing: 8) {
                         Text(game.gameFormat.displayName)
-                            .font(.system(size: 13, weight: .medium))
+                            .font(AppFonts.subheadline())
                             .foregroundColor(.secondary)
 
                         Text(game.balance.summary)
@@ -83,15 +84,16 @@ struct GameCardView: View {
                             .cornerRadius(10)
                     }
                     .buttonStyle(.plain)
+                    .contentShape(Rectangle())
                 } else {
                     Text("Full")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(AppFonts.subheadline())
                         .foregroundColor(.secondary)
                 }
             }
             .cardStyle()
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressableSubtle)
     }
 }
 

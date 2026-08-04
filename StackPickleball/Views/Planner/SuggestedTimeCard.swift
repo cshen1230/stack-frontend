@@ -23,11 +23,12 @@ struct SuggestedTimeCard: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text("You usually play \(suggestion.weekdayName)s at \(suggestion.hourLabel)")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(AppFonts.subheadline())
+                            .fontWeight(.semibold)
                             .foregroundColor(.primary)
 
                         Text("Played \(suggestion.playCount) times")
-                            .font(.system(size: 11))
+                            .font(AppFonts.caption2())
                             .foregroundColor(.secondary)
                     }
 
@@ -50,6 +51,7 @@ struct SuggestedTimeCard: View {
             )
             .shadow(color: .black.opacity(0.04), radius: 3, y: 1)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressableSubtle)
+        .contentShape(RoundedRectangle(cornerRadius: 10))
     }
 }

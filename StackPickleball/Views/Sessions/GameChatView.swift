@@ -37,12 +37,14 @@ struct GameChatView: View {
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
+                .accessibilityLabel("Back")
 
                 Spacer()
 
                 Text(game.sessionName ?? "Chat")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(AppFonts.headline())
 
                 Spacer()
 
@@ -53,7 +55,9 @@ struct GameChatView: View {
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.primary)
                         .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
+                .accessibilityLabel("Session settings")
             }
             .padding(.horizontal, 8)
             .background(Color.stackBackground)
@@ -74,11 +78,11 @@ struct GameChatView: View {
                                 .foregroundColor(.stackGreen.opacity(0.4))
 
                             Text("Start the conversation")
-                                .font(.system(size: 22, weight: .bold))
+                                .font(AppFonts.sectionTitle())
                                 .foregroundColor(.primary)
 
                             Text("Say hello to your group!")
-                                .font(.system(size: 15))
+                                .font(AppFonts.body())
                                 .foregroundColor(.secondary)
                         }
                         .frame(maxWidth: .infinity)
@@ -128,7 +132,7 @@ struct GameChatView: View {
 
                 HStack(alignment: .bottom, spacing: 10) {
                     TextField("Message", text: $messageText, axis: .vertical)
-                        .font(.system(size: 16))
+                        .font(AppFonts.body())
                         .lineLimit(1...5)
                         .focused($isInputFocused)
                         .padding(.horizontal, 16)
@@ -139,6 +143,7 @@ struct GameChatView: View {
                         )
 
                     Button {
+                        Haptics.tap()
                         Task { await sendMessage() }
                     } label: {
                         Image(systemName: "arrow.up")
@@ -151,8 +156,10 @@ struct GameChatView: View {
                             )
                     }
                     .disabled(!canSend)
+                    .accessibilityLabel("Send message")
+                    .animation(Motion.state, value: canSend)
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppConstants.screenPadding)
                 .padding(.vertical, 10)
             }
             .background(Color.stackBackground)
@@ -277,7 +284,7 @@ private struct SessionSettingsSheet: View {
                             Text("·").fontWeight(.bold)
                             Text(game.gameFormat.displayName)
                         }
-                        .font(.system(size: 13))
+                        .font(AppFonts.subheadline())
                         .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity)
@@ -286,7 +293,7 @@ private struct SessionSettingsSheet: View {
                     // Players section
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Players (\(participants.count))")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(AppFonts.headline())
                             .padding(.horizontal, 4)
 
                         if isLoadingParticipants {
@@ -362,13 +369,10 @@ private struct SessionSettingsSheet: View {
                                         }
                                     }
                                 }
-                                .padding(10)
-                                .background(Color.stackCardWhite)
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.stackBorder, lineWidth: 1)
-                                )
+                                .padding(12)
+                                .background(Color(.systemBackground))
+                                .clipShape(RoundedRectangle(cornerRadius: AppConstants.buttonCornerRadius))
+                                .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur / 2, y: 1)
                             }
                         }
                     }
@@ -384,17 +388,14 @@ private struct SessionSettingsSheet: View {
                                     Image(systemName: "rectangle.portrait.and.arrow.right")
                                         .font(.system(size: 15))
                                     Text("Leave Session")
-                                        .font(.system(size: 16, weight: .semibold))
+                                        .font(AppFonts.body())
+                                        .fontWeight(.semibold)
                                 }
                                 .foregroundColor(.red)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
-                                .background(Color.red.opacity(0.1))
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
-                                )
+                                .background(Color.red.opacity(0.08))
+                                .clipShape(RoundedRectangle(cornerRadius: AppConstants.buttonCornerRadius))
                             }
                             .disabled(isProcessing)
                         } else {
@@ -405,17 +406,14 @@ private struct SessionSettingsSheet: View {
                                     Image(systemName: "trash")
                                         .font(.system(size: 15))
                                     Text("Delete Session")
-                                        .font(.system(size: 16, weight: .semibold))
+                                        .font(AppFonts.body())
+                                        .fontWeight(.semibold)
                                 }
                                 .foregroundColor(.red)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)
-                                .background(Color.red.opacity(0.1))
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
-                                )
+                                .background(Color.red.opacity(0.08))
+                                .clipShape(RoundedRectangle(cornerRadius: AppConstants.buttonCornerRadius))
                             }
                             .disabled(isProcessing)
                         }
@@ -497,7 +495,7 @@ private struct SessionSettingsSheet: View {
 
     private var participantPlaceholder: some View {
         Circle()
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color(.tertiarySystemFill))
             .frame(width: 40, height: 40)
             .overlay(
                 Image(systemName: "person.fill")
@@ -587,12 +585,13 @@ private struct MessageBubble: View {
             VStack(alignment: isFromCurrentUser ? .trailing : .leading, spacing: 4) {
                 if !isFromCurrentUser {
                     Text(message.senderDisplayName)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(AppFonts.caption())
+                        .fontWeight(.medium)
                         .foregroundColor(.stackSecondaryText)
                 }
 
                 Text(message.content)
-                    .font(.system(size: 15))
+                    .font(AppFonts.body())
                     .foregroundColor(isFromCurrentUser ? .white : .primary)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
@@ -600,7 +599,7 @@ private struct MessageBubble: View {
                     .cornerRadius(20)
 
                 Text(message.createdAt, format: .dateTime.hour().minute())
-                    .font(.system(size: 11))
+                    .font(AppFonts.caption2())
                     .foregroundColor(.stackTimestamp)
             }
 
