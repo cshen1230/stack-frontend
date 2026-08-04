@@ -8,7 +8,7 @@ struct SignUpView: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [.white, Color(hex: "#F1F8E9")],
+                colors: [.white, .stackLoginGradientEnd],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -21,117 +21,149 @@ struct SignUpView: View {
                 VStack(spacing: 8) {
                     Text("Create Account")
                         .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(Color(hex: "#2D5016"))
+                        .foregroundColor(.stackGreen)
 
                     Text("Join the pickleball community")
-                        .font(.system(size: 16))
-                        .foregroundColor(.secondary)
+                        .font(AppFonts.headline())
+                        .foregroundColor(.stackSecondaryText)
                 }
 
                 Spacer()
 
-                // Input fields — email + password only (name/DUPR collected in onboarding)
-                VStack(spacing: 16) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "envelope")
-                            .foregroundColor(.secondary)
-                        TextField("Email", text: $viewModel.email)
-                            .textContentType(.emailAddress)
-                            #if os(iOS)
-                            .textInputAutocapitalization(.never)
-                            .keyboardType(.emailAddress)
-                            #endif
-                    }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "#E0E0E0"), lineWidth: 1)
-                    )
-
-                    HStack(spacing: 12) {
-                        Image(systemName: "lock")
-                            .foregroundColor(.secondary)
-                        SecureField("Password", text: $viewModel.password)
-                            .textContentType(.newPassword)
-                    }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "#E0E0E0"), lineWidth: 1)
-                    )
-
-                    HStack(spacing: 12) {
-                        Image(systemName: "lock")
-                            .foregroundColor(.secondary)
-                        SecureField("Confirm Password", text: $confirmPassword)
-                            .textContentType(.newPassword)
-                    }
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(hex: "#E0E0E0"), lineWidth: 1)
-                    )
-                }
-                .padding(.horizontal, 24)
-
-                // Success / Error messages
                 if viewModel.signUpSucceeded {
-                    Text("Check your email to confirm your account, then sign in.")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Color(hex: "#2D5016"))
-                        .padding(.horizontal, 24)
-                } else if let error = viewModel.errorMessage {
-                    Text(error)
-                        .font(.system(size: 14))
-                        .foregroundColor(.red)
-                        .padding(.horizontal, 24)
-                }
+                    // Success state — clear instructions + way back
+                    VStack(spacing: 20) {
+                        Image(systemName: "envelope.badge.shield.half.filled")
+                            .font(.system(size: 44))
+                            .foregroundColor(.stackGreen)
 
-                // Sign up button
-                Button(action: {
-                    if viewModel.password != confirmPassword {
-                        viewModel.errorMessage = "Passwords do not match"
-                        return
+                        Text("Check your email")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(.primary)
+
+                        Text("We sent a confirmation link to **\(viewModel.email)**. Tap it, then come back and sign in.")
+                            .font(AppFonts.body())
+                            .foregroundColor(.stackSecondaryText)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 8)
+
+                        Button(action: { dismiss() }) {
+                            Text("Back to Sign In")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 54)
+                                .background(Color.stackGreen)
+                                .cornerRadius(AppConstants.buttonCornerRadius)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    Task { await viewModel.signUp() }
-                }) {
-                    if viewModel.isLoading {
-                        ProgressView()
-                            .tint(.white)
-                    } else {
-                        Text("Sign Up")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                } else {
+                    // Input fields
+                    VStack(spacing: 14) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "envelope")
+                                .font(.system(size: 16))
+                                .foregroundColor(.stackInputIcon)
+                            TextField("Email", text: $viewModel.email)
+                                .font(.system(size: 16))
+                                .textContentType(.emailAddress)
+                                #if os(iOS)
+                                .textInputAutocapitalization(.never)
+                                .keyboardType(.emailAddress)
+                                #endif
+                        }
+                        .padding()
+                        .background(Color(.secondarySystemBackground))
+                        .cornerRadius(AppConstants.buttonCornerRadius)
+
+                        HStack(spacing: 12) {
+                            Image(systemName: "lock")
+                                .font(.system(size: 16))
+                                .foregroundColor(.stackInputIcon)
+                            SecureField("Password", text: $viewModel.password)
+                                .font(.system(size: 16))
+                                .textContentType(.newPassword)
+                        }
+                        .padding()
+                        .background(Color(.secondarySystemBackground))
+                        .cornerRadius(AppConstants.buttonCornerRadius)
+
+                        HStack(spacing: 12) {
+                            Image(systemName: "lock")
+                                .font(.system(size: 16))
+                                .foregroundColor(.stackInputIcon)
+                            SecureField("Confirm Password", text: $confirmPassword)
+                                .font(.system(size: 16))
+                                .textContentType(.newPassword)
+                        }
+                        .padding()
+                        .background(Color(.secondarySystemBackground))
+                        .cornerRadius(AppConstants.buttonCornerRadius)
                     }
+                    .padding(.horizontal, 24)
+
+                    // Error message
+                    if let error = viewModel.errorMessage {
+                        Text(error)
+                            .font(AppFonts.callout())
+                            .foregroundColor(.red)
+                            .padding(.horizontal, 24)
+                    }
+
+                    // Sign up button
+                    Button(action: {
+                        if viewModel.password != confirmPassword {
+                            viewModel.errorMessage = "Passwords do not match"
+                            return
+                        }
+                        Task {
+                            await viewModel.signUp()
+                        }
+                    }) {
+                        if viewModel.isLoading {
+                            ProgressView()
+                                .tint(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 54)
+                                .background(Color.stackGreen)
+                                .cornerRadius(AppConstants.buttonCornerRadius)
+                        } else {
+                            Text("Sign Up")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 54)
+                                .background(Color.stackGreen)
+                                .cornerRadius(AppConstants.buttonCornerRadius)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .contentShape(Rectangle())
+                    .padding(.horizontal, 24)
+                    .disabled(viewModel.isLoading)
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(Color(hex: "#2D5016"))
-                .cornerRadius(12)
-                .padding(.horizontal, 24)
-                .disabled(viewModel.isLoading)
 
                 // Back to login link
-                HStack(spacing: 4) {
-                    Text("Already have an account?")
-                        .foregroundColor(.secondary)
-                    Button("Sign In") {
-                        dismiss()
+                if !viewModel.signUpSucceeded {
+                    HStack(spacing: 4) {
+                        Text("Already have an account?")
+                            .foregroundColor(.stackSecondaryText)
+                        Button("Sign In") {
+                            dismiss()
+                        }
+                        .foregroundColor(.stackGreen)
+                        .fontWeight(.semibold)
                     }
-                    .foregroundColor(Color(hex: "#2D5016"))
-                    .fontWeight(.semibold)
+                    .font(.system(size: 16))
                 }
-                .font(.system(size: 16))
 
                 Spacer()
             }
         }
+        .animation(Motion.transition, value: viewModel.signUpSucceeded)
     }
 }
 

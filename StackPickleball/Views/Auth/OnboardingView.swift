@@ -5,16 +5,10 @@ struct OnboardingView: View {
     @EnvironmentObject private var locationManager: LocationManager
 
     @State private var firstName = ""
-    @State private var middleName = ""
     @State private var lastName = ""
     @State private var username = ""
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var duprConnected = false
-    @State private var duprProfile: DUPRService.DUPRProfile?
-    /// Asked once here so friends' calendars have something on them from day one, instead of
-    /// everyone having to remember to broadcast.
-    @State private var dayParts: [Int: Set<DayPart>] = [:]
 
     var body: some View {
         ZStack {
@@ -26,60 +20,39 @@ struct OnboardingView: View {
             .ignoresSafeArea()
 
             ScrollView {
-                VStack(spacing: 24) {
-                    Spacer(minLength: 40)
+                VStack(spacing: 28) {
+                    Spacer(minLength: 48)
 
+                    // Header
                     VStack(spacing: 8) {
-                        Text("Complete Your Profile")
-                            .font(.system(size: 28, weight: .bold))
-                            .foregroundColor(.stackGreen)
+                        Text("What's your name?")
+                            .font(AppFonts.pageTitle())
+                            .foregroundColor(.primary)
 
-                        Text("Tell us about yourself to get started")
-                            .font(.system(size: 16))
+                        Text("This is how other players will find you.")
+                            .font(AppFonts.body())
                             .foregroundColor(.stackSecondaryText)
                     }
 
-                    VStack(spacing: 16) {
-                        // First name
-                        formField(icon: "person", placeholder: "First Name", text: $firstName)
+                    // Fields
+                    VStack(spacing: 14) {
+                        formField(icon: "person", placeholder: "First name", text: $firstName)
                             .textContentType(.givenName)
 
-                        // Middle name (optional)
-                        formField(icon: "person", placeholder: "Middle Name (optional)", text: $middleName)
-                            .textContentType(.middleName)
-
-                        // Last name
-                        formField(icon: "person", placeholder: "Last Name", text: $lastName)
+                        formField(icon: "person", placeholder: "Last name", text: $lastName)
                             .textContentType(.familyName)
 
-                        // Username
                         formField(icon: "at", placeholder: "Username", text: $username)
                             .textContentType(.username)
                             #if os(iOS)
                             .textInputAutocapitalization(.never)
                             #endif
-
-                        // DUPR Connect
-                        DUPRConnectView(
-                            onConnected: { profile in
-                                duprProfile = profile
-                                duprConnected = true
-                            },
-                            onSkip: {
-                                duprConnected = false
-                                duprProfile = nil
-                            },
-                            allowSkip: true,
-                            isConnected: duprConnected
-                        )
-
-                        availabilitySection
                     }
                     .padding(.horizontal, 24)
 
                     if let error = errorMessage {
                         Text(error)
-                            .font(.system(size: 14))
+                            .font(AppFonts.callout())
                             .foregroundColor(.red)
                             .padding(.horizontal, 24)
                     }
@@ -89,16 +62,16 @@ struct OnboardingView: View {
                             ProgressView().tint(.white)
                         } else {
                             Text("Get Started")
-                                .font(.system(size: 18, weight: .semibold))
-                                .foregroundColor(.white)
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(Color.stackGreen)
-                    .cornerRadius(14)
+                    .primaryButton()
                     .padding(.horizontal, 24)
                     .disabled(isLoading)
+
+                    Text("You can connect DUPR and set your\navailability later in your profile.")
+                        .font(AppFonts.caption())
+                        .foregroundColor(.stackSecondaryText)
+                        .multilineTextAlignment(.center)
 
                     Spacer(minLength: 40)
                 }
@@ -106,43 +79,18 @@ struct OnboardingView: View {
         }
     }
 
-    private var availabilitySection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("When do you usually play?")
-                .font(.headline)
-
-            Text("Tap the times that usually work \u{2014} you can change these any time.")
-                .font(.subheadline)
-                .foregroundColor(.stackSecondaryText)
-                .fixedSize(horizontal: false, vertical: true)
-
-            DayPartGrid(selection: $dayParts)
-        }
-        .padding(16)
-        .background(Color.white)
-        .cornerRadius(14)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color(hex: "#E5E7EB"), lineWidth: 1)
-        )
-    }
-
     @ViewBuilder
     private func formField(icon: String, placeholder: String, text: Binding<String>) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 16))
-                .foregroundColor(Color(hex: "#9CA3AF"))
+                .foregroundColor(.stackInputIcon)
             TextField(placeholder, text: text)
                 .font(.system(size: 16))
         }
         .padding()
-        .background(Color.white)
-        .cornerRadius(14)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color(hex: "#E5E7EB"), lineWidth: 1)
-        )
+        .background(Color(.secondarySystemBackground))
+        .cornerRadius(AppConstants.buttonCornerRadius)
     }
 
     /// Strips control characters (tabs, newlines, zero-width joiners, etc.)
@@ -157,7 +105,6 @@ struct OnboardingView: View {
 
         let cleanFirst = sanitized(firstName).trimmingCharacters(in: .whitespaces)
         let cleanLast  = sanitized(lastName).trimmingCharacters(in: .whitespaces)
-        let cleanMiddle = sanitized(middleName).trimmingCharacters(in: .whitespaces)
         let cleanUsername = sanitized(username).trimmingCharacters(in: .whitespaces)
 
         guard !cleanFirst.isEmpty else {
@@ -176,10 +123,6 @@ struct OnboardingView: View {
             errorMessage = "Last name is too long"
             return
         }
-        guard cleanMiddle.count <= 100 else {
-            errorMessage = "Middle name is too long"
-            return
-        }
         guard cleanUsername.count >= 3 else {
             errorMessage = "Username must be at least 3 characters"
             return
@@ -192,21 +135,15 @@ struct OnboardingView: View {
         isLoading = true
         Task {
             do {
-                let rating = duprProfile?.dupr_rating ?? 2.5
                 try await ProfileService.createProfile(
                     firstName: cleanFirst,
                     lastName: cleanLast,
-                    middleName: cleanMiddle.isEmpty ? nil : cleanMiddle,
+                    middleName: nil,
                     username: cleanUsername,
-                    duprRating: rating,
+                    duprRating: 2.5,
                     latitude: locationManager.latitude,
                     longitude: locationManager.longitude
                 )
-                // Availability is optional — a failure here shouldn't strand someone who
-                // has already created their profile.
-                if dayParts.hasAnySelection {
-                    try? await ScheduleService.saveSchedule(windows: dayParts.scheduleWindows)
-                }
 
                 // Reload profile in app state
                 if let userId = await AuthService.currentUserId() {
@@ -215,12 +152,11 @@ struct OnboardingView: View {
             } catch {
                 let message = "\(error)"
                 if message.lowercased().contains("username") || message.contains("duplicate") || message.contains("unique") || message.contains("23505") || message.contains("users_username_key") {
-                    errorMessage = "Username already exists. Please choose a different one."
+                    errorMessage = "That username is taken. Try another one."
                 } else {
-                    // Check if username exists as a fallback for generic edge function errors
                     let taken = (try? await ProfileService.isUsernameTaken(username)) ?? false
                     if taken {
-                        errorMessage = "Username already exists. Please choose a different one."
+                        errorMessage = "That username is taken. Try another one."
                     } else {
                         errorMessage = "Something went wrong. Please try again."
                     }

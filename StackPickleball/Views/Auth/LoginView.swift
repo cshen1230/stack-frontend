@@ -28,9 +28,11 @@ struct LoginView: View {
                         .font(.system(size: 42, weight: .bold))
                         .foregroundColor(.stackGreen)
 
-                    Text("Your Pickleball Community")
+                    Text("Find players. Schedule games.\nJust play.")
                         .font(AppFonts.headline())
                         .foregroundColor(.stackSecondaryText)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(3)
                 }
 
                 Spacer()
@@ -53,7 +55,6 @@ struct LoginView: View {
                     .padding()
                     .background(Color(.secondarySystemBackground))
                     .cornerRadius(AppConstants.buttonCornerRadius)
-                    .colorScheme(.light)
 
                     HStack(spacing: 12) {
                         Image(systemName: "lock")
@@ -67,7 +68,6 @@ struct LoginView: View {
                     .padding()
                     .background(Color(.secondarySystemBackground))
                     .cornerRadius(AppConstants.buttonCornerRadius)
-                    .colorScheme(.light)
                 }
                 .padding(.horizontal, 24)
                 .onChange(of: viewModel.email) { viewModel.errorMessage = nil }
