@@ -32,7 +32,8 @@ struct CreatedSessionToast: View {
                 // Session details
                 VStack(spacing: 4) {
                     Text(info.headline)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppFonts.body())
+                        .fontWeight(.semibold)
                         .foregroundColor(.primary)
                         .lineLimit(1)
 
@@ -57,7 +58,8 @@ struct CreatedSessionToast: View {
                     }
 
                     Text(info.sessionType.displayName)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(AppFonts.caption())
+                        .fontWeight(.medium)
                         .foregroundColor(.stackGreen)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)

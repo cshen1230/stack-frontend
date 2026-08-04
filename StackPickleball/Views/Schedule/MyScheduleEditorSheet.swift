@@ -28,7 +28,7 @@ struct MyScheduleEditorSheet: View {
 
                     summary
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppConstants.screenPadding)
                 .padding(.top, 4)
                 .padding(.bottom, 24)
             }

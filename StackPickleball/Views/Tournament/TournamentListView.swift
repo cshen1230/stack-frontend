@@ -10,7 +10,7 @@ struct TournamentListView: View {
                 if viewModel.isLoading && viewModel.tournaments.isEmpty {
                     ScrollView {
                         SkeletonList(count: 3) { SkeletonCard() }
-                            .padding(16)
+                            .padding(AppConstants.screenPadding)
                     }
                 } else if viewModel.tournaments.isEmpty {
                     EmptyStateView(
@@ -25,12 +25,12 @@ struct TournamentListView: View {
                                 TournamentCardView(tournament: tournament)
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                         .padding(.top, 12)
                     }
                 }
             }
-            .background(Color.white)
+            .background(Color.stackBackground)
             .navigationTitle("Tournaments")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.large)

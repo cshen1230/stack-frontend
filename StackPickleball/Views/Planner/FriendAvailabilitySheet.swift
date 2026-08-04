@@ -19,7 +19,8 @@ struct FriendAvailabilitySheet: View {
 
             VStack(spacing: 6) {
                 Text(slot.displayName)
-                    .font(.system(size: 20, weight: .bold))
+                    .font(AppFonts.headline())
+                    .fontWeight(.bold)
 
                 if let rating = slot.duprRating {
                     HStack(spacing: 3) {
@@ -29,7 +30,8 @@ struct FriendAvailabilitySheet: View {
                                 .foregroundColor(.stackDUPRBadge)
                         }
                         Text("\(String(format: "%.1f", rating)) DUPR")
-                            .font(.system(size: 13, weight: .semibold))
+                            .font(AppFonts.subheadline())
+                            .fontWeight(.semibold)
                             .foregroundColor(.stackDUPRBadge)
                     }
                     .padding(.horizontal, 8)
@@ -43,13 +45,15 @@ struct FriendAvailabilitySheet: View {
                 Image(systemName: "clock")
                     .font(.system(size: 13))
                 Text("Usually plays \(slot.timeRangeLabel)")
-                    .font(.system(size: 15, weight: .medium))
+                    .font(AppFonts.body())
+                    .fontWeight(.medium)
             }
             .foregroundColor(.stackSecondaryText)
 
             if let format = slot.preferredFormat {
                 Text(format.displayName)
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(AppFonts.caption())
+                    .fontWeight(.semibold)
                     .foregroundColor(.white)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
@@ -58,7 +62,7 @@ struct FriendAvailabilitySheet: View {
             }
 
             Text("Drag across their window on the calendar to plan a session and invite them.")
-                .font(.system(size: 14))
+                .font(AppFonts.callout())
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)

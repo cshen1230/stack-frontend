@@ -7,8 +7,9 @@ struct TournamentCardView: View {
         VStack(alignment: .leading, spacing: 12) {
             // Title
             Text(tournament.name)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.black)
+                .font(AppFonts.headline())
+                .fontWeight(.bold)
+                .foregroundColor(.primary)
 
             // Dates
             HStack(spacing: 8) {
@@ -16,8 +17,8 @@ struct TournamentCardView: View {
                     .font(.system(size: 14))
                     .foregroundColor(.stackGreen)
                 Text(dateRange)
-                    .font(.system(size: 15))
-                    .foregroundColor(.black)
+                    .font(AppFonts.body())
+                    .foregroundColor(.primary)
             }
 
             // Location
@@ -27,8 +28,8 @@ struct TournamentCardView: View {
                         .font(.system(size: 14))
                         .foregroundColor(.stackGreen)
                     Text(location)
-                        .font(.system(size: 15))
-                        .foregroundColor(.black)
+                        .font(AppFonts.body())
+                        .foregroundColor(.primary)
                 }
             }
 
@@ -39,7 +40,7 @@ struct TournamentCardView: View {
                         .font(.system(size: 14))
                         .foregroundColor(.stackGreen)
                     Text(divisions.joined(separator: ", "))
-                        .font(.system(size: 14))
+                        .font(AppFonts.callout())
                         .foregroundColor(.stackSecondaryText)
                 }
             }
@@ -47,7 +48,7 @@ struct TournamentCardView: View {
             // Description
             if let desc = tournament.description {
                 Text(desc)
-                    .font(.system(size: 14))
+                    .font(AppFonts.callout())
                     .foregroundColor(.stackSecondaryText)
                     .lineLimit(2)
             }
@@ -56,19 +57,17 @@ struct TournamentCardView: View {
             if let urlString = tournament.registrationUrl, let url = URL(string: urlString) {
                 Link(destination: url) {
                     Text("Register")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(AppFonts.body())
+                        .fontWeight(.semibold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background(Color.stackGreen)
-                        .cornerRadius(10)
+                        .cornerRadius(AppConstants.buttonCornerRadius)
                 }
             }
         }
-        .padding(16)
-        .background(Color.stackCardWhite)
-        .cornerRadius(16)
-        .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 3)
+        .cardStyle()
     }
 
     private var dateRange: String {

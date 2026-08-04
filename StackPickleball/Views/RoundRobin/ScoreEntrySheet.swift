@@ -44,34 +44,37 @@ struct ScoreEntrySheet: View {
                 // Team 1
                 VStack(spacing: 8) {
                     Text(team1Names)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppFonts.body())
+                        .fontWeight(.semibold)
                     TextField("0", text: $team1ScoreText)
                         .font(.system(size: 36, weight: .bold))
                         .multilineTextAlignment(.center)
                         .keyboardType(.numberPad)
                         .frame(maxWidth: 120)
                 }
-                .padding(16)
-                .background(Color.stackCardWhite)
-                .cornerRadius(12)
+                .padding(AppConstants.cardPadding)
+                .background(Color(.systemBackground))
+                .cornerRadius(AppConstants.buttonCornerRadius)
 
                 Text("vs")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(AppFonts.headline())
+                    .fontWeight(.bold)
                     .foregroundColor(.secondary)
 
                 // Team 2
                 VStack(spacing: 8) {
                     Text(team2Names)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppFonts.body())
+                        .fontWeight(.semibold)
                     TextField("0", text: $team2ScoreText)
                         .font(.system(size: 36, weight: .bold))
                         .multilineTextAlignment(.center)
                         .keyboardType(.numberPad)
                         .frame(maxWidth: 120)
                 }
-                .padding(16)
-                .background(Color.stackCardWhite)
-                .cornerRadius(12)
+                .padding(AppConstants.cardPadding)
+                .background(Color(.systemBackground))
+                .cornerRadius(AppConstants.buttonCornerRadius)
 
                 Spacer()
 

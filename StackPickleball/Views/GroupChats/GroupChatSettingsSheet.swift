@@ -76,7 +76,7 @@ struct GroupChatSettingsSheet: View {
                                     .stroke(Color.stackGreen.opacity(0.3), lineWidth: 1)
                             )
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                     }
 
                     // Members section
@@ -167,7 +167,7 @@ struct GroupChatSettingsSheet: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
 
                     // Actions
                     VStack(spacing: 10) {
@@ -215,13 +215,13 @@ struct GroupChatSettingsSheet: View {
                             .disabled(isProcessing)
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
 
                     if let error = errorMessage {
                         Text(error)
                             .font(.system(size: 13))
                             .foregroundColor(.red)
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppConstants.screenPadding)
                     }
                 }
                 .padding(.bottom, 24)

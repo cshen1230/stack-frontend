@@ -11,7 +11,7 @@ struct CreateGameButton: View {
                 .frame(width: 58, height: 58)
                 .background(Color.stackGreen)
                 .clipShape(Circle())
-                .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 4)
+                .shadow(color: .black.opacity(0.15), radius: AppConstants.shadowBlur, x: 0, y: AppConstants.shadowYOffset)
         }
     }
 }

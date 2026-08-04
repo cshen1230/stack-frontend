@@ -97,8 +97,9 @@ struct SessionCalendarView: View {
                 Spacer()
 
                 Text(monthTitle)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.black)
+                    .font(AppFonts.headline())
+                    .fontWeight(.bold)
+                    .foregroundColor(.primary)
 
                 Spacer()
 
@@ -114,7 +115,8 @@ struct SessionCalendarView: View {
             LazyVGrid(columns: columns, spacing: 0) {
                 ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
                     Text(day)
-                        .font(.system(size: 13, weight: .semibold))
+                        .font(AppFonts.subheadline())
+                        .fontWeight(.semibold)
                         .foregroundColor(.stackGreen)
                         .frame(maxWidth: .infinity)
                         .padding(.bottom, 8)
@@ -167,7 +169,8 @@ struct SessionCalendarView: View {
 
     private func dayCellLabel(day: Int, count: Int, isSelected: Bool, isToday: Bool) -> some View {
         Text("\(day)")
-            .font(.system(size: 15, weight: (isToday || count > 0) ? .bold : .medium))
+            .font(AppFonts.body())
+            .fontWeight((isToday || count > 0) ? .bold : .medium)
             .foregroundColor(dayTextColor(count: count, isSelected: isSelected, isToday: isToday))
             .frame(width: 36, height: 36)
             .background(
@@ -198,8 +201,9 @@ struct SessionCalendarView: View {
                 if parts.count == 3,
                    let date = calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2])) {
                     Text(date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.black)
+                        .font(AppFonts.body())
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
                         .padding(.leading, 4)
                 }
             }
@@ -229,7 +233,8 @@ struct SessionCalendarView: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(game.sessionName ?? game.creatorDisplayName)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(AppFonts.body())
+                        .fontWeight(.semibold)
                         .foregroundColor(.primary)
                         .lineLimit(1)
 
@@ -238,7 +243,8 @@ struct SessionCalendarView: View {
                             Image(systemName: "crown.fill")
                                 .font(.system(size: 9))
                             Text("Host")
-                                .font(.system(size: 10, weight: .semibold))
+                                .font(AppFonts.caption2())
+                                .fontWeight(.semibold)
                         }
                         .foregroundColor(.orange)
                     }
@@ -246,15 +252,16 @@ struct SessionCalendarView: View {
 
                 HStack(spacing: 8) {
                     Text(game.gameDatetime, format: .dateTime.hour().minute())
-                        .font(.system(size: 13))
+                        .font(AppFonts.subheadline())
                         .foregroundColor(.secondary)
 
                     Text(game.gameFormat.displayName)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(AppFonts.caption())
+                        .fontWeight(.medium)
                         .foregroundColor(.stackGreen)
 
                     Text("\(game.spotsFilled)/\(game.spotsAvailable)")
-                        .font(.system(size: 13))
+                        .font(AppFonts.subheadline())
                         .foregroundColor(.secondary)
 
                     if let location = game.locationName {
@@ -264,7 +271,7 @@ struct SessionCalendarView: View {
                             Text(location)
                                 .lineLimit(1)
                         }
-                        .font(.system(size: 12))
+                        .font(AppFonts.caption())
                         .foregroundColor(.secondary)
                     }
                 }
@@ -313,13 +320,15 @@ private struct PastSessionDetailSheet: View {
 
                     VStack(spacing: 8) {
                         Text(game.sessionName ?? game.creatorDisplayName)
-                            .font(.system(size: 24, weight: .bold))
+                            .font(AppFonts.sectionTitle())
+                            .fontWeight(.bold)
                             .foregroundColor(.primary)
                             .multilineTextAlignment(.center)
 
                         HStack(spacing: 8) {
                             Text(game.gameFormat.displayName)
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(AppFonts.subheadline())
+                                .fontWeight(.semibold)
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 5)
@@ -331,7 +340,8 @@ private struct PastSessionDetailSheet: View {
                                     Image(systemName: "crown.fill")
                                         .font(.system(size: 11))
                                     Text("Host")
-                                        .font(.system(size: 13, weight: .semibold))
+                                        .font(AppFonts.subheadline())
+                                        .fontWeight(.semibold)
                                 }
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 10)
@@ -376,24 +386,22 @@ private struct PastSessionDetailSheet: View {
                                         .foregroundColor(.stackSecondaryText)
                                         .frame(width: 24)
                                     Text("Notes")
-                                        .font(.system(size: 14, weight: .medium))
+                                        .font(AppFonts.callout())
+                                        .fontWeight(.medium)
                                         .foregroundColor(.stackSecondaryText)
                                 }
                                 Text(desc)
-                                    .font(.system(size: 15))
+                                    .font(AppFonts.body())
                                     .foregroundColor(.primary)
                                     .padding(.leading, 32)
                             }
                         }
                     }
-                    .padding(16)
-                    .background(Color.stackCardWhite)
-                    .cornerRadius(16)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.stackBorder, lineWidth: 1)
-                    )
-                    .padding(.horizontal, 16)
+                    .padding(AppConstants.cardPadding)
+                    .background(Color(.systemBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius))
+                    .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)
+                    .padding(.horizontal, AppConstants.screenPadding)
                 }
                 .padding(.top, 8)
                 .padding(.bottom, 24)
@@ -420,11 +428,13 @@ private struct PastSessionDetailSheet: View {
                 .foregroundColor(.stackSecondaryText)
                 .frame(width: 24)
             Text(label)
-                .font(.system(size: 14, weight: .medium))
+                .font(AppFonts.callout())
+                .fontWeight(.medium)
                 .foregroundColor(.stackSecondaryText)
             Spacer()
             Text(value)
-                .font(.system(size: 15, weight: .medium))
+                .font(AppFonts.body())
+                .fontWeight(.medium)
                 .foregroundColor(.primary)
                 .multilineTextAlignment(.trailing)
         }

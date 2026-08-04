@@ -25,7 +25,8 @@ struct SessionShareBubble: View {
             VStack(alignment: isFromCurrentUser ? .trailing : .leading, spacing: 4) {
                 if !isFromCurrentUser {
                     Text(message.senderDisplayName)
-                        .font(.system(size: 12, weight: .medium))
+                        .font(AppFonts.caption())
+                        .fontWeight(.medium)
                         .foregroundColor(.stackSecondaryText)
                 }
 
@@ -51,7 +52,7 @@ struct SessionShareBubble: View {
                     }
                 } else {
                     Text(message.content)
-                        .font(.system(size: 14))
+                        .font(AppFonts.callout())
                         .foregroundColor(.secondary)
                         .italic()
                         .padding(.horizontal, 14)
@@ -61,7 +62,7 @@ struct SessionShareBubble: View {
                 }
 
                 Text(message.createdAt, format: .dateTime.hour().minute())
-                    .font(.system(size: 11))
+                    .font(AppFonts.caption2())
                     .foregroundColor(.stackTimestamp)
             }
 
@@ -103,7 +104,8 @@ struct SessionShareBubble: View {
             }
 
             Text(game.sessionName ?? game.creatorDisplayName)
-                .font(.system(size: 14, weight: .semibold))
+                .font(AppFonts.callout())
+                .fontWeight(.semibold)
                 .foregroundColor(.primary)
                 .lineLimit(1)
 

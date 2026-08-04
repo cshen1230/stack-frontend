@@ -25,7 +25,7 @@ struct LoginView: View {
                         .cornerRadius(22)
 
                     Text("Stack")
-                        .font(.system(size: 42, weight: .bold))
+                        .font(.system(size: 42, weight: .bold)) // Branding size — intentionally not a token
                         .foregroundColor(.stackGreen)
 
                     Text("Find players. Schedule games.\nJust play.")
@@ -41,10 +41,10 @@ struct LoginView: View {
                 VStack(spacing: 14) {
                     HStack(spacing: 12) {
                         Image(systemName: "envelope")
-                            .font(.system(size: 16))
+                            .font(AppFonts.body())
                             .foregroundColor(.stackInputIcon)
                         TextField("Email", text: $viewModel.email)
-                            .font(.system(size: 16))
+                            .font(AppFonts.body())
                             .foregroundColor(.primary)
                             .textContentType(.emailAddress)
                             #if os(iOS)
@@ -58,10 +58,10 @@ struct LoginView: View {
 
                     HStack(spacing: 12) {
                         Image(systemName: "lock")
-                            .font(.system(size: 16))
+                            .font(AppFonts.body())
                             .foregroundColor(.stackInputIcon)
                         SecureField("Password", text: $viewModel.password)
-                            .font(.system(size: 16))
+                            .font(AppFonts.body())
                             .foregroundColor(.primary)
                             .textContentType(.password)
                     }
@@ -95,7 +95,7 @@ struct LoginView: View {
                             .cornerRadius(AppConstants.buttonCornerRadius)
                     } else {
                         Text("Sign In")
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(AppFonts.headline())
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
@@ -120,7 +120,7 @@ struct LoginView: View {
                             showingSignUp = true
                         }
                 }
-                .font(.system(size: 16))
+                .font(AppFonts.body())
                 .padding(.top, 20)
 
                 Spacer()

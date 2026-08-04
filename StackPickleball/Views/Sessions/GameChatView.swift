@@ -67,7 +67,7 @@ struct GameChatView: View {
                 ScrollView {
                     if isLoading {
                         SkeletonMessages()
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppConstants.screenPadding)
                             .padding(.top, 16)
                     } else if messages.isEmpty {
                         VStack(spacing: 16) {
@@ -108,7 +108,7 @@ struct GameChatView: View {
                                 .id(message.id)
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                         .padding(.top, 8)
                         .padding(.bottom, 12)
                     }
@@ -135,7 +135,7 @@ struct GameChatView: View {
                         .font(AppFonts.body())
                         .lineLimit(1...5)
                         .focused($isInputFocused)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                         .padding(.vertical, 10)
                         .background(
                             RoundedRectangle(cornerRadius: 22)
@@ -376,7 +376,7 @@ private struct SessionSettingsSheet: View {
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
 
                     // Actions
                     VStack(spacing: 10) {
@@ -418,13 +418,13 @@ private struct SessionSettingsSheet: View {
                             .disabled(isProcessing)
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
 
                     if let error = errorMessage {
                         Text(error)
                             .font(.system(size: 13))
                             .foregroundColor(.red)
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppConstants.screenPadding)
                     }
                 }
                 .padding(.bottom, 24)

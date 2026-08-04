@@ -176,7 +176,8 @@ struct OnboardingView: View {
 
                     Button { withAnimation { step = 3 } } label: {
                         Text("Skip for now")
-                            .font(.system(size: 15, weight: .medium))
+                            .font(AppFonts.body())
+                            .fontWeight(.medium)
                             .foregroundColor(.stackSecondaryText)
                     }
                 }
@@ -194,7 +195,8 @@ struct OnboardingView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(user.displayName)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(AppFonts.body())
+                    .fontWeight(.semibold)
                     .foregroundColor(.primary)
                 Text("@\(user.username)")
                     .font(AppFonts.caption())
@@ -205,14 +207,16 @@ struct OnboardingView: View {
 
             if friendsVM.pendingSentIds.contains(user.id) {
                 Text("Sent")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(AppFonts.subheadline())
+                    .fontWeight(.medium)
                     .foregroundColor(.stackSecondaryText)
             } else {
                 Button {
                     Task { await friendsVM.sendRequest(to: user.id) }
                 } label: {
                     Text("Add")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(AppFonts.callout())
+                        .fontWeight(.semibold)
                         .foregroundColor(.white)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 7)
@@ -253,7 +257,8 @@ struct OnboardingView: View {
 
                     Button(action: finishOnboarding) {
                         Text("Skip for now")
-                            .font(.system(size: 15, weight: .medium))
+                            .font(AppFonts.body())
+                            .fontWeight(.medium)
                             .foregroundColor(.stackSecondaryText)
                     }
                 }
@@ -294,10 +299,10 @@ struct OnboardingView: View {
     private func formField(icon: String, placeholder: String, text: Binding<String>) -> some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.system(size: 16))
+                .font(AppFonts.body())
                 .foregroundColor(.stackInputIcon)
             TextField(placeholder, text: text)
-                .font(.system(size: 16))
+                .font(AppFonts.body())
         }
         .padding()
         .background(Color(.secondarySystemBackground))

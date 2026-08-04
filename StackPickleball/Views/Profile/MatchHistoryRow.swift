@@ -18,16 +18,17 @@ struct MatchHistoryRow: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(label)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.black)
+                    .font(AppFonts.body())
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
                 Text(detail)
-                    .font(.system(size: 14))
+                    .font(AppFonts.callout())
                     .foregroundColor(.stackSecondaryText)
             }
 
             Spacer()
         }
-        .padding(16)
+        .padding(AppConstants.cardPadding)
     }
 }
 

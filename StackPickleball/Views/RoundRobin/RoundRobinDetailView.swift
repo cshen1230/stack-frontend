@@ -70,7 +70,8 @@ struct RoundRobinDetailView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         Text(game.gameFormat.displayName)
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(AppFonts.caption())
+                            .fontWeight(.semibold)
                             .foregroundColor(.stackGreen)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 4)
@@ -78,7 +79,8 @@ struct RoundRobinDetailView: View {
                             .cornerRadius(8)
 
                         Text("Round Robin")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(AppFonts.caption())
+                            .fontWeight(.semibold)
                             .foregroundColor(.white)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 4)
@@ -92,7 +94,7 @@ struct RoundRobinDetailView: View {
                                 .font(.system(size: 13))
                                 .foregroundColor(.stackSecondaryText)
                             Text("\(numRounds) rounds")
-                                .font(.system(size: 14))
+                                .font(AppFonts.callout())
                         }
                     }
 
@@ -101,10 +103,10 @@ struct RoundRobinDetailView: View {
                             .font(.system(size: 13))
                             .foregroundColor(.stackSecondaryText)
                         Text("\(viewModel.participants.count)/\(game.spotsAvailable) players joined")
-                            .font(.system(size: 14))
+                            .font(AppFonts.callout())
                     }
                 }
-                .padding(16)
+                .padding(AppConstants.cardPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color(.systemBackground))
                 .clipShape(RoundedRectangle(cornerRadius: AppConstants.cardCornerRadius))
@@ -128,10 +130,12 @@ struct RoundRobinDetailView: View {
                                         .foregroundColor(.white)
                                 )
                             Text(p.displayName)
-                                .font(.system(size: 15, weight: .medium))
+                                .font(AppFonts.body())
+                                .fontWeight(.medium)
                             if p.userId == game.creatorId {
                                 Text("Host")
-                                    .font(.system(size: 11, weight: .semibold))
+                                    .font(AppFonts.caption2())
+                                    .fontWeight(.semibold)
                                     .foregroundColor(.orange)
                             }
                             Spacer()
@@ -174,7 +178,7 @@ struct RoundRobinDetailView: View {
                                     .font(.system(size: 12))
                                     .foregroundColor(.secondary)
                                 Text("Sitting out: \(group.byes.map { viewModel.playerName(for: $0) }.joined(separator: ", "))")
-                                    .font(.system(size: 13))
+                                    .font(AppFonts.subheadline())
                                     .foregroundColor(.secondary)
                             }
                             .padding(.horizontal, AppConstants.screenPadding)
@@ -203,20 +207,23 @@ struct RoundRobinDetailView: View {
                     HStack(spacing: 12) {
                         // Rank
                         Text("#\(index + 1)")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(AppFonts.body())
+                            .fontWeight(.bold)
                             .foregroundColor(index < 3 ? .stackGreen : .secondary)
                             .frame(width: 36)
 
                         Text(viewModel.playerName(for: entry.playerId))
-                            .font(.system(size: 15, weight: .medium))
+                            .font(AppFonts.body())
+                            .fontWeight(.medium)
 
                         Spacer()
 
                         VStack(alignment: .trailing, spacing: 2) {
                             Text("\(entry.wins)W - \(entry.losses)L")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(AppFonts.callout())
+                                .fontWeight(.semibold)
                             Text("\(entry.avgPointDifferential >= 0 ? "+" : "")\(String(format: "%.1f", entry.avgPointDifferential)) avg diff")
-                                .font(.system(size: 12))
+                                .font(AppFonts.caption())
                                 .foregroundColor(entry.avgPointDifferential >= 0 ? .stackGreen : .secondary)
                         }
                     }
@@ -250,13 +257,15 @@ struct RoundRobinDetailView: View {
                         VStack(alignment: .leading, spacing: 3) {
                             HStack(spacing: 6) {
                                 Text(p.displayName)
-                                    .font(.system(size: 16, weight: .semibold))
+                                    .font(AppFonts.body())
+                                    .fontWeight(.semibold)
                                 if p.userId == game.creatorId {
                                     HStack(spacing: 2) {
                                         Image(systemName: "crown.fill")
                                             .font(.system(size: 10))
                                         Text("Host")
-                                            .font(.system(size: 11, weight: .semibold))
+                                            .font(AppFonts.caption2())
+                                            .fontWeight(.semibold)
                                     }
                                     .foregroundColor(.orange)
                                 }
@@ -269,7 +278,8 @@ struct RoundRobinDetailView: View {
                                             .foregroundColor(.stackGreen)
                                     }
                                     Text("DUPR \(String(format: "%.1f", rating))")
-                                        .font(.system(size: 13, weight: .medium))
+                                        .font(AppFonts.subheadline())
+                                        .fontWeight(.medium)
                                         .foregroundColor(.stackGreen)
                                 }
                             }
@@ -312,13 +322,16 @@ private struct MatchCard: View {
             VStack(spacing: 8) {
                 HStack {
                     Text(team1Names)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(AppFonts.callout())
+                        .fontWeight(.medium)
                         .frame(maxWidth: .infinity)
                     Text("vs")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(AppFonts.caption())
+                        .fontWeight(.bold)
                         .foregroundColor(.secondary)
                     Text(team2Names)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(AppFonts.callout())
+                        .fontWeight(.medium)
                         .frame(maxWidth: .infinity)
                 }
 
@@ -329,7 +342,8 @@ private struct MatchCard: View {
                             .foregroundColor((match.team1Score ?? 0) > (match.team2Score ?? 0) ? .stackGreen : .primary)
                             .frame(maxWidth: .infinity)
                         Text("–")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(AppFonts.body())
+                            .fontWeight(.bold)
                             .foregroundColor(.secondary)
                         Text("\(match.team2Score ?? 0)")
                             .font(.system(size: 20, weight: .bold))
@@ -337,11 +351,11 @@ private struct MatchCard: View {
                             .frame(maxWidth: .infinity)
                     }
                     Text("Tap to edit")
-                        .font(.system(size: 11))
+                        .font(AppFonts.caption2())
                         .foregroundColor(.secondary)
                 } else {
                     Text("Tap to enter score")
-                        .font(.system(size: 12))
+                        .font(AppFonts.caption())
                         .foregroundColor(.stackGreen)
                 }
             }

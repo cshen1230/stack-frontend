@@ -97,9 +97,11 @@ struct HomeView: View {
                                         showingMap = true
                                     } label: {
                                         Image(systemName: "map")
-                                            .font(.system(size: 17, weight: .medium))
+                                            .font(AppFonts.headline())
+                                            .fontWeight(.medium)
                                             .foregroundColor(.stackSecondaryText)
                                     }
+                                    .accessibilityLabel("View games on map")
                                 }
                                 .padding(.horizontal, AppConstants.screenPadding)
 
@@ -150,9 +152,10 @@ struct HomeView: View {
                         showingAddFriends = true
                     } label: {
                         Image(systemName: "person.badge.plus")
-                            .font(.system(size: 17, weight: .semibold))
+                            .font(AppFonts.headline())
                             .foregroundColor(.primary)
                     }
+                    .accessibilityLabel("Add friends")
                 }
             }
             .task(id: currentUserId) {

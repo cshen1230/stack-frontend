@@ -44,7 +44,7 @@ struct InvitePlayersSheet: View {
                 .padding(12)
                 .background(Color(.systemGray6))
                 .cornerRadius(10)
-                .padding(.horizontal, 16)
+                .padding(.horizontal, AppConstants.screenPadding)
                 .padding(.top, 8)
                 .padding(.bottom, 12)
 
@@ -128,7 +128,7 @@ struct InvitePlayersSheet: View {
                                             .font(.system(size: 22))
                                             .foregroundColor(isSelected ? .stackGreen : Color(.systemGray3))
                                     }
-                                    .padding(.horizontal, 16)
+                                    .padding(.horizontal, AppConstants.screenPadding)
                                     .padding(.vertical, 10)
                                     .background(isSelected ? Color.stackGreen.opacity(0.04) : Color.clear)
                                 }

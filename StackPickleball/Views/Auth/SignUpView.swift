@@ -20,7 +20,7 @@ struct SignUpView: View {
                 // Header
                 VStack(spacing: 8) {
                     Text("Create Account")
-                        .font(.system(size: 32, weight: .bold))
+                        .font(AppFonts.pageTitle())
                         .foregroundColor(.stackGreen)
 
                     Text("Join the pickleball community")
@@ -38,7 +38,7 @@ struct SignUpView: View {
                             .foregroundColor(.stackGreen)
 
                         Text("Check your email")
-                            .font(.system(size: 22, weight: .bold))
+                            .font(AppFonts.sectionTitle())
                             .foregroundColor(.primary)
 
                         Text("We sent a confirmation link to **\(viewModel.email)**. Tap it, then come back and sign in.")
@@ -49,7 +49,7 @@ struct SignUpView: View {
 
                         Button(action: { dismiss() }) {
                             Text("Back to Sign In")
-                                .font(.system(size: 17, weight: .semibold))
+                                .font(AppFonts.headline())
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 54)
@@ -65,10 +65,10 @@ struct SignUpView: View {
                     VStack(spacing: 14) {
                         HStack(spacing: 12) {
                             Image(systemName: "envelope")
-                                .font(.system(size: 16))
+                                .font(AppFonts.body())
                                 .foregroundColor(.stackInputIcon)
                             TextField("Email", text: $viewModel.email)
-                                .font(.system(size: 16))
+                                .font(AppFonts.body())
                                 .textContentType(.emailAddress)
                                 #if os(iOS)
                                 .textInputAutocapitalization(.never)
@@ -81,10 +81,10 @@ struct SignUpView: View {
 
                         HStack(spacing: 12) {
                             Image(systemName: "lock")
-                                .font(.system(size: 16))
+                                .font(AppFonts.body())
                                 .foregroundColor(.stackInputIcon)
                             SecureField("Password", text: $viewModel.password)
-                                .font(.system(size: 16))
+                                .font(AppFonts.body())
                                 .textContentType(.newPassword)
                         }
                         .padding()
@@ -93,10 +93,10 @@ struct SignUpView: View {
 
                         HStack(spacing: 12) {
                             Image(systemName: "lock")
-                                .font(.system(size: 16))
+                                .font(AppFonts.body())
                                 .foregroundColor(.stackInputIcon)
                             SecureField("Confirm Password", text: $confirmPassword)
-                                .font(.system(size: 16))
+                                .font(AppFonts.body())
                                 .textContentType(.newPassword)
                         }
                         .padding()
@@ -132,7 +132,7 @@ struct SignUpView: View {
                                 .cornerRadius(AppConstants.buttonCornerRadius)
                         } else {
                             Text("Sign Up")
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(AppFonts.headline())
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 54)
@@ -157,7 +157,7 @@ struct SignUpView: View {
                         .foregroundColor(.stackGreen)
                         .fontWeight(.semibold)
                     }
-                    .font(.system(size: 16))
+                    .font(AppFonts.body())
                 }
 
                 Spacer()

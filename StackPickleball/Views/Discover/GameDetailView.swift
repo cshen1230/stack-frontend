@@ -236,7 +236,7 @@ struct GameDetailView: View {
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(.secondary)
                         }
-                        .padding(16)
+                        .padding(AppConstants.cardPadding)
                         .background(Color(.systemBackground))
                         .cornerRadius(AppConstants.cardCornerRadius)
                         .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)
@@ -265,7 +265,7 @@ struct GameDetailView: View {
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(.secondary)
                         }
-                        .padding(16)
+                        .padding(AppConstants.cardPadding)
                         .background(Color(.systemBackground))
                         .cornerRadius(AppConstants.cardCornerRadius)
                         .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)
@@ -291,7 +291,7 @@ struct GameDetailView: View {
                                 .font(.system(size: 13, weight: .semibold))
                                 .foregroundColor(.secondary)
                         }
-                        .padding(16)
+                        .padding(AppConstants.cardPadding)
                         .background(Color(.systemBackground))
                         .cornerRadius(AppConstants.cardCornerRadius)
                         .shadow(color: .black.opacity(AppConstants.shadowOpacity), radius: AppConstants.shadowBlur, y: AppConstants.shadowYOffset)

@@ -52,10 +52,10 @@ struct CommunityInfoView: View {
                         .padding(.top, 20)
 
                     Text(groupChat.name)
-                        .font(.system(size: 22, weight: .bold))
+                        .font(AppFonts.sectionTitle())
 
                     Text("Community · \(members.count) members")
-                        .font(.system(size: 14))
+                        .font(AppFonts.callout())
                         .foregroundColor(.stackSecondaryText)
 
                     if let visibility = groupChat.visibility {
@@ -63,7 +63,8 @@ struct CommunityInfoView: View {
                             Image(systemName: visibility.iconName)
                                 .font(.system(size: 11))
                             Text(visibility.displayName)
-                                .font(.system(size: 12, weight: .medium))
+                                .font(AppFonts.caption())
+                                .fontWeight(.medium)
                         }
                         .foregroundColor(visibility == .public ? .stackGreen : .stackSecondaryText)
                         .padding(.horizontal, 10)
@@ -80,7 +81,7 @@ struct CommunityInfoView: View {
 
                 // Action buttons row
                 actionButtonsRow
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                     .padding(.bottom, 24)
 
                 // Session link
@@ -99,7 +100,7 @@ struct CommunityInfoView: View {
                                     .foregroundColor(.stackGreen)
                                     .frame(width: 28)
                                 Text("View Session")
-                                    .font(.system(size: 16))
+                                    .font(AppFonts.body())
                                     .foregroundColor(.primary)
                                 Spacer()
                                 Image(systemName: "chevron.right")
@@ -109,25 +110,25 @@ struct CommunityInfoView: View {
                             .padding(14)
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                     .padding(.bottom, 16)
                 }
 
                 // Members preview
                 membersSection
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                     .padding(.bottom, 16)
 
                 // Danger zone
                 dangerSection
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, AppConstants.screenPadding)
                     .padding(.bottom, 32)
 
                 if let error = errorMessage {
                     Text(error)
                         .font(.system(size: 13))
                         .foregroundColor(.red)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                 }
             }
         }
@@ -240,7 +241,8 @@ struct CommunityInfoView: View {
                     .font(.system(size: 20))
                     .foregroundColor(.stackGreen)
                 Text(label)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(AppFonts.caption())
+                    .fontWeight(.medium)
                     .foregroundColor(.stackGreen)
             }
             .frame(maxWidth: .infinity)
@@ -258,7 +260,8 @@ struct CommunityInfoView: View {
                 // Header
                 HStack {
                     Text("\(members.count) Members")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(AppFonts.callout())
+                        .fontWeight(.semibold)
                         .foregroundColor(.stackSecondaryText)
                     Spacer()
                 }
@@ -303,7 +306,8 @@ struct CommunityInfoView: View {
                                     .clipShape(Circle())
 
                                 Text("See all members")
-                                    .font(.system(size: 15, weight: .medium))
+                                    .font(AppFonts.body())
+                                    .fontWeight(.medium)
                                     .foregroundColor(.stackGreen)
 
                                 Spacer()
@@ -342,19 +346,21 @@ struct CommunityInfoView: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(member.displayName)
-                        .font(.system(size: 15, weight: .medium))
+                        .font(AppFonts.body())
+                        .fontWeight(.medium)
                         .foregroundColor(.primary)
 
                     if member.userId == currentUserId {
                         Text("You")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(AppFonts.caption2())
+                            .fontWeight(.medium)
                             .foregroundColor(.stackSecondaryText)
                     }
                 }
 
                 if member.role == .admin {
                     Text("Admin")
-                        .font(.system(size: 12))
+                        .font(AppFonts.caption())
                         .foregroundColor(.stackGreen)
                 } else if let rating = member.users.duprRating {
                     HStack(spacing: 3) {
@@ -364,7 +370,7 @@ struct CommunityInfoView: View {
                                 .foregroundColor(.stackSecondaryText)
                         }
                         Text("DUPR \(String(format: "%.1f", rating))")
-                            .font(.system(size: 12))
+                            .font(AppFonts.caption())
                             .foregroundColor(.stackSecondaryText)
                     }
                 }
@@ -378,7 +384,7 @@ struct CommunityInfoView: View {
 
     private var memberPlaceholder: some View {
         Circle()
-            .fill(Color.gray.opacity(0.25))
+            .fill(Color(.tertiarySystemFill))
             .frame(width: 40, height: 40)
             .overlay(
                 Image(systemName: "person.fill")
@@ -397,11 +403,11 @@ struct CommunityInfoView: View {
                 } label: {
                     HStack(spacing: 12) {
                         Image(systemName: "rectangle.portrait.and.arrow.right")
-                            .font(.system(size: 16))
+                            .font(AppFonts.body())
                             .foregroundColor(.red)
                             .frame(width: 28)
                         Text("Leave Community")
-                            .font(.system(size: 16))
+                            .font(AppFonts.body())
                             .foregroundColor(.red)
                         Spacer()
                     }

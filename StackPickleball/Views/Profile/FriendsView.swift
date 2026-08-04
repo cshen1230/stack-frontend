@@ -49,7 +49,7 @@ struct FriendsView: View {
             Section(viewModel.friends.isEmpty ? "" : "Friends") {
                 if viewModel.isLoading && viewModel.friends.isEmpty {
                     SkeletonList(count: 5) { SkeletonRow() }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                         .padding(.top, 8)
                 } else if viewModel.friends.isEmpty && viewModel.searchResults.isEmpty {
                     Text("No friends yet. Search for players above to add friends.")

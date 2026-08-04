@@ -19,7 +19,8 @@ struct DUPRConnectView: View {
                         .font(.system(size: 20))
                         .foregroundColor(.stackGreen)
                     Text("DUPR Verified")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(AppFonts.body())
+                        .fontWeight(.semibold)
                         .foregroundColor(.stackGreen)
                 }
                 .padding(.vertical, 4)
@@ -31,18 +32,18 @@ struct DUPRConnectView: View {
                         .foregroundColor(.stackGreen)
 
                     Text("Connect Your DUPR Account")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.black)
+                        .font(AppFonts.headline())
+                        .foregroundColor(.primary)
 
                     Text("Verify your rating for skill-matched games")
-                        .font(.system(size: 14))
+                        .font(AppFonts.callout())
                         .foregroundColor(.stackSecondaryText)
                         .multilineTextAlignment(.center)
                 }
 
                 if let error = errorMessage {
                     Text(error)
-                        .font(.system(size: 13))
+                        .font(AppFonts.subheadline())
                         .foregroundColor(.red)
                         .multilineTextAlignment(.center)
                 }
@@ -57,14 +58,15 @@ struct DUPRConnectView: View {
                             Image(systemName: "link")
                                 .font(.system(size: 15, weight: .semibold))
                             Text("Connect DUPR")
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(AppFonts.body())
+                                .fontWeight(.semibold)
                         }
                     }
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
                     .background(Color.stackGreen)
-                    .cornerRadius(14)
+                    .cornerRadius(AppConstants.buttonCornerRadius)
                 }
                 .disabled(isLoading)
 
@@ -72,7 +74,8 @@ struct DUPRConnectView: View {
                 if allowSkip {
                     Button(action: { onSkip?() }) {
                         Text("Skip for now")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(AppFonts.callout())
+                            .fontWeight(.medium)
                             .foregroundColor(.stackSecondaryText)
                     }
                 }

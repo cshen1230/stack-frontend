@@ -17,7 +17,7 @@ struct ShareSessionSheet: View {
                 if isLoading {
                     ScrollView {
                         SkeletonList(count: 3) { SkeletonCard() }
-                            .padding(16)
+                            .padding(AppConstants.screenPadding)
                     }
                 } else if sessions.isEmpty {
                     VStack(spacing: 12) {
@@ -25,7 +25,7 @@ struct ShareSessionSheet: View {
                             .font(.system(size: 40))
                             .foregroundColor(.stackSecondaryText)
                         Text("No active sessions to share")
-                            .font(.system(size: 15))
+                            .font(AppFonts.body())
                             .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -37,12 +37,14 @@ struct ShareSessionSheet: View {
                             HStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(game.sessionName ?? game.creatorDisplayName)
-                                        .font(.system(size: 15, weight: .semibold))
+                                        .font(AppFonts.body())
+                                        .fontWeight(.semibold)
                                         .foregroundColor(.primary)
 
                                     HStack(spacing: 6) {
                                         Text(game.gameFormat.displayName)
-                                            .font(.system(size: 12, weight: .medium))
+                                            .font(AppFonts.caption())
+                                            .fontWeight(.medium)
                                             .foregroundColor(.stackGreen)
 
                                         Text("·")
@@ -50,7 +52,7 @@ struct ShareSessionSheet: View {
                                             .foregroundColor(.stackTimestamp)
 
                                         Text(game.gameDatetime, format: .dateTime.month(.abbreviated).day().hour().minute())
-                                            .font(.system(size: 12))
+                                            .font(AppFonts.caption())
                                             .foregroundColor(.stackTimestamp)
                                     }
 
@@ -59,7 +61,7 @@ struct ShareSessionSheet: View {
                                             Image(systemName: "mappin")
                                                 .font(.system(size: 10))
                                             Text(location)
-                                                .font(.system(size: 11))
+                                                .font(AppFonts.caption2())
                                         }
                                         .foregroundColor(.stackTimestamp)
                                     }

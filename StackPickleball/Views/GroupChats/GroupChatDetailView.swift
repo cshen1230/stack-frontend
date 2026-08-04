@@ -73,7 +73,7 @@ struct GroupChatDetailView: View {
                 ScrollView {
                     if isLoading {
                         SkeletonMessages()
-                            .padding(.horizontal, 16)
+                            .padding(.horizontal, AppConstants.screenPadding)
                             .padding(.top, 16)
                     } else if messages.isEmpty {
                         VStack(spacing: 16) {
@@ -126,7 +126,7 @@ struct GroupChatDetailView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                         .padding(.top, 8)
                         .padding(.bottom, 12)
                     }
@@ -162,7 +162,7 @@ struct GroupChatDetailView: View {
                         .font(AppFonts.body())
                         .lineLimit(1...5)
                         .focused($isInputFocused)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                         .padding(.vertical, 10)
                         .background(
                             RoundedRectangle(cornerRadius: 22)
@@ -348,7 +348,7 @@ private struct SystemMessageView: View {
         Text(message.content)
             .font(AppFonts.caption())
             .foregroundColor(.stackSecondaryText)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, AppConstants.screenPadding)
             .padding(.vertical, 6)
             .frame(maxWidth: .infinity)
     }

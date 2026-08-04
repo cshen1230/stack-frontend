@@ -255,7 +255,7 @@ private struct GroupChatRow: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppConstants.screenPadding)
         .padding(.vertical, 12)
     }
 
@@ -376,7 +376,7 @@ private struct DiscoverableCommunityRow: View {
                     Text("Join")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, AppConstants.screenPadding)
                         .padding(.vertical, 7)
                         .background(Color.stackGreen)
                         .cornerRadius(18)
@@ -391,7 +391,7 @@ private struct DiscoverableCommunityRow: View {
                 .foregroundColor(.stackSecondaryText)
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, AppConstants.screenPadding)
         .padding(.vertical, 10)
     }
 
